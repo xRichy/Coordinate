@@ -32,7 +32,7 @@ export default function DashboardPage() {
     const conversionRate = leads.length > 0 ? Math.round((wonLeads / leads.length) * 100) : 0;
 
     return (
-        <div className="flex-1 space-y-6">
+        <div className="flex-1 space-y-6 pb-20 md:pb-6">
             <div className="flex items-center justify-between space-y-2">
                 <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
             </div>
@@ -44,7 +44,7 @@ export default function DashboardPage() {
                         <DollarSign className="h-4 w-4 text-primary" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">${totalValue.toLocaleString()}</div>
+                        <div className="text-2xl font-bold">${totalValue.toLocaleString("en-US")}</div>
                         <p className="text-xs text-muted-foreground">+20.1% from last month</p>
                     </CardContent>
                 </Card>
@@ -87,21 +87,22 @@ export default function DashboardPage() {
                     </CardHeader>
                     <CardContent className="pl-2">
                         <div className="h-[300px]">
-                            <ResponsiveContainer width="100%" height="100%">
+                            <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                                 <AreaChart data={revenueData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                                     <defs>
                                         <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8} />
-                                            <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                                            <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.8} />
+                                            <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
                                         </linearGradient>
                                     </defs>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                                    <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
+                                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} strokeOpacity={0.4} />
+                                    <XAxis dataKey="name" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
+                                    <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
                                     <Tooltip
-                                        contentStyle={{ backgroundColor: 'hsl(var(--card))', borderRadius: '8px', border: '1px solid hsl(var(--border))' }}
+                                        contentStyle={{ backgroundColor: 'var(--card)', borderRadius: '8px', border: '1px solid var(--border)', color: 'var(--foreground)' }}
+                                        itemStyle={{ color: 'var(--foreground)' }}
                                     />
-                                    <Area type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" fillOpacity={1} fill="url(#colorRevenue)" />
+                                    <Area type="monotone" dataKey="revenue" stroke="var(--primary)" fillOpacity={1} fill="url(#colorRevenue)" />
                                 </AreaChart>
                             </ResponsiveContainer>
                         </div>
@@ -115,15 +116,16 @@ export default function DashboardPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="h-[300px]">
-                            <ResponsiveContainer width="100%" height="100%">
+                            <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                                 <BarChart data={leadsData}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                                    <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
+                                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} strokeOpacity={0.4} />
+                                    <XAxis dataKey="name" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
                                     <Tooltip
-                                        cursor={{ fill: 'hsl(var(--muted)/0.5)' }}
-                                        contentStyle={{ backgroundColor: 'hsl(var(--card))', borderRadius: '8px', border: '1px solid hsl(var(--border))' }}
+                                        cursor={{ fill: 'var(--muted)', opacity: 0.5 }}
+                                        contentStyle={{ backgroundColor: 'var(--card)', borderRadius: '8px', border: '1px solid var(--border)', color: 'var(--foreground)' }}
+                                        itemStyle={{ color: 'var(--foreground)' }}
                                     />
-                                    <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                                    <Bar dataKey="count" fill="var(--primary)" radius={[4, 4, 0, 0]} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>

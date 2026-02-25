@@ -29,7 +29,10 @@ export default function LeadsBoardPage() {
             <div className="flex flex-col sm:flex-row shadow-sm bg-card/40 backdrop-blur-md border border-border/50 p-6 rounded-xl justify-between items-start sm:items-center gap-4">
                 <div>
                     <h2 className="text-3xl font-bold tracking-tight">Leads Board</h2>
-                    <p className="text-muted-foreground">Drag and drop leads across pipeline stages.</p>
+                    <p className="text-muted-foreground mt-2 max-w-3xl">
+                        Il Kanban board è uno strumento visivo per gestire le tue opportunità di vendita (Leads).
+                        Ogni colonna rappresenta una fase del processo di vendita. Puoi trascinare (drag & drop) i contatti da una fase all&apos;altra per aggiornarne lo stato fino alla chiusura (&quot;Won&quot; o &quot;Lost&quot;).
+                    </p>
                 </div>
                 <Button className="shrink-0 group">
                     <Plus className="mr-2 h-4 w-4 transition-transform group-hover:rotate-90" />
@@ -37,8 +40,8 @@ export default function LeadsBoardPage() {
                 </Button>
             </div>
 
-            <div className="flex-1 overflow-x-auto pb-4 custom-scrollbar">
-                <div className="flex gap-4 h-full min-h-[600px] items-start">
+            <div className="flex-1 overflow-y-auto pb-4 custom-scrollbar">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 h-full items-start">
                     {STAGES.map((stage) => {
                         const stageLeads = leads.filter((l) => l.status === stage);
                         const totalValue = stageLeads.reduce((acc, lead) => acc + lead.value, 0);
@@ -46,7 +49,7 @@ export default function LeadsBoardPage() {
                         return (
                             <div
                                 key={stage}
-                                className="flex-shrink-0 w-80 flex flex-col gap-3 rounded-xl bg-muted/40 p-4 border border-border/40"
+                                className="flex flex-col gap-3 rounded-xl bg-muted/40 p-4 border border-border/40"
                                 onDragOver={handleDragOver}
                                 onDrop={() => handleDrop(stage)}
                             >
@@ -55,7 +58,7 @@ export default function LeadsBoardPage() {
                                     <Badge variant="secondary" className="bg-background">{stageLeads.length}</Badge>
                                 </div>
                                 <div className="text-sm text-muted-foreground mb-2 font-medium">
-                                    ${totalValue.toLocaleString()}
+                                    ${totalValue.toLocaleString("en-US")}
                                 </div>
 
                                 <div className="flex flex-col gap-3 flex-1 min-h-[100px]">
@@ -71,7 +74,7 @@ export default function LeadsBoardPage() {
                                             </CardHeader>
                                             <CardContent className="p-4 pt-2">
                                                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                                    <span className="font-medium text-foreground">${lead.value.toLocaleString()}</span>
+                                                    <span className="font-medium text-foreground">${lead.value.toLocaleString("en-US")}</span>
                                                     <span>{lead.customerName}</span>
                                                 </div>
                                             </CardContent>

@@ -18,6 +18,7 @@ import {
     CheckSquare,
     Settings,
     Target,
+    Package,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -28,6 +29,7 @@ const navigation = [
     { name: "Customers", href: "/crm/customers", icon: Users },
     { name: "Leads Board", href: "/crm/leads", icon: Kanban },
     { name: "Tasks", href: "/tasks", icon: CheckSquare },
+    { name: "Warehouse", href: "/warehouse", icon: Package },
 ];
 
 export function AppSidebar() {

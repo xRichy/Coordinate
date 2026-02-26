@@ -81,7 +81,7 @@ export default function DashboardPage() {
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-                <Card className="col-span-4 bg-card/40 backdrop-blur-md border-border/50 shadow-sm">
+                <Card className="md:col-span-2 lg:col-span-4 bg-card/40 backdrop-blur-md border-border/50 shadow-sm">
                     <CardHeader>
                         <CardTitle>Revenue Overview</CardTitle>
                     </CardHeader>
@@ -109,7 +109,7 @@ export default function DashboardPage() {
                     </CardContent>
                 </Card>
 
-                <Card className="col-span-3 bg-card/40 backdrop-blur-md border-border/50 shadow-sm">
+                <Card className="md:col-span-2 lg:col-span-3 bg-card/40 backdrop-blur-md border-border/50 shadow-sm">
                     <CardHeader>
                         <CardTitle>Lead Distribution</CardTitle>
                         <CardDescription>Current active leads per stage</CardDescription>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useAppStore } from "@/store/useAppStore";
+import { useAppStore, Customer } from "@/store/useAppStore";
 import {
     Table,
     TableBody,
@@ -13,16 +13,29 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus } from "lucide-react";
+import { Search, Plus, Eye } from "lucide-react";
+import { CustomerModal } from "./customer-modal";
 
 export default function CustomersPage() {
     const { customers } = useAppStore();
     const [searchTerm, setSearchTerm] = useState("");
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [customerToEdit, setCustomerToEdit] = useState<Customer | null>(null);
 
     const filteredCustomers = customers.filter(c =>
         c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         c.company.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    const handleOpenAddModal = () => {
+        setCustomerToEdit(null);
+        setIsModalOpen(true);
+    };
+
+    const handleOpenEditModal = (customer: Customer) => {
+        setCustomerToEdit(customer);
+        setIsModalOpen(true);
+    };
 
     return (
         <div className="flex-1 space-y-6">
@@ -31,13 +44,13 @@ export default function CustomersPage() {
                     <h2 className="text-3xl font-bold tracking-tight">Customers</h2>
                     <p className="text-muted-foreground">Manage your customer relationships and contacts.</p>
                 </div>
-                <Button className="shrink-0 group">
+                <Button className="shrink-0 group" onClick={handleOpenAddModal}>
                     <Plus className="mr-2 h-4 w-4 transition-transform group-hover:rotate-90" />
                     Add Customer
                 </Button>
             </div>
 
-            <div className="bg-card/40 backdrop-blur-md border border-border/50 rounded-xl overflow-hidden shadow-sm">
+            <div className="bg-card/40 backdrop-blur-md border border-border/50 rounded-xl overflow-hidden shadow-sm p-3">
                 <div className="p-4 flex items-center gap-4 border-b border-border/50">
                     <div className="relative flex-1 max-w-sm">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -75,7 +88,12 @@ export default function CustomersPage() {
                                         </Badge>
                                     </TableCell>
                                     <TableCell className="text-right">
-                                        <Button variant="ghost" size="sm">Edit</Button>
+                                        <div className="flex justify-end gap-2">
+                                            <Button variant="ghost" size="sm" onClick={() => handleOpenEditModal(customer)}>
+                                                <Eye className="w-4 h-4 mr-2" />
+                                                View/Edit
+                                            </Button>
+                                        </div>
                                     </TableCell>
                                 </TableRow>
                             ))
@@ -89,6 +107,12 @@ export default function CustomersPage() {
                     </TableBody>
                 </Table>
             </div>
+
+            <CustomerModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                customerToEdit={customerToEdit}
+            />
         </div>
     );
 }

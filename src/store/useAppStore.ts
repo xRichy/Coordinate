@@ -25,13 +25,37 @@ export interface Task {
     dueDate: string;
 }
 
+export interface Product {
+    id: string;
+    sku: string;
+    name: string;
+    category: string;
+    price: number;
+    stockQuantity: number;
+}
+
+export interface StockMovement {
+    id: string;
+    productId: string;
+    quantity: number;
+    type: "In" | "Out";
+    date: string;
+    note?: string;
+}
+
 interface AppState {
     customers: Customer[];
     leads: Lead[];
     tasks: Task[];
+    products: Product[];
+    stockMovements: StockMovement[];
     addCustomer: (customer: Customer) => void;
+    updateCustomer: (id: string, customerData: Partial<Customer>) => void;
     updateLeadStatus: (id: string, status: Lead["status"]) => void;
     updateTaskStatus: (id: string, status: Task["status"]) => void;
+    addProduct: (product: Product) => void;
+    updateProduct: (id: string, productData: Partial<Product>) => void;
+    addStockMovement: (movement: StockMovement) => void;
 }
 
 const mockCustomers: Customer[] = [
@@ -54,15 +78,50 @@ const mockTasks: Task[] = [
     { id: "3", title: "Schedule demo with Stark Industries", priority: "Low", status: "Done", dueDate: "2024-05-10" },
 ];
 
+const mockProducts: Product[] = [
+    { id: "1", sku: "SRV-001", name: "Enterprise Server Unit", category: "Hardware", price: 4500, stockQuantity: 12 },
+    { id: "2", sku: "LIC-002", name: "Cloud Storage 10TB/yr", category: "Software", price: 1200, stockQuantity: 999 },
+    { id: "3", sku: "NET-003", name: "Core Router X900", category: "Networking", price: 2800, stockQuantity: 5 },
+];
+
+const mockStockMovements: StockMovement[] = [
+    { id: "1", productId: "3", quantity: 5, type: "In", date: "2024-05-01", note: "Initial stock" },
+    { id: "2", productId: "1", quantity: 2, type: "Out", date: "2024-05-05", note: "Deployed to client" },
+];
+
 export const useAppStore = create<AppState>((set) => ({
     customers: mockCustomers,
     leads: mockLeads,
     tasks: mockTasks,
+    products: mockProducts,
+    stockMovements: mockStockMovements,
     addCustomer: (customer) => set((state) => ({ customers: [...state.customers, customer] })),
+    updateCustomer: (id, customerData) => set((state) => ({
+        customers: state.customers.map((c) => c.id === id ? { ...c, ...customerData } : c)
+    })),
     updateLeadStatus: (id, status) => set((state) => ({
         leads: state.leads.map((l) => l.id === id ? { ...l, status } : l)
     })),
     updateTaskStatus: (id, status) => set((state) => ({
         tasks: state.tasks.map((t) => t.id === id ? { ...t, status } : t)
     })),
+    addProduct: (product) => set((state) => ({ products: [...state.products, product] })),
+    updateProduct: (id, productData) => set((state) => ({
+        products: state.products.map((p) => p.id === id ? { ...p, ...productData } : p)
+    })),
+    addStockMovement: (movement) => set((state) => {
+        // Find product to update stock
+        const products = state.products.map(p => {
+            if (p.id === movement.productId) {
+                const stockChange = movement.type === "In" ? movement.quantity : -movement.quantity;
+                return { ...p, stockQuantity: p.stockQuantity + stockChange };
+            }
+            return p;
+        });
+
+        return {
+            stockMovements: [...state.stockMovements, movement],
+            products
+        };
+    }),
 }));

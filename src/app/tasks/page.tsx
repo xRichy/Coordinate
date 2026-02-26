@@ -61,7 +61,7 @@ export default function TasksPage() {
                 </Button>
             </div>
 
-            <div className="bg-card/40 backdrop-blur-md border border-border/50 rounded-xl overflow-hidden shadow-sm">
+            <div className="bg-card/40 backdrop-blur-md border border-border/50 rounded-xl overflow-hidden shadow-sm p-3">
                 <div className="p-4 flex flex-col sm:flex-row items-center gap-4 border-b border-border/50">
                     <div className="relative flex-1 w-full max-w-sm">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />

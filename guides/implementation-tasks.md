@@ -35,7 +35,7 @@ Ogni task assume che Claude Code legga (o ricordi) questi documenti quando rilev
 ## Stato globale
 
 ```
-Fase 0  Monorepo Setup                 [ ] 2/8 task
+Fase 0  Monorepo Setup                 [ ] 3/8 task
 Fase 1  Backend & Auth & Multi-Tenant  [ ] 0/18 task
 Fase 2  Module Registry                [ ] 0/12 task
 Fase 3  Moduli MVP                     [ ] 0/24 task
@@ -94,7 +94,7 @@ touch apps/.gitkeep packages/ui/.gitkeep packages/core/.gitkeep packages/databas
 
 ---
 
-### T0.3 — Spostare il codice esistente in `apps/web`
+### T0.3 ✅ — Spostare il codice esistente in `apps/web`
 
 **Deps**: T0.2  
 **Size**: S  

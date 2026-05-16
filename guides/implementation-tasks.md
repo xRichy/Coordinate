@@ -4,11 +4,11 @@ Task plan operativo per costruire l'MVP. Ogni task è **autonomo e di dimensione
 
 ## Come usare questo file
 
-Modello git: **GitFlow semplificato** — `main` (stabile) ← `develop` (integrazione) ← `feat|fix|chore|docs/t<x>-<y>/<slug>` (task branches).
+Modello git: **GitFlow semplificato** — `main` (stabile) ← `develop` (integrazione) ← `feature|fix|chore|docs/T<x.y>-<slug>` (task branches).
 
 1. Aprire una sessione Claude Code (in questa cartella) e dire: *"Esegui il task T0.1 da `guides/implementation-tasks.md`"*.
 2. Claude legge il task **e legge `guides/task-workflow.md`** per le regole git.
-3. Claude parte da `develop` aggiornato, crea il branch `feat/t<x>-<y>/<slug>`, esegue il task, verifica gli acceptance criteria, aggiorna lo stato del task in questo file, e **pusha il branch**.
+3. Claude parte da `develop` aggiornato, crea il branch `feature/T<x.y>-<slug>`, esegue il task, verifica gli acceptance criteria, aggiorna lo stato del task in questo file, e **pusha il branch**.
 4. Claude **si ferma e consegna**: non mergi su `develop`, non mergi su `main`, mai.
 5. **Tu fai la review** del branch e — se ok — mergi sul branch `develop` con `--no-ff`.
 6. A fine fase, **tu** fai review complessiva di `develop` e mergi su `main` con tag `v0.X.0`.
@@ -35,7 +35,7 @@ Ogni task assume che Claude Code legga (o ricordi) questi documenti quando rilev
 ## Stato globale
 
 ```
-Fase 0  Monorepo Setup                 [ ] 3/8 task
+Fase 0  Monorepo Setup                 [ ] 5/8 task
 Fase 1  Backend & Auth & Multi-Tenant  [ ] 0/18 task
 Fase 2  Module Registry                [ ] 0/12 task
 Fase 3  Moduli MVP                     [ ] 0/24 task
@@ -120,7 +120,7 @@ Eliminare `node_modules/`, `.next/`, `tsconfig.tsbuildinfo` dalla root (saranno 
 
 ---
 
-### T0.4 — Creare configurazione workspace pnpm + Turborepo
+### T0.4 ✅ — Creare configurazione workspace pnpm + Turborepo
 
 **Deps**: T0.3  
 **Size**: M  
@@ -185,7 +185,7 @@ Aggiornare `apps/web/package.json`:
 
 ---
 
-### T0.5 — Creare scaffold dei packages condivisi
+### T0.5 ✅ — Creare scaffold dei packages condivisi
 
 **Deps**: T0.4  
 **Size**: M  

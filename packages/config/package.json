@@ -1,0 +1,9 @@
+{
+  "name": "@coordinate/config",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf node_modules .turbo"
+  }
+}

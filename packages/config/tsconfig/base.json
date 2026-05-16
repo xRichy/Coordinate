@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "paths": {
+      "@coordinate/ui": ["../../packages/ui/src/index.ts"],
+      "@coordinate/core": ["../../packages/core/src/index.ts"],
+      "@coordinate/database": ["../../packages/database/src/index.ts"],
+      "@coordinate/api": ["../../packages/api/src/index.ts"],
+      "@coordinate/config": ["../../packages/config"]
+    }
+  }
+}

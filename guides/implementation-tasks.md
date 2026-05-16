@@ -35,7 +35,7 @@ Ogni task assume che Claude Code legga (o ricordi) questi documenti quando rilev
 ## Stato globale
 
 ```
-Fase 0  Monorepo Setup                 [ ] 1/8 task
+Fase 0  Monorepo Setup                 [ ] 2/8 task
 Fase 1  Backend & Auth & Multi-Tenant  [ ] 0/18 task
 Fase 2  Module Registry                [ ] 0/12 task
 Fase 3  Moduli MVP                     [ ] 0/24 task
@@ -75,7 +75,7 @@ Azioni:
 
 ---
 
-### T0.2 — Creare struttura directory del monorepo
+### T0.2 ✅ — Creare struttura directory del monorepo
 
 **Deps**: T0.1  
 **Size**: XS  

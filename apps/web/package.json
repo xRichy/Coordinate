@@ -1,12 +1,14 @@
 {
-  "name": "coordinate",
+  "name": "@coordinate/web",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf .next node_modules .turbo"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

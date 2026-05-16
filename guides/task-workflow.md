@@ -11,9 +11,9 @@ main          ←  versione stabile / produzione
   ↑
   └─ develop  ←  integrazione delle feature completate (review già fatta)
        ↑
-       ├─ feature/T0.4-pnpm-turbo          (task feature, parte da develop)
-       ├─ feature/T1.5-tenant-middleware
-       ├─ fix/T2.7-customer-import-encoding (bug fix scoperto durante un task)
+       ├─ feat/t0-4/pnpm-turbo              (task feature, parte da develop)
+       ├─ feat/t1-5/tenant-middleware
+       ├─ fix/t2-7/customer-import-encoding (bug fix scoperto durante un task)
        ├─ chore/upgrade-prisma-7.5         (manutenzione, non legata a task)
        └─ docs/clarify-pricing-faq         (docs in guides/ non triviali)
 
@@ -50,31 +50,35 @@ git config --local merge.ff false
 
 ## 3. Naming convention dei branch
 
-**Pattern**:
+**Pattern per task con ID**:
 
 ```
-<tipo>/<identifier>-<kebab-slug>
+<tipo>/t<fase>-<num>/<kebab-slug>
+```
+
+**Pattern per branch senza ID task** (chore, hotfix, docs fuori piano):
+
+```
+<tipo>/<kebab-slug>
 ```
 
 Dove `<tipo>` è uno di:
 
 | Tipo | Quando usare |
 |---|---|
-| `feature` | Task di tipo feature dal piano (nuovo modulo, nuova funzionalità). Default per quasi tutti i task. |
+| `feat` | Task di tipo feature dal piano (nuovo modulo, nuova funzionalità). Default per quasi tutti i task. |
 | `fix` | Bug fix di codice esistente. Anche un task del piano può essere `fix` se è risolutivo (raro nel MVP). |
 | `chore` | Manutenzione non legata a un task del piano (upgrade dipendenze, refactor di config, pulizia). |
 | `docs` | Modifiche significative ai file in `guides/` o `README.md`. (Per micro-fix in `guides/` si può lavorare direttamente su `develop` — vedi §14.) |
 | `hotfix` | Fix urgenti in produzione che bypassano `develop`. Branch parte da `main`. |
 
-`<identifier>` è:
-- L'**ID del task** se esiste (es. `T1.5`)
-- Lo slug solo, se è un'iniziativa fuori-piano (es. `chore/upgrade-prisma-7.5`)
+`t<fase>-<num>` è l'ID del task in lowercase con trattino (es. `T1.5` → `t1-5`). Se il branch non è legato a un task, si usa solo lo slug (es. `chore/upgrade-prisma-7.5`).
 
 **Esempi corretti**:
-- `feature/T0.4-pnpm-turbo`
-- `feature/T1.5-tenant-middleware`
-- `feature/T3.16-quotes-module-base`
-- `fix/T2.7-customer-import-encoding`
+- `feat/t0-4/pnpm-turbo`
+- `feat/t1-5/tenant-middleware`
+- `feat/t3-16/quotes-module-base`
+- `fix/t2-7/customer-import-encoding`
 - `chore/upgrade-prisma-7.5`
 - `docs/clarify-pricing-faq`
 - `hotfix/login-redirect-loop`
@@ -105,7 +109,7 @@ Controllare che i task in `Deps:` siano **tutti ✅ nel state globale**. Se manc
 
 ### Step 4 — Creare il branch da `develop`
 ```bash
-git checkout -b feature/T<x.y>-<slug>
+git checkout -b feat/t<x>-<y>/<slug>
 # (oppure fix/, chore/, docs/ secondo §3)
 ```
 
@@ -138,7 +142,7 @@ docs(tasks): mark T0.1 ✅
 
 ### Step 10 — Push del branch
 ```bash
-git push -u origin feature/T<x.y>-<slug>
+git push -u origin feat/t<x>-<y>/<slug>
 ```
 
 ### Step 11 — Consegna all'utente
@@ -148,7 +152,7 @@ Claude **si ferma qui**. Riporta all'utente:
 - Numero di commit
 - Lista degli acceptance criteria verificati (con ✅ ciascuno)
 - Eventuali note (cose annotate in `known-issues.md`, decisioni minori prese)
-- Comandi suggeriti per la review (es. `git log develop..feature/T0.1-...` + `git diff develop..feature/T0.1-...`)
+- Comandi suggeriti per la review (es. `git log develop..feat/t0-1/...` + `git diff develop..feat/t0-1/...`)
 
 **Claude NON esegue il merge**.
 
@@ -158,8 +162,8 @@ Tu fai la review (diff, eventualmente checkout del branch e test manuale). Quand
 ```bash
 git checkout develop
 git pull --ff-only origin develop
-git merge --no-ff feature/T<x.y>-<slug> \
-  -m "merge: T<x.y> <titolo task>"
+git merge --no-ff feat/t<x>-<y>/<slug> \
+  -m "merge: T<x>.<y> <titolo task>"
 git push origin develop
 ```
 
@@ -167,8 +171,8 @@ Il flag `--no-ff` preserva la storia del branch (ogni task resta un "blocco" vis
 
 ### Step 13 — Cleanup del branch
 ```bash
-git branch -d feature/T<x.y>-<slug>
-git push origin --delete feature/T<x.y>-<slug>
+git branch -d feat/t<x>-<y>/<slug>
+git push origin --delete feat/t<x>-<y>/<slug>
 ```
 
 ### Step 14 — Fine fase: review tua + merge su `main`
@@ -288,7 +292,7 @@ Se durante il task `develop` è andato avanti (altri task mergiati), **rebasare*
 
 ```bash
 git fetch origin
-git checkout feature/T<x.y>-<slug>
+git checkout feat/t<x>-<y>/<slug>
 git rebase origin/develop
 # risolvere eventuali conflitti
 git push --force-with-lease   # solo se il branch era già stato pushato
@@ -415,7 +419,7 @@ Quando una sessione Claude esegue un task, **deve**:
 3. **Leggere i documenti di riferimento** elencati nel task
 4. **Dichiarare il piano in 1-2 frasi** all'utente prima di iniziare a editare file
 5. **Verificare di partire da `develop` aggiornato**
-6. **Creare il branch** `feature|fix|chore|docs/T<x.y>-<slug>` prima di qualunque modifica
+6. **Creare il branch** `feat|fix|chore|docs/t<x>-<y>/<slug>` prima di qualunque modifica
 7. **Eseguire SOLO quanto specificato** nel task — niente "bonus"
 8. **Verificare ogni acceptance criterion** in modo esplicito al termine
 9. **NON committare automaticamente** — chiedere all'utente conferma del commit message
@@ -456,7 +460,7 @@ Walkthrough di come si svolge una sessione Claude per il task T0.1.
 > "Esegui il task T0.1 da `guides/implementation-tasks.md`"
 
 ### Claude (dichiarazione del piano)
-> Eseguo T0.1: installazione pnpm + creazione branch dedicato. Prima di tutto leggo `task-workflow.md` e l'intera spec del task, poi verifico che `develop` esista e sia pulito, creo `feature/T0.1-install-pnpm` da lì, eseguo il task, aggiorno lo stato e ti consegno il branch per review (non mergo io).
+> Eseguo T0.1: installazione pnpm + creazione branch dedicato. Prima di tutto leggo `task-workflow.md` e l'intera spec del task, poi verifico che `develop` esista e sia pulito, creo `feat/t0-1/install-pnpm` da lì, eseguo il task, aggiorno lo stato e ti consegno il branch per review (non mergo io).
 
 ### Claude (esecuzione)
 ```bash
@@ -474,7 +478,7 @@ corepack enable
 corepack prepare pnpm@latest --activate
 
 # Branch
-git checkout -b feature/T0.1-install-pnpm
+git checkout -b feat/t0-1/install-pnpm
 
 # Aggiornamento implementation-tasks.md (incremento contatore fase 0)
 # Edit guides/implementation-tasks.md
@@ -483,7 +487,7 @@ git checkout -b feature/T0.1-install-pnpm
 ### Claude (verifica acceptance)
 > Verifica:
 > - ✅ `pnpm --version` ritorna 9.x
-> - ✅ Branch corrente: `feature/T0.1-install-pnpm`
+> - ✅ Branch corrente: `feat/t0-1/install-pnpm`
 > - ✅ Working directory pulita
 > - ✅ Stato Fase 0 aggiornato a `1/8` in `implementation-tasks.md`
 
@@ -507,23 +511,23 @@ git add guides/implementation-tasks.md
 git commit -m "docs(tasks): mark T0.1 ✅ (pnpm installed, branch ready)
 
 [T0.1]"
-git push -u origin feature/T0.1-install-pnpm
+git push -u origin feat/t0-1/install-pnpm
 ```
 
 > **T0.1 consegnato.**
 >
-> - Branch: `feature/T0.1-install-pnpm` (pushato su origin)
+> - Branch: `feat/t0-1/install-pnpm` (pushato su origin)
 > - Commit: 1
 > - Acceptance criteria verificati:
 >   - ✅ `pnpm --version` ≥ 9
->   - ✅ Branch corrente è `feature/T0.1-install-pnpm`
+>   - ✅ Branch corrente è `feat/t0-1/install-pnpm`
 >   - ✅ Working dir pulita
 >
 > Per la review:
 >
 > ```bash
-> git log develop..feature/T0.1-install-pnpm
-> git diff develop..feature/T0.1-install-pnpm
+> git log develop..feat/t0-1/install-pnpm
+> git diff develop..feat/t0-1/install-pnpm
 > ```
 >
 > Quando sei soddisfatto, mergia su `develop`:
@@ -531,11 +535,11 @@ git push -u origin feature/T0.1-install-pnpm
 > ```bash
 > git checkout develop
 > git pull --ff-only
-> git merge --no-ff feature/T0.1-install-pnpm \
+> git merge --no-ff feat/t0-1/install-pnpm \
 >   -m "merge: T0.1 install pnpm + branch setup"
 > git push origin develop
-> git branch -d feature/T0.1-install-pnpm
-> git push origin --delete feature/T0.1-install-pnpm
+> git branch -d feat/t0-1/install-pnpm
+> git push origin --delete feat/t0-1/install-pnpm
 > ```
 
 ---
@@ -597,7 +601,7 @@ In questi casi, valgono comunque le regole §5 (convenzioni commit), ma non serv
 ### Inizio task (Claude)
 ```bash
 git checkout develop && git pull --ff-only origin develop
-git checkout -b feature/T1.5-tenant-middleware
+git checkout -b feat/t1-5/tenant-middleware
 ```
 
 ### Lavoro + verifiche
@@ -618,20 +622,20 @@ git commit -m "docs(tasks): mark T1.5 ✅
 
 ### Push + consegna (Claude si ferma qui)
 ```bash
-git push -u origin feature/T1.5-tenant-middleware
+git push -u origin feat/t1-5/tenant-middleware
 ```
 
 ### Review + merge su develop (tu)
 ```bash
 git checkout develop && git pull --ff-only
-git diff develop..feature/T1.5-tenant-middleware
-git log develop..feature/T1.5-tenant-middleware
+git diff develop..feat/t1-5/tenant-middleware
+git log develop..feat/t1-5/tenant-middleware
 
-git merge --no-ff feature/T1.5-tenant-middleware \
+git merge --no-ff feat/t1-5/tenant-middleware \
   -m "merge: T1.5 tenant middleware via subdomain"
 git push origin develop
-git branch -d feature/T1.5-tenant-middleware
-git push origin --delete feature/T1.5-tenant-middleware
+git branch -d feat/t1-5/tenant-middleware
+git push origin --delete feat/t1-5/tenant-middleware
 ```
 
 ### Fine fase: develop → main + tag (tu)

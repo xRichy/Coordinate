@@ -4,11 +4,11 @@ Task plan operativo per costruire l'MVP. Ogni task è **autonomo e di dimensione
 
 ## Come usare questo file
 
-Modello git: **GitFlow semplificato** — `main` (stabile) ← `develop` (integrazione) ← `feature|fix|chore|docs/T<x.y>-<slug>` (task branches).
+Modello git: **GitFlow semplificato** — `main` (stabile) ← `develop` (integrazione) ← `feat|fix|chore|docs/t<x>-<y>/<slug>` (task branches).
 
 1. Aprire una sessione Claude Code (in questa cartella) e dire: *"Esegui il task T0.1 da `guides/implementation-tasks.md`"*.
 2. Claude legge il task **e legge `guides/task-workflow.md`** per le regole git.
-3. Claude parte da `develop` aggiornato, crea il branch `feature/T<x.y>-<slug>`, esegue il task, verifica gli acceptance criteria, aggiorna lo stato del task in questo file, e **pusha il branch**.
+3. Claude parte da `develop` aggiornato, crea il branch `feat/t<x>-<y>/<slug>`, esegue il task, verifica gli acceptance criteria, aggiorna lo stato del task in questo file, e **pusha il branch**.
 4. Claude **si ferma e consegna**: non mergi su `develop`, non mergi su `main`, mai.
 5. **Tu fai la review** del branch e — se ok — mergi sul branch `develop` con `--no-ff`.
 6. A fine fase, **tu** fai review complessiva di `develop` e mergi su `main` con tag `v0.X.0`.

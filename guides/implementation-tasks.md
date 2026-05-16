@@ -35,7 +35,7 @@ Ogni task assume che Claude Code legga (o ricordi) questi documenti quando rilev
 ## Stato globale
 
 ```
-Fase 0  Monorepo Setup                 [ ] 0/8 task
+Fase 0  Monorepo Setup                 [ ] 1/8 task
 Fase 1  Backend & Auth & Multi-Tenant  [ ] 0/18 task
 Fase 2  Module Registry                [ ] 0/12 task
 Fase 3  Moduli MVP                     [ ] 0/24 task
@@ -57,7 +57,7 @@ Fase 7  Launch Prep                    [ ] 0/8 task
 
 ---
 
-### T0.1 — Install pnpm e creare branch dedicato
+### T0.1 ✅ — Install pnpm e creare branch dedicato
 
 **Deps**: nessuna  
 **Size**: XS  

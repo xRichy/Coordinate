@@ -35,7 +35,7 @@ Ogni task assume che Claude Code legga (o ricordi) questi documenti quando rilev
 ## Stato globale
 
 ```
-Fase 0  Monorepo Setup                 [ ] 6/8 task
+Fase 0  Monorepo Setup                 [ ] 7/8 task
 Fase 1  Backend & Auth & Multi-Tenant  [ ] 0/18 task
 Fase 2  Module Registry                [ ] 0/12 task
 Fase 3  Moduli MVP                     [ ] 0/24 task
@@ -238,7 +238,7 @@ Aggiornare `apps/web/tsconfig.json`:
 
 ---
 
-### T0.7 — Install dipendenze e verificare che il dev server parta
+### T0.7 ✅ — Install dipendenze e verificare che il dev server parta
 
 **Deps**: T0.6  
 **Size**: S  

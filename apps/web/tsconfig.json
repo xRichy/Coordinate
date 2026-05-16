@@ -1,16 +1,9 @@
 {
+  "extends": "../../packages/config/tsconfig/base.json",
   "compilerOptions": {
     "target": "ES2017",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "noEmit": true,
-    "esModuleInterop": true,
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
     "jsx": "react-jsx",
     "incremental": true,
     "plugins": [
@@ -19,7 +12,12 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@coordinate/ui": ["../../packages/ui/src/index.ts"],
+      "@coordinate/core": ["../../packages/core/src/index.ts"],
+      "@coordinate/database": ["../../packages/database/src/index.ts"],
+      "@coordinate/api": ["../../packages/api/src/index.ts"],
+      "@coordinate/config": ["../../packages/config"]
     }
   },
   "include": [

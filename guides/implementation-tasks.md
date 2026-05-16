@@ -35,7 +35,7 @@ Ogni task assume che Claude Code legga (o ricordi) questi documenti quando rilev
 ## Stato globale
 
 ```
-Fase 0  Monorepo Setup                 [ ] 5/8 task
+Fase 0  Monorepo Setup                 [ ] 6/8 task
 Fase 1  Backend & Auth & Multi-Tenant  [ ] 0/18 task
 Fase 2  Module Registry                [ ] 0/12 task
 Fase 3  Moduli MVP                     [ ] 0/24 task
@@ -221,7 +221,7 @@ Creare `packages/config/tsconfig/base.json` con la config TS condivisa (target E
 
 ---
 
-### T0.6 — Aggiornare path aliases e tsconfig di apps/web
+### T0.6 ✅ — Aggiornare path aliases e tsconfig di apps/web
 
 **Deps**: T0.5  
 **Size**: S  

@@ -37,7 +37,7 @@ Ogni task assume che Claude Code legga (o ricordi) questi documenti quando rilev
 ```
 Fase 0  Monorepo Setup                 [✅] 8/8 task
 Fase 1  Backend & Auth & Multi-Tenant  [✅] 17/18 task (T1.16 deferred → Fase 4)
-Fase 2  Module Registry                [ ] 0/12 task
+Fase 2  Module Registry                [ ] 1/12 task
 Fase 3  Moduli MVP                     [ ] 0/24 task
 Fase 4  Billing & Onboarding & Admin   [ ] 0/16 task
 Fase 5  Polish: i18n, search, theming  [ ] 0/10 task
@@ -632,7 +632,7 @@ Il seed sarà usato come fixture di riferimento per i task successivi (T1.14, T2
 
 ---
 
-### T2.1 — Definire type ModuleManifest e contract del registry
+### T2.1 ✅ — Definire type ModuleManifest e contract del registry
 
 **Deps**: T1.18  
 **Size**: M  

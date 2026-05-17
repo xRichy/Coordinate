@@ -1,6 +1,3 @@
-export { can } from "./permissions";
-export type { Role, Permission } from "./permissions";
-
 export type {
   ModuleRoute,
   NavigationItem,
@@ -13,4 +10,4 @@ export type {
   NavigationUser,
   TenantContext,
   ModuleRegistry,
-} from "./module-registry";
+} from "./types";

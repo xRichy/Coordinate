@@ -9,7 +9,8 @@
     "./auth": "./src/auth/index.ts",
     "./tenant": "./src/tenant/index.ts",
     "./jobs": "./src/jobs/index.ts",
-    "./analytics": "./src/analytics/index.ts"
+    "./analytics": "./src/analytics/index.ts",
+    "./module-registry": "./src/module-registry/index.ts"
   },
   "scripts": {
     "lint": "eslint .",

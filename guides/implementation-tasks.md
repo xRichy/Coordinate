@@ -36,7 +36,7 @@ Ogni task assume che Claude Code legga (o ricordi) questi documenti quando rilev
 
 ```
 Fase 0  Monorepo Setup                 [✅] 8/8 task
-Fase 1  Backend & Auth & Multi-Tenant  [ ] 6/18 task
+Fase 1  Backend & Auth & Multi-Tenant  [ ] 7/18 task
 Fase 2  Module Registry                [ ] 0/12 task
 Fase 3  Moduli MVP                     [ ] 0/24 task
 Fase 4  Billing & Onboarding & Admin   [ ] 0/16 task
@@ -423,7 +423,7 @@ Il seed sarà usato come fixture di riferimento per i task successivi (T1.14, T2
 
 ---
 
-### T1.7 — Test isolamento tenant (RLS) automatizzato
+### T1.7 ✅ — Test isolamento tenant (RLS) automatizzato
 
 **Deps**: T1.6  
 **Size**: M  

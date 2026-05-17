@@ -1,0 +1,1 @@
+export { resolveTenantBySlug } from "./resolve";

@@ -51,7 +51,7 @@ Cose che il MVP **non** è:
 ## 4. Foundation — cosa serve sempre, indipendentemente dai moduli
 
 ### `auth` — autenticazione
-**IN**: email + password con verifica email, OAuth Google, OAuth Microsoft, password reset, sessioni con refresh token, 2FA via TOTP (Google Authenticator).
+**IN**: email + password (senza verifica email obbligatoria — abilitata pre-lancio con Resend, vedi T1.16), OAuth Google, OAuth Microsoft, password reset, sessioni con refresh token, 2FA via TOTP (Google Authenticator).
 **OUT**: SSO/SAML (→ Wave 3), magic link, social login esotici (Apple, GitHub).
 
 ### `users` & `organizations` (Better-Auth)
@@ -99,11 +99,12 @@ Cose che il MVP **non** è:
 ### `tenant onboarding flow`
 **IN**: sign-up self-serve dalla home (`coordinate.app/signup`):
 1. Email + password + nome
-2. Verifica email
-3. Setup azienda (nome, slug subdomain auto-suggerito, P.IVA, paese)
-4. Scelta tier (Starter/Pro) + carta Stripe (con trial 14gg per entrambi)
-5. Redirect a `<slug>.coordinate.app` già loggati
-6. Tour guidato in-app (3-4 step) + creazione primo contatto demo
+2. Setup azienda (nome, slug subdomain auto-suggerito, P.IVA, paese)
+3. Scelta tier (Starter/Pro) + carta Stripe (con trial 14gg per entrambi)
+4. Redirect a `<slug>.coordinate.app` già loggati
+5. Tour guidato in-app (3-4 step) + creazione primo contatto demo
+
+> **Nota**: la verifica email (step rimosso) viene abilitata pre-lancio una volta configurato Resend (T1.16).
 
 **OUT**: import dati da file (manuale possibile via CSV, ma no wizard) (→ Wave 2), migrazione assistita (→ servizio venduto separatamente).
 
@@ -484,7 +485,7 @@ Il MVP è "fatto" e pronto al lancio quando **tutte** queste condizioni sono sod
 - [ ] Knowledge base con almeno 30 articoli (15 IT + 15 EN, anche solo traduzione)
 - [ ] 5 video tutorial pubblicati (sign-up, contacts, pipeline, quotes, billing)
 - [ ] In-app tour per nuovo utente (4-6 step)
-- [ ] Email transazionali finalizzate (8: welcome, verify email, password reset, invite, payment success, payment failed, trial ending, account deleted)
+- [ ] Email transazionali finalizzate con Resend (T1.16): welcome, verify email, password reset, invite, payment success, payment failed, trial ending, account deleted
 - [ ] Stato moduli + roadmap pubblica visibile sul sito (es. `/roadmap`)
 
 ### Operativo
@@ -529,7 +530,7 @@ Con scope creep "moderato" (1 modulo aggiuntivo richiesto a metà): **+3-4 setti
 | Scope creep su moduli "vorrei aggiungere anche..." | Alta | Alto | Questo documento. Ogni richiesta di feature post-MVP va in Wave 2+. |
 | Custom fields complessi richiesti da prospect | Media | Medio | Limitazione esplicita a 5 tipi nel MVP, comunicata in vendita |
 | Performance Postgres con RLS sotto carico | Bassa | Medio | Indici espressione + query review. Monitoraggio con Sentry Performance |
-| Sign-up self-serve abusato (signups massivi falsi) | Media | Basso | Email verification + rate limit + Cloudflare Turnstile su sign-up |
+| Sign-up self-serve abusato (signups massivi falsi) | Media | Basso | Rate limit su `/api/auth/*` + Cloudflare Turnstile su sign-up (email verification abilitata pre-lancio con T1.16) |
 | Stripe webhook delays / failures | Bassa | Medio | Idempotenza + reconciliation job giornaliero |
 | Cliente pilota chiede modulo non in scope | Alta | Medio | Pricing custom development (Tier 4) trasparente, MVP fermo sul suo perimetro |
 | Compliance GDPR fatto male | Media | Alto | Consulenza legale 4-6h pre-lancio + audit privacy minimo |

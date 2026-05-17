@@ -484,8 +484,7 @@ Il seed sarà usato come fixture di riferimento per i task successivi (T1.14, T2
 - Form sign-up: email, password, nome, cognome, nome azienda.
 - Validazione Zod.
 - Submit → chiama Better-Auth sign-up + crea Tenant + crea Membership owner.
-- Verifica email obbligatoria (Better-Auth invia email; per dev, log in console o usare Resend dev).
-- Redirect dopo verifica → step di setup tenant (slug subdomain, P.IVA opzionale).
+- Redirect immediato a `<slug>.lvh.me:3000/dashboard` dopo signup (nessuna verifica email per ora — vedi nota T1.16).
 
 **Done when**:
 - Sign-up flow end-to-end funziona
@@ -576,20 +575,23 @@ Il seed sarà usato come fixture di riferimento per i task successivi (T1.14, T2
 
 ---
 
-### T1.16 — Setup Resend per email transazionali
+### T1.16 ⏭ DEFERRED — Setup Resend per email transazionali
 
 **Deps**: T1.4  
 **Size**: M  
 **Files**: `packages/core/email/`, `apps/web/src/server/email/`  
 
+> **Decisione**: la verifica email e le email transazionali non sono bloccanti per il core del prodotto. `requireEmailVerification: false` in Better-Auth. Resend viene installato e configurato in Fase 4, prima del lancio, quando servono le email di billing (trial ending, payment failed, ecc.).
+
 - Installare `resend` + `@react-email/components`.
-- Creare API key Resend (account gratis ok per dev).
-- Creare 2 template React Email: `WelcomeEmail`, `VerifyEmail`.
+- Creare API key Resend (piano gratuito: 3.000 email/mese).
+- Creare template React Email: `WelcomeEmail`, `PasswordResetEmail`, `InviteEmail`, `TrialEndingEmail`, `PaymentFailedEmail`.
 - Helper `sendEmail({ to, template, props })` in `packages/core/email`.
-- Integrare con Better-Auth per email di verifica.
+- Riabilitare `requireEmailVerification: true` in Better-Auth una volta che Resend è configurato.
 
 **Done when**:
-- Sign-up invia email reale (dominio dev) e si vede in inbox
+- Sign-up invia email reale e si vede in inbox
+- Password reset funziona via email
 
 ---
 
@@ -612,10 +614,10 @@ Il seed sarà usato come fixture di riferimento per i task successivi (T1.14, T2
 
 ### T1.18 — Commit Phase 1 + smoke test end-to-end
 
-**Deps**: tutti i T1.*  
+**Deps**: tutti i T1.* eccetto T1.16 (deferred a Fase 4)  
 **Size**: S  
 
-- Smoke test: signup → email verify → login → arrivo su tenant subdomain → logout
+- Smoke test: signup → login → arrivo su tenant subdomain → logout (nessuna verifica email per ora)
 - Commit + push branch + opzionalmente merge in main
 - Marcare Fase 1 come ✅
 

@@ -15,6 +15,7 @@
       "@/*": ["./src/*"],
       "@coordinate/ui": ["../../packages/ui/src/index.ts"],
       "@coordinate/core": ["../../packages/core/src/index.ts"],
+      "@coordinate/core/*": ["../../packages/core/src/*"],
       "@coordinate/database": ["../../packages/database/src/index.ts"],
       "@coordinate/api": ["../../packages/api/src/index.ts"],
       "@coordinate/config": ["../../packages/config"]

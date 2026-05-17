@@ -36,7 +36,7 @@ Ogni task assume che Claude Code legga (o ricordi) questi documenti quando rilev
 
 ```
 Fase 0  Monorepo Setup                 [✅] 8/8 task
-Fase 1  Backend & Auth & Multi-Tenant  [ ] 2/18 task
+Fase 1  Backend & Auth & Multi-Tenant  [ ] 3/18 task
 Fase 2  Module Registry                [ ] 0/12 task
 Fase 3  Moduli MVP                     [ ] 0/24 task
 Fase 4  Billing & Onboarding & Admin   [ ] 0/16 task
@@ -327,7 +327,7 @@ Se ci sono import path che si sono rotti durante il move, fixarli ora.
 
 ---
 
-### T1.3 — Definire schema Prisma base multi-tenant + seed demo
+### T1.3 ✅ — Definire schema Prisma base multi-tenant + seed demo
 
 **Deps**: T1.2  
 **Size**: M  

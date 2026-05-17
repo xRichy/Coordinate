@@ -4,7 +4,9 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useAppStore, Customer } from "@/store/useAppStore";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import type { inferRouterOutputs } from "@trpc/server";
+import type { AppRouter } from "@coordinate/api";
 import {
     Dialog,
     DialogContent,
@@ -31,6 +33,9 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { useTRPC } from "@/lib/trpc";
+
+type Contact = inferRouterOutputs<AppRouter>["crm"]["contact"]["list"][number];
 
 const customerSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters"),
@@ -45,11 +50,32 @@ type CustomerFormValues = z.infer<typeof customerSchema>;
 interface CustomerModalProps {
     isOpen: boolean;
     onClose: () => void;
-    customerToEdit?: Customer | null;
+    customerToEdit?: Contact | null;
 }
 
 export function CustomerModal({ isOpen, onClose, customerToEdit }: CustomerModalProps) {
-    const { addCustomer, updateCustomer } = useAppStore();
+    const trpc = useTRPC();
+    const queryClient = useQueryClient();
+
+    const createContact = useMutation(
+        trpc.crm.contact.create.mutationOptions({
+            onSuccess: () => {
+                queryClient.invalidateQueries(trpc.crm.contact.list.queryOptions());
+                toast("Customer created successfully.");
+                onClose();
+            },
+        })
+    );
+
+    const updateContact = useMutation(
+        trpc.crm.contact.update.mutationOptions({
+            onSuccess: () => {
+                queryClient.invalidateQueries(trpc.crm.contact.list.queryOptions());
+                toast("Customer updated successfully.");
+                onClose();
+            },
+        })
+    );
 
     const form = useForm<CustomerFormValues>({
         resolver: zodResolver(customerSchema),
@@ -84,17 +110,13 @@ export function CustomerModal({ isOpen, onClose, customerToEdit }: CustomerModal
 
     const onSubmit = (values: CustomerFormValues) => {
         if (customerToEdit) {
-            updateCustomer(customerToEdit.id, values);
-            toast("Customer updated successfully.");
+            updateContact.mutate({ id: customerToEdit.id, data: values });
         } else {
-            addCustomer({
-                id: Math.random().toString(36).substring(7),
-                ...values,
-            });
-            toast("Customer created successfully.");
+            createContact.mutate(values);
         }
-        onClose();
     };
+
+    const isPending = createContact.isPending || updateContact.isPending;
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
@@ -188,7 +210,7 @@ export function CustomerModal({ isOpen, onClose, customerToEdit }: CustomerModal
                             <Button type="button" variant="outline" onClick={onClose}>
                                 Cancel
                             </Button>
-                            <Button type="submit">Save changes</Button>
+                            <Button type="submit" disabled={isPending}>Save changes</Button>
                         </DialogFooter>
                     </form>
                 </Form>

@@ -1,11 +1,15 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import type { inferRouterOutputs } from "@trpc/server";
+import type { AppRouter } from "@coordinate/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 import { DollarSign, Users, TrendingUp, Activity } from "lucide-react";
-import { useAppStore } from "@/store/useAppStore";
 import { useTRPC } from "@/lib/trpc";
+
+type Lead = inferRouterOutputs<AppRouter>["crm"]["lead"]["list"][number];
+type Task = inferRouterOutputs<AppRouter>["activities"]["task"]["list"][number];
 
 const revenueData = [
     { name: "Jan", revenue: 4000 },
@@ -28,12 +32,12 @@ const leadsData = [
 export default function DashboardPage() {
     const trpc = useTRPC();
     const { data: health } = useQuery(trpc.healthcheck.queryOptions());
+    const { data: leads = [] } = useQuery(trpc.crm.lead.list.queryOptions());
+    const { data: tasks = [] } = useQuery(trpc.activities.task.list.queryOptions());
 
-    const { leads, tasks } = useAppStore();
-
-    const totalValue = leads.reduce((acc, lead) => acc + lead.value, 0);
-    const activeLeads = leads.filter(l => l.status !== "Won" && l.status !== "Lost").length;
-    const wonLeads = leads.filter(l => l.status === "Won").length;
+    const totalValue = leads.reduce((acc: number, lead: Lead) => acc + lead.value, 0);
+    const activeLeads = leads.filter((l: Lead) => l.status !== "Won" && l.status !== "Lost").length;
+    const wonLeads = leads.filter((l: Lead) => l.status === "Won").length;
     const conversionRate = leads.length > 0 ? Math.round((wonLeads / leads.length) * 100) : 0;
 
     return (
@@ -82,7 +86,7 @@ export default function DashboardPage() {
                         <Activity className="h-4 w-4 text-primary" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{tasks.filter(t => t.status !== "Done").length}</div>
+                        <div className="text-2xl font-bold">{tasks.filter((t: Task) => t.status !== "Done").length}</div>
                         <p className="text-xs text-muted-foreground">Requires immediate attention</p>
                     </CardContent>
                 </Card>

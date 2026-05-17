@@ -4,7 +4,9 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useAppStore, Product } from "@/store/useAppStore";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import type { inferRouterOutputs } from "@trpc/server";
+import type { AppRouter } from "@coordinate/api";
 import {
     Dialog,
     DialogContent,
@@ -24,6 +26,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useTRPC } from "@/lib/trpc";
+
+type Product = inferRouterOutputs<AppRouter>["warehouse"]["product"]["list"][number];
 
 const productSchema = z.object({
     sku: z.string().min(2, "SKU is required"),
@@ -42,9 +47,30 @@ interface ProductModalProps {
 }
 
 export function ProductModal({ isOpen, onClose, productToEdit }: ProductModalProps) {
-    const { addProduct, updateProduct } = useAppStore();
+    const trpc = useTRPC();
+    const queryClient = useQueryClient();
 
-    const form = useForm<z.infer<typeof productSchema>>({
+    const createProduct = useMutation(
+        trpc.warehouse.product.create.mutationOptions({
+            onSuccess: () => {
+                queryClient.invalidateQueries(trpc.warehouse.product.list.queryOptions());
+                toast("Product created successfully.");
+                onClose();
+            },
+        })
+    );
+
+    const updateProduct = useMutation(
+        trpc.warehouse.product.update.mutationOptions({
+            onSuccess: () => {
+                queryClient.invalidateQueries(trpc.warehouse.product.list.queryOptions());
+                toast("Product updated successfully.");
+                onClose();
+            },
+        })
+    );
+
+    const form = useForm<ProductFormValues>({
         resolver: zodResolver(productSchema),
         defaultValues: {
             sku: "",
@@ -77,17 +103,13 @@ export function ProductModal({ isOpen, onClose, productToEdit }: ProductModalPro
 
     const onSubmit = (values: ProductFormValues) => {
         if (productToEdit) {
-            updateProduct(productToEdit.id, values);
-            toast("Product updated successfully.");
+            updateProduct.mutate({ id: productToEdit.id, data: values });
         } else {
-            addProduct({
-                id: Math.random().toString(36).substring(7),
-                ...values,
-            });
-            toast("Product created successfully.");
+            createProduct.mutate(values);
         }
-        onClose();
     };
+
+    const isPending = createProduct.isPending || updateProduct.isPending;
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
@@ -173,7 +195,7 @@ export function ProductModal({ isOpen, onClose, productToEdit }: ProductModalPro
                             <Button type="button" variant="outline" onClick={onClose}>
                                 Cancel
                             </Button>
-                            <Button type="submit">Save Product</Button>
+                            <Button type="submit" disabled={isPending}>Save Product</Button>
                         </DialogFooter>
                     </form>
                 </Form>

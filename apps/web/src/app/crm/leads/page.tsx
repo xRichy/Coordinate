@@ -1,25 +1,36 @@
 "use client";
 
 import { useState } from "react";
-import { useAppStore, Lead } from "@/store/useAppStore";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import type { inferRouterOutputs } from "@trpc/server";
+import type { AppRouter } from "@coordinate/api";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import { useTRPC } from "@/lib/trpc";
+
+type Lead = inferRouterOutputs<AppRouter>["crm"]["lead"]["list"][number];
 
 const STAGES: Lead["status"][] = ["New", "Contacted", "Qualified", "Proposal", "Won", "Lost"];
 
 export default function LeadsBoardPage() {
-    const { leads, updateLeadStatus } = useAppStore();
+    const trpc = useTRPC();
+    const queryClient = useQueryClient();
+    const { data: leads = [] } = useQuery(trpc.crm.lead.list.queryOptions());
+    const updateStatus = useMutation(
+        trpc.crm.lead.updateStatus.mutationOptions({
+            onSuccess: () => queryClient.invalidateQueries(trpc.crm.lead.list.queryOptions()),
+        })
+    );
 
-    // Drag and Drop mock state
     const [draggedLead, setDraggedLead] = useState<Lead | null>(null);
 
     const handleDragStart = (lead: Lead) => setDraggedLead(lead);
     const handleDragOver = (e: React.DragEvent) => e.preventDefault();
     const handleDrop = (status: Lead["status"]) => {
         if (draggedLead && draggedLead.status !== status) {
-            updateLeadStatus(draggedLead.id, status);
+            updateStatus.mutate({ id: draggedLead.id, status });
         }
         setDraggedLead(null);
     };
@@ -43,8 +54,8 @@ export default function LeadsBoardPage() {
             <div className="flex-1 overflow-y-auto pb-4 custom-scrollbar">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 h-full items-start">
                     {STAGES.map((stage) => {
-                        const stageLeads = leads.filter((l) => l.status === stage);
-                        const totalValue = stageLeads.reduce((acc, lead) => acc + lead.value, 0);
+                        const stageLeads = leads.filter((l: Lead) => l.status === stage);
+                        const totalValue = stageLeads.reduce((acc: number, lead: Lead) => acc + lead.value, 0);
 
                         return (
                             <div
@@ -62,7 +73,7 @@ export default function LeadsBoardPage() {
                                 </div>
 
                                 <div className="flex flex-col gap-3 flex-1 min-h-[100px]">
-                                    {stageLeads.map((lead) => (
+                                    {stageLeads.map((lead: Lead) => (
                                         <Card
                                             key={lead.id}
                                             draggable

@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useAppStore, Product } from "@/store/useAppStore";
+import { useQuery } from "@tanstack/react-query";
+import type { inferRouterOutputs } from "@trpc/server";
+import type { AppRouter } from "@coordinate/api";
 import {
     Table,
     TableBody,
@@ -18,19 +20,24 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 import { ProductModal } from "./product-modal";
 import { StockMovementModal } from "./stock-movement-modal";
+import { useTRPC } from "@/lib/trpc";
+
+type Product = inferRouterOutputs<AppRouter>["warehouse"]["product"]["list"][number];
+type StockMovement = inferRouterOutputs<AppRouter>["warehouse"]["stockMovement"]["list"][number];
 
 export default function WarehousePage() {
-    const { products, stockMovements } = useAppStore();
+    const trpc = useTRPC();
+    const { data: products = [] } = useQuery(trpc.warehouse.product.list.queryOptions());
+    const { data: stockMovements = [] } = useQuery(trpc.warehouse.stockMovement.list.queryOptions());
     const [searchTerm, setSearchTerm] = useState("");
 
-    // Modals state
     const [isProductModalOpen, setIsProductModalOpen] = useState(false);
     const [productToEdit, setProductToEdit] = useState<Product | null>(null);
 
     const [isStockModalOpen, setIsStockModalOpen] = useState(false);
     const [productForStock, setProductForStock] = useState<Product | null>(null);
 
-    const filteredProducts = products.filter(p =>
+    const filteredProducts = products.filter((p: Product) =>
         p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.category.toLowerCase().includes(searchTerm.toLowerCase())
@@ -97,7 +104,7 @@ export default function WarehousePage() {
                             </TableHeader>
                             <TableBody>
                                 {filteredProducts.length > 0 ? (
-                                    filteredProducts.map((product) => (
+                                    filteredProducts.map((product: Product) => (
                                         <TableRow key={product.id} className="border-border/50 hover:bg-muted/50 transition-colors">
                                             <TableCell className="font-medium">{product.sku}</TableCell>
                                             <TableCell>{product.name}</TableCell>
@@ -152,8 +159,8 @@ export default function WarehousePage() {
                             </TableHeader>
                             <TableBody>
                                 {stockMovements.length > 0 ? (
-                                    [...stockMovements].reverse().map((movement) => {
-                                        const product = products.find(p => p.id === movement.productId);
+                                    [...stockMovements].reverse().map((movement: StockMovement) => {
+                                        const product = products.find((p: Product) => p.id === movement.productId);
                                         return (
                                             <TableRow key={movement.id} className="border-border/50 hover:bg-muted/50 transition-colors">
                                                 <TableCell className="font-medium whitespace-nowrap">

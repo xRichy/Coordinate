@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useAppStore } from "@/store/useAppStore";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import type { inferRouterOutputs } from "@trpc/server";
+import type { AppRouter } from "@coordinate/api";
 import {
     Table,
     TableBody,
@@ -22,12 +24,22 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { format, parseISO } from "date-fns";
+import { useTRPC } from "@/lib/trpc";
+
+type Task = inferRouterOutputs<AppRouter>["activities"]["task"]["list"][number];
 
 export default function TasksPage() {
-    const { tasks, updateTaskStatus } = useAppStore();
+    const trpc = useTRPC();
+    const queryClient = useQueryClient();
+    const { data: tasks = [] } = useQuery(trpc.activities.task.list.queryOptions());
+    const updateStatus = useMutation(
+        trpc.activities.task.updateStatus.mutationOptions({
+            onSuccess: () => queryClient.invalidateQueries(trpc.activities.task.list.queryOptions()),
+        })
+    );
     const [searchTerm, setSearchTerm] = useState("");
 
-    const filteredTasks = tasks.filter(t =>
+    const filteredTasks = tasks.filter((t: Task) =>
         t.title.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
@@ -92,7 +104,7 @@ export default function TasksPage() {
                     </TableHeader>
                     <TableBody>
                         {filteredTasks.length > 0 ? (
-                            filteredTasks.map((task) => (
+                            filteredTasks.map((task: Task) => (
                                 <TableRow key={task.id} className="border-border/50 hover:bg-muted/50 transition-colors">
                                     <TableCell className="font-medium">
                                         <div className="flex items-center gap-3">
@@ -105,7 +117,9 @@ export default function TasksPage() {
                                     <TableCell>
                                         <Select
                                             defaultValue={task.status}
-                                            onValueChange={(value: "Todo" | "In Progress" | "Done") => updateTaskStatus(task.id, value)}
+                                            onValueChange={(value: "Todo" | "In Progress" | "Done") =>
+                                                updateStatus.mutate({ id: task.id, status: value })
+                                            }
                                         >
                                             <SelectTrigger className="w-[140px] h-8 text-xs bg-background/50 border-border/50">
                                                 <SelectValue />

@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useAppStore, Customer } from "@/store/useAppStore";
+import { useQuery } from "@tanstack/react-query";
+import type { inferRouterOutputs } from "@trpc/server";
+import type { AppRouter } from "@coordinate/api";
 import {
     Table,
     TableBody,
@@ -15,14 +17,18 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Search, Plus, Eye } from "lucide-react";
 import { CustomerModal } from "./customer-modal";
+import { useTRPC } from "@/lib/trpc";
+
+type Contact = inferRouterOutputs<AppRouter>["crm"]["contact"]["list"][number];
 
 export default function CustomersPage() {
-    const { customers } = useAppStore();
+    const trpc = useTRPC();
+    const { data: customers = [] } = useQuery(trpc.crm.contact.list.queryOptions());
     const [searchTerm, setSearchTerm] = useState("");
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [customerToEdit, setCustomerToEdit] = useState<Customer | null>(null);
+    const [customerToEdit, setCustomerToEdit] = useState<Contact | null>(null);
 
-    const filteredCustomers = customers.filter(c =>
+    const filteredCustomers = customers.filter((c: Contact) =>
         c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         c.company.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -32,7 +38,7 @@ export default function CustomersPage() {
         setIsModalOpen(true);
     };
 
-    const handleOpenEditModal = (customer: Customer) => {
+    const handleOpenEditModal = (customer: Contact) => {
         setCustomerToEdit(customer);
         setIsModalOpen(true);
     };
@@ -76,7 +82,7 @@ export default function CustomersPage() {
                     </TableHeader>
                     <TableBody>
                         {filteredCustomers.length > 0 ? (
-                            filteredCustomers.map((customer) => (
+                            filteredCustomers.map((customer: Contact) => (
                                 <TableRow key={customer.id} className="border-border/50 hover:bg-muted/50 transition-colors">
                                     <TableCell className="font-medium">{customer.name}</TableCell>
                                     <TableCell>{customer.company}</TableCell>

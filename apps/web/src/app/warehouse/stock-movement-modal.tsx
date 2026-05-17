@@ -1,9 +1,12 @@
 "use client";
 
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useAppStore, Product } from "@/store/useAppStore";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import type { inferRouterOutputs } from "@trpc/server";
+import type { AppRouter } from "@coordinate/api";
 import {
     Dialog,
     DialogContent,
@@ -30,7 +33,9 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { useEffect } from "react";
+import { useTRPC } from "@/lib/trpc";
+
+type Product = inferRouterOutputs<AppRouter>["warehouse"]["product"]["list"][number];
 
 const stockMovementSchema = z.object({
     type: z.enum(["In", "Out"]),
@@ -47,9 +52,21 @@ interface StockMovementModalProps {
 }
 
 export function StockMovementModal({ isOpen, onClose, product }: StockMovementModalProps) {
-    const { addStockMovement } = useAppStore();
+    const trpc = useTRPC();
+    const queryClient = useQueryClient();
 
-    const form = useForm<z.infer<typeof stockMovementSchema>>({
+    const recordMovement = useMutation(
+        trpc.warehouse.stockMovement.record.mutationOptions({
+            onSuccess: () => {
+                queryClient.invalidateQueries(trpc.warehouse.stockMovement.list.queryOptions());
+                queryClient.invalidateQueries(trpc.warehouse.product.list.queryOptions());
+                toast("Stock movement recorded.");
+                onClose();
+            },
+        })
+    );
+
+    const form = useForm<StockMovementFormValues>({
         resolver: zodResolver(stockMovementSchema),
         defaultValues: {
             type: "In",
@@ -60,31 +77,22 @@ export function StockMovementModal({ isOpen, onClose, product }: StockMovementMo
 
     useEffect(() => {
         if (isOpen) {
-            form.reset({
-                type: "In",
-                quantity: 1,
-                note: "",
-            });
+            form.reset({ type: "In", quantity: 1, note: "" });
         }
     }, [isOpen, form]);
 
     const onSubmit = (values: StockMovementFormValues) => {
         if (!product) return;
 
-        // Validation for stock going out
         if (values.type === "Out" && values.quantity > product.stockQuantity) {
             form.setError("quantity", { message: `Cannot remove more than current stock (${product.stockQuantity})` });
             return;
         }
 
-        addStockMovement({
-            id: Math.random().toString(36).substring(7),
+        recordMovement.mutate({
             productId: product.id,
-            date: new Date().toISOString(),
             ...values,
         });
-        toast("Stock movement recorded.");
-        onClose();
     };
 
     return (
@@ -153,7 +161,7 @@ export function StockMovementModal({ isOpen, onClose, product }: StockMovementMo
                             <Button type="button" variant="outline" onClick={onClose}>
                                 Cancel
                             </Button>
-                            <Button type="submit">Record Movement</Button>
+                            <Button type="submit" disabled={recordMovement.isPending}>Record Movement</Button>
                         </DialogFooter>
                     </form>
                 </Form>

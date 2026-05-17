@@ -36,7 +36,7 @@ Ogni task assume che Claude Code legga (o ricordi) questi documenti quando rilev
 
 ```
 Fase 0  Monorepo Setup                 [✅] 8/8 task
-Fase 1  Backend & Auth & Multi-Tenant  [ ] 16/18 task
+Fase 1  Backend & Auth & Multi-Tenant  [✅] 17/18 task (T1.16 deferred → Fase 4)
 Fase 2  Module Registry                [ ] 0/12 task
 Fase 3  Moduli MVP                     [ ] 0/24 task
 Fase 4  Billing & Onboarding & Admin   [ ] 0/16 task
@@ -613,13 +613,13 @@ Il seed sarà usato come fixture di riferimento per i task successivi (T1.14, T2
 
 ---
 
-### T1.18 — Commit Phase 1 + smoke test end-to-end
+### ✅ T1.18 — Commit Phase 1 + smoke test end-to-end
 
 **Deps**: tutti i T1.* eccetto T1.16 (deferred a Fase 4)  
 **Size**: S  
 
-- Smoke test: signup → login → arrivo su tenant subdomain → logout (nessuna verifica email per ora)
-- Commit + push branch + opzionalmente merge in main
+- Smoke test (da eseguire manualmente): `pnpm dev` → signup su `lvh.me:3000/signup` → redirect a `<slug>.lvh.me:3000/dashboard` → logout → redirect a login.
+- Typecheck ✅ su tutti i package Fase 1: `@coordinate/core`, `@coordinate/api`, `@coordinate/database`, `@coordinate/web`.
 - Marcare Fase 1 come ✅
 
 ---

@@ -1,20 +1,21 @@
 # Coordinate — Catalogo Moduli
 
-Catalogo ragionato di tutti i moduli che ha senso costruire su Coordinate. Ogni modulo è una unità autonoma con manifest, modelli, rotte, permessi. La maggior parte dei clienti userà 4-8 moduli; nessun cliente li userà tutti.
+Catalogo ragionato di moduli che ha senso costruire su Coordinate. Ogni modulo è un'unità autonoma con manifest, modelli, rotte, permessi.
+
+Con il modello boutique a ~5 clienti (vedi `mvp-scope.md`), **non costruiamo moduli a freddo**: un modulo entra nel codebase solo quando un cliente reale lo richiede e lo paga (o quando è incluso nei moduli core scelti per l'MVP iniziale).
+
+Questo documento serve come **mappa mentale**: cosa potremmo costruire, in che ordine ha senso costruirlo, quanto è grande. È riferimento per i preventivi, non una roadmap di sviluppo.
 
 ## Tassonomia
 
-Ogni modulo appartiene a una **categoria** e a un **livello**:
+Ogni modulo appartiene a una **categoria** e ha uno **stato**:
 
-**Livelli** (determinano il pricing e la priorità di sviluppo):
-- **Foundation** — incluso nel core, non vendibile separatamente
-- **Core** — moduli base, inclusi nei piani standard
-- **Standard** — moduli a pagamento di uso comune
-- **Advanced** — moduli specialistici per piani superiori
-- **Vertical** — moduli industry-specific (un settore solo)
-- **Custom** — moduli sviluppati su misura per un cliente
+**Stato**:
+- **Core MVP** — incluso nel MVP, costruito subito
+- **Catalog** — disponibile a preventivo, costruito quando un cliente lo paga
+- **Custom-only** — pensato per un cliente specifico, non promosso a catalog finché non ci sono 2+ clienti che lo userebbero
 
-**Sigle**:
+**Sigle dimensione**:
 - `[S]` = piccolo (1-2 settimane di sviluppo)
 - `[M]` = medio (1-2 mesi)
 - `[L]` = grande (3-6 mesi)
@@ -23,503 +24,335 @@ Ogni modulo appartiene a una **categoria** e a un **livello**:
 
 ---
 
-## 1. Foundation (parte del core)
+## 1. Foundation (parte del core, non vendibile separatamente)
 
-Componenti fondamentali che ogni cliente ha, non vendibili separatamente. Vivono in `packages/core`.
+Componenti che ogni cliente ha. Vivono in `packages/core/`.
 
 | Modulo | Cosa fa | Note |
 |---|---|---|
 | **auth** | Login, sessioni, MFA, password reset, OAuth | Better-Auth |
-| **users** | Anagrafica utenti tenant, inviti, deattivazione | |
-| **rbac** | Ruoli predefiniti + permessi granulari (CASL) | |
-| **tenant-admin** | Pagina settings tenant, branding, abilitazione moduli | |
-| **notifications** | Notifiche in-app + email, preferenze utente | Base — il modulo "notifications-advanced" estende |
-| **audit-log** | Tracciamento azioni base (login, modifiche critiche) | |
-| **file-storage** | Upload, storage S3-compatible, permessi file | |
+| **users** | Anagrafica utenti tenant, inviti (admin-led), deattivazione | |
+| **rbac** | 4 ruoli predefiniti + permessi granulari per modulo | Niente CASL nell'MVP |
+| **tenant-admin** | Settings tenant: dati azienda, branding, abilitazione moduli | |
+| **module-registry** | Sistema di manifest + loader | ✅ Già costruito |
+| **notifications** (in-app) | Campanella in header, eventi rilevanti dei moduli | Niente email transazionali nell'MVP |
+| **audit-log** (base) | Tracciamento azioni base (login, modifiche critiche) | |
+| **file-storage** | Upload S3-compatible (R2) | |
 | **search** | Ricerca globale full-text via Postgres `tsvector` | Indicizza modelli registrati dai moduli |
 
 ---
 
-## 2. Core — Moduli CRM base
+## 2. Moduli MVP — Core CRM (Core MVP)
 
-I moduli che definiscono Coordinate come CRM. Tutti i clienti ne avranno almeno uno.
+I 5 moduli che vengono costruiti nell'MVP iniziale.
 
-### `crm-contacts` `[M]` — **Core**
-Anagrafica persone e aziende. Relazioni padre-figlio (azienda → persone). Tag, categorie, owner. Dati commerciali, fiscali (P.IVA, CF), contatti multipli.
-- Estendibile via custom fields
-- Emette eventi: `contact.created`, `contact.updated`, `contact.merged`
+### `crm-contacts` `[M]` — Core MVP
+Anagrafica persone e aziende. Relazione padre-figlio (azienda → persone). Tag, owner. Soft delete con ripristino entro 30 giorni. Import/export CSV.
+- Emette eventi (quando l'event bus sarà attivo): `contact.created`, `contact.updated`
 
-### `crm-pipeline` `[M]` — **Core**  
+### `crm-pipeline` `[M]` — Core MVP
 → `crm-contacts`
-Lead e Deal/Opportunità. Pipeline configurabili (stadi custom per tenant). Kanban + tabella. Valore atteso, probabilità, data di chiusura. Conversione lead → cliente.
+Lead e Deal. Pipeline configurabile per tenant (stadi custom). Kanban + tabella. Valore atteso, data di chiusura, owner. Conversione Lead → Deal → Customer.
 - Emette eventi: `lead.stage.changed`, `deal.won`, `deal.lost`
 
-### `activities` `[S]` — **Core**
+### `activities` `[S]` — Core MVP
 → `crm-contacts`
-Task, chiamate, meeting, note. Vista timeline su contatto. Promemoria via notifications.
+Task, chiamate, meeting, note. Vista timeline su contatto/deal. Le mie attività.
 
-### `calendar` `[M]` — **Core**
-→ `activities`
-Vista calendario settimanale/mensile. Sincronizzazione Google/Outlook (modulo `calendar-sync` separato).
+### `warehouse` `[M]` — Core MVP
+Prodotti, categorie, stock mono-deposito, movimentazioni in/out. Alert visivo per stock sotto soglia. Import CSV prodotti.
 
-### `dashboard` `[S]` — **Core**
-Widget configurabili. KPI standard (lead aperti, fatturato mese, task in scadenza). Per dashboard avanzati custom → `analytics-advanced`.
-
----
-
-## 3. Standard — Operations & Magazzino
-
-### `warehouse` `[M]` — **Standard**
-Prodotti, categorie, prezzi, listini multipli. Stock per deposito singolo. Movimentazioni in/out. Soglie minime con alert.
-
-### `warehouse-multi` `[M]` — **Advanced**  
-→ `warehouse`
-Multi-deposito, trasferimenti tra depositi, mappatura ubicazioni (corsia/scaffale).
-
-### `barcode` `[S]` — **Advanced**
-→ `warehouse`
-Lettura barcode (web + mobile camera), stampa etichette, codici EAN/QR.
-
-### `suppliers` `[M]` — **Standard**
-Anagrafica fornitori, listini fornitore, condizioni di pagamento, RDA (richiesta d'acquisto), ordini fornitore.
-
-### `production` `[L]` — **Vertical (manifattura)**
-→ `warehouse`, `suppliers`
-Distinta base (BOM), ordini di produzione, fasi di lavorazione, calcolo costi di produzione. Pesante — solo per manifattura reale.
-
-### `logistics` `[M]` — **Advanced**
-→ `warehouse`
-Documenti di trasporto (DDT), tracciamento spedizioni, integrazione corrieri (BRT, GLS, SDA, DHL via API).
+### `dashboard` `[S]` — Core MVP
+Widget fissi (pipeline aperta €, deal won mese, lead nuovi mese, conversion rate, task scadenza 7gg, ricavi 6 mesi). Filtri periodo + owner. Numeri cliccabili → drill-down.
 
 ---
 
-## 4. Standard — Ciclo documentale vendite
+## 3. Moduli a catalogo — vendibili a preventivo
 
-### `quotes` `[M]` — **Standard**
-→ `crm-contacts`
-Preventivi con righe articolo (collegate a `warehouse` se attivo), sconti, condizioni, scadenza. Generazione PDF brandato. Workflow approvazione interno (opzionale).
+Moduli per cui esiste già un design mentale, ma che si costruiscono solo quando un cliente li paga.
 
-### `orders` `[M]` — **Standard**
-→ `quotes`
-Conversione preventivo → ordine cliente. Gestione stato (confermato, in lavorazione, evaso). Allocazione stock se `warehouse` attivo.
+### CRM avanzato
 
-### `invoicing` `[L]` — **Advanced**
-→ `orders` (opzionale)
-Fatture, note di credito, acconti. Numerazione configurabile. Scadenziario, solleciti automatici. **Non include SDI** — quello è modulo separato (`it-fatturazione-sdi`).
+**`calendar` `[M]`** — Vista calendario settimanale/mensile delle activity. Click su slot vuoto → nuova activity. Niente sync Google/Outlook nell'MVP (sarebbe `calendar-sync` separato).
 
-### `subscriptions` `[L]` — **Advanced**
-→ `invoicing`
-Contratti ricorrenti, fatturazione automatica, gestione rinnovi, upgrade/downgrade, prorate. Integrazione Stripe Billing per pagamento automatico.
+**`it-anagrafica-check` `[S]`** — Verifica P.IVA via VIES, validazione Codice Fiscale, autocompletamento azienda da P.IVA (provider tipo `openapi.it`). Quick win italiano.
 
-### `contracts` `[M]` — **Advanced**
-→ `crm-contacts`
-Repository contratti, scadenze, rinnovi, allegati. Integrabile con firma elettronica (`e-signature`).
+**`lead-scoring` `[M]`** — Regole di punteggio configurabili (apertura email = +5, visita pricing = +10).
 
----
+### Ciclo documentale
 
-## 5. Standard — Moduli Italia (must-have per il mercato locale)
+**`quotes` `[M]`** — Preventivi con righe articolo, sconti, IVA configurabile, generazione PDF brandato (logo + colore tenant). Stati: bozza/inviato/accettato/rifiutato/scaduto.
 
-Sono il **differenziatore principale** vs competitor globali. Per molti clienti italiani questi moduli sono il motivo dell'acquisto.
+**`orders` `[M]`** — Conversione preventivo → ordine cliente. Stato (confermato/in lavorazione/evaso). Allocazione stock se `warehouse` attivo.
 
-### `it-fatturazione-sdi` `[L]` — **Standard**  
-→ `invoicing`
-Invio fatture al Sistema di Interscambio. Ricezione fatture passive. Notifiche SDI gestite. Integrazione tramite provider (Aruba, Fatture in Cloud API, Notartel, ecc.) — niente accreditamento diretto SDI.
-- Probabilmente il modulo a maggior valore percepito per la clientela italiana
+**`invoicing` `[L]`** — Fatture, note di credito, acconti. Numerazione configurabile. Scadenziario, solleciti. **Non include SDI** — quello è `it-fatturazione-sdi`.
 
-### `it-conservazione` `[M]` — **Standard**
-→ `it-fatturazione-sdi`
-Conservazione sostitutiva a norma (10 anni). Via provider partner (Aruba, InfoCert). Pay-per-document o flat.
+**`subscriptions` `[L]`** — → `invoicing`. Contratti ricorrenti, fatturazione automatica, rinnovi, upgrade/downgrade.
 
-### `it-pec` `[S]` — **Standard**
-Invio PEC dalla piattaforma. Tracciamento ricevute. Archiviazione comunicazioni PEC su contatti/contratti.
+**`contracts` `[M]`** — Repository contratti, scadenze, allegati. Integrabile con firma elettronica.
 
-### `it-anagrafica-check` `[S]` — **Standard**
-Verifica P.IVA via VIES, recupero dati azienda da P.IVA (provider tipo `openapi.it`, `Cerved`), Codice Fiscale validation. Autocompletamento anagrafica.
+### Moduli Italia (differenziatore locale)
 
-### `it-f24` `[M]` — **Vertical (commercialisti)**
-Generazione F24 per il cliente. Solo per studi di commercialisti come modulo verticale.
+**`it-fatturazione-sdi` `[L]`** — → `invoicing`. Invio fatture al Sistema di Interscambio, ricezione fatture passive. Via provider partner (Aruba, Fatture in Cloud API, Notartel). Probabilmente il modulo a maggior valore percepito per clienti italiani.
 
-### `it-corrispettivi-elettronici` `[M]` — **Vertical (retail/ristorazione)**
-Integrazione corrispettivi telematici per chi non emette fattura ma scontrino.
+**`it-conservazione` `[M]`** — → `it-fatturazione-sdi`. Conservazione sostitutiva 10 anni via provider.
 
----
+**`it-pec` `[S]`** — Invio PEC dalla piattaforma, tracciamento ricevute.
 
-## 6. Advanced — Marketing
+**`it-f24` `[M]`** — Generazione F24 (verticale per studi commercialisti).
 
-### `email-marketing` `[L]` — **Advanced**
-Liste, segmenti dinamici, template builder (drag&drop), invio massivo via provider (Resend, SendGrid, Mailgun). Statistiche aperture/click. **Compliance GDPR built-in** (double opt-in, unsubscribe).
+### Operations & Magazzino avanzati
 
-### `marketing-automation` `[XL]` — **Advanced**
-→ `email-marketing`, `crm-contacts`
-Workflow visuali (trigger → condizione → azione). Drip campaigns, nurturing, lead scoring automatico. Complesso — valutare se costruire o integrare (es. embed di un tool esterno).
+**`warehouse-multi` `[M]`** — → `warehouse`. Multi-deposito, trasferimenti, ubicazioni.
 
-### `forms-landing` `[M]` — **Advanced**
-Form builder, landing page semplici, embed su siti esterni. Lead capture diretta in CRM.
+**`barcode` `[S]`** — → `warehouse`. Lettura barcode web + mobile, stampa etichette.
 
-### `lead-scoring` `[M]` — **Advanced**
-→ `crm-pipeline`
-Regole di punteggio configurabili (apertura email = +5, visita pricing = +10, ecc.). Versione AI in `ai-lead-scoring`.
+**`suppliers` `[M]`** — Anagrafica fornitori, listini, RDA, ordini fornitore.
 
-### `social-publishing` `[M]` — **Vertical (marketing agencies)**
-Programmazione post su Facebook, Instagram, LinkedIn. Calendario editoriale. Approvazioni interne.
+**`logistics` `[M]`** — → `warehouse`. DDT, tracciamento spedizioni, integrazione corrieri.
 
-### `sms-marketing` `[S]` — **Advanced**
-Invio SMS marketing. Provider: Twilio, MessageBird, Skebby (italiano).
+**`production` `[L]`** — → `warehouse`, `suppliers`. Distinta base (BOM), ordini di produzione, fasi di lavorazione. Solo per manifattura reale.
 
----
+### Customer Service
 
-## 7. Advanced — Customer Service
+**`helpdesk` `[L]`** — → `crm-contacts`. Ticket system, SLA, email-to-ticket.
 
-### `helpdesk` `[L]` — **Advanced**
-→ `crm-contacts`
-Ticket system con stati, assegnazione, priorità, SLA. Email-to-ticket (parsing email entranti). Macro/risposte rapide.
+**`knowledge-base` `[M]`** — Articoli pubblici/privati, ricerca, categorie.
 
-### `knowledge-base` `[M]` — **Advanced**
-Articoli con categorie, ricerca, voto utili/non-utili. Interna o pubblica (su sottodominio dedicato).
+**`live-chat` `[L]`** — → `helpdesk`. Widget chat per sito cliente, transcript come ticket.
 
-### `live-chat` `[L]` — **Advanced**
-→ `helpdesk`
-Widget chat per sito cliente, routing a operatori, transcript salvato come ticket. Bot di pre-qualifica opzionale.
+**`customer-portal` `[L]`** — Portale per cliente finale (non utente CRM): vede fatture, ticket, contratti.
 
-### `customer-portal` `[L]` — **Advanced**
-Portale per il cliente finale (non utente del CRM): vede sue fatture, ticket aperti, contratti, può aprire nuovi ticket. White-label sotto sottodominio.
+**`sla-management` `[M]`** — → `helpdesk`. Definizione SLA, alert escalation.
 
-### `sla-management` `[M]` — **Advanced**
-→ `helpdesk`
-Definizione SLA per cliente/priorità, alert escalation, reporting compliance SLA.
+### Project Management & Time
 
----
+**`projects` `[L]`** — Progetti, milestone, task strutturati, dipendenze.
 
-## 8. Advanced — Project Management & Time
+**`time-tracking` `[M]`** — → `projects` (opzionale). Timesheet, timer in-app, esportabile in fattura.
 
-### `projects` `[L]` — **Advanced**
-Progetti, milestone, task strutturati, dipendenze, % completamento.
+**`gantt` `[M]`** — → `projects`. Vista Gantt drag&drop.
 
-### `time-tracking` `[M]` — **Advanced**
-→ `projects` (opzionale)
-Timesheet, timer in-app, fatturabile/non-fatturabile, report ore per cliente/progetto. Esportabile in fattura via `invoicing`.
+**`resource-planning` `[L]`** — → `projects`. Capacity, overbooking.
 
-### `gantt` `[M]` — **Advanced**
-→ `projects`
-Vista Gantt con drag&drop, baseline, critical path.
+### HR
 
-### `resource-planning` `[L]` — **Advanced**
-→ `projects`
-Allocazione risorse umane sui progetti, vista capacity, gestione overbooking.
+**`hr-employees` `[M]`** — Anagrafica dipendenti, organigramma, scadenze documenti.
 
----
+**`hr-attendance` `[L]`** — → `hr-employees`. Timbrature, turni, straordinari.
 
-## 9. Advanced — HR
+**`hr-leave` `[M]`** — → `hr-employees`. Ferie/permessi, workflow approvazione.
 
-Modulo HR per PMI è un mercato a sé. Valutare se entrarci o restare "lite" e integrarsi con software dedicati (TeamSystem HR, Zucchetti).
+**`hr-expenses` `[M]`** — → `hr-employees`. Note spese con OCR opzionale.
 
-### `hr-employees` `[M]` — **Advanced**
-Anagrafica dipendenti, organigramma, contratti, scadenze documenti (passaporto, patente, visita medica).
+**`hr-recruiting-ats` `[L]`** — Job posting, candidati, pipeline assunzione.
 
-### `hr-attendance` `[L]` — **Advanced**  
-→ `hr-employees`
-Timbrature (web + mobile + badge fisico), turni, calcolo straordinari. Integrabile con dispositivi fisici (ZKTeco, biometrici).
+**`hr-performance` `[L]`** — Review periodiche, OKR, 360° feedback.
 
-### `hr-leave` `[M]` — **Advanced**
-→ `hr-employees`
-Richieste ferie/permessi, workflow approvazione, calendario assenze del team.
+### Finance & Accounting
 
-### `hr-expenses` `[M]` — **Advanced**
-→ `hr-employees`
-Note spese con foto scontrino (OCR opzionale), categorie, approvazione, esportazione contabilità.
+> **Decisione strategica**: l'accounting completo (registri IVA, libri sociali, dichiarativi) è un mondo enorme che TeamSystem/Zucchetti dominano. Sconsigliato costruirlo. Si costruiscono invece **pezzi pre-contabili** che si integrano col commercialista del cliente.
 
-### `hr-recruiting-ats` `[L]` — **Advanced**
-Job posting, candidati, pipeline assunzione, colloqui programmati. Embed form su sito carriere.
+**`cashflow` `[M]`** — Cash flow previsto vs effettivo, categorizzazione.
 
-### `hr-performance` `[L]` — **Advanced**
-Review periodiche, obiettivi (OKR), 360° feedback.
+**`bank-reconciliation` `[L]`** — Import movimenti bancari (PSD2/CSV), matching automatico con fatture.
 
----
+**`budget-forecast` `[M]`** — Budget annuale per centro di costo, confronto consuntivo.
 
-## 10. Finance & Accounting
+### Documenti & Comunicazione
 
-**Decisione strategica importante**: l'accounting completo (registri IVA, libri sociali, dichiarativi) è un mondo enorme (TeamSystem, Zucchetti dominano). Sconsiglio di costruirlo. Costruire invece **pezzi pre-contabili** che si integrano con il commercialista del cliente.
+**`dms` `[M]`** — Document Management: cartelle, versioning, permessi, ricerca full-text PDF/Word.
 
-### `cashflow` `[M]` — **Advanced**
-Vista cash flow previsto vs effettivo, basato su fatture/scadenze. Categorizzazione entrate/uscite.
+**`document-templates` `[M]`** — Template con placeholder, generazione documenti da dati CRM.
 
-### `bank-reconciliation` `[L]` — **Advanced**
-Import movimenti bancari (PSD2 / CSV / OFX), matching automatico con fatture, regole di categorizzazione.
+**`e-signature` `[M]`** — Firma elettronica via provider (DocuSign, Yousign, Namirial).
 
-### `budget-forecast` `[M]` — **Advanced**
-Budget annuale per centro di costo, confronto consuntivo.
+**`email-integration` `[L]`** — Sync IMAP/Exchange/Gmail bidirezionale.
 
-### `prima-nota` `[M]` — **Vertical (commercialisti)**
-Solo se si vuole entrare nel verticale commercialisti. Altrimenti meglio integrazione.
+**`voip-integration` `[M]`** — Click-to-call, log chiamate, popup contatto su entrante.
+
+**`whatsapp-business` `[M]`** — Conversazioni WhatsApp Business dentro al CRM.
+
+**`sms` `[S]`** — SMS transazionali via Skebby/Twilio.
+
+### Marketing
+
+**`email-marketing` `[L]`** — Liste, segmenti, template builder, invio massivo, statistiche. Compliance GDPR built-in.
+
+**`marketing-automation` `[XL]`** — → `email-marketing`, `crm-contacts`. Workflow visuali, drip campaigns, lead scoring automatico.
+
+**`forms-landing` `[M]`** — Form builder, landing page, embed su siti esterni.
+
+**`social-publishing` `[M]`** — Programmazione post FB/IG/LinkedIn.
+
+### Analytics & BI
+
+**`reports-builder` `[L]`** — Report visuale drag&drop su dati CRM + moduli.
+
+**`embedded-bi` `[XL]`** — Embed Metabase/Superset multi-tenant aware.
+
+**`data-export` `[S]`** — Export CSV/Excel programmati via email o S3.
+
+### Compliance & Security
+
+**`gdpr-toolkit` `[M]`** — Data export per cliente finale, right-to-be-forgotten, consensi tracciati.
+
+**`sso-saml` `[M]`** — SAML 2.0 + OIDC. Required per enterprise.
+
+**`audit-log-advanced` `[M]`** — Estende base: diff campo-per-campo, retention configurabile, export.
+
+**`backup-restore` `[M]`** — Backup on-demand, restore selettivo.
+
+### AI & Smart features
+
+**`ai-assistant` `[M]`** — Assistente conversazionale interno via API LLM (Claude/OpenAI).
+
+**`ai-email-summary` `[S]`** — → `email-integration`. Riassunto thread, suggerimento risposta.
+
+**`ai-lead-scoring` `[M]`** — → `crm-pipeline`. Scoring lead basato su comportamento.
+
+**`ai-content-gen` `[S]`** — Generazione testi: bozze email, descrizioni prodotto.
+
+**`ai-voice-notes` `[M]`** — → `activities`. Note vocali mobile → trascrizione.
+
+**`ai-document-extract` `[L]`** — OCR + estrazione strutturata da documenti.
 
 ---
 
-## 11. Document Management & Communication
+## 4. Integrazioni
 
-### `dms` `[M]` — **Advanced**
-Cartelle, versioning, permessi granulari sui documenti, ricerca full-text nel contenuto (PDF/Word via Tika).
+Sono moduli a tutti gli effetti (manifest, rotte di config, job di sync).
 
-### `document-templates` `[M]` — **Advanced**
-Template Word/PDF con placeholder, generazione documenti da dati CRM (es. contratti precompilati).
+**`integration-zapier-make` `[S]`** — Endpoint trigger/action per Zapier e Make. Copre il 90% delle richieste di "integrazione minore".
 
-### `e-signature` `[M]` — **Advanced**
-Firma elettronica via provider (DocuSign, Yousign, Namirial italiana). Pay-per-firma.
+**`integration-webhooks` `[S]`** — Webhook outbound configurabili su eventi tenant.
 
-### `email-integration` `[L]` — **Advanced**
-Sincronizzazione bidirezionale IMAP/Exchange/Gmail. Email logged automaticamente su contatto. Reply dall'interno del CRM.
+**`integration-api-public` `[M]`** — API REST documentata (OpenAPI), token per tenant.
 
-### `voip-integration` `[M]` — **Advanced**
-Click-to-call, log chiamate automatico, popup contatto su chiamata entrante. Provider: Twilio, Vonage, 3CX, Wildix (italiano).
+**`integration-teamsystem` `[L]`** — Sync con TeamSystem. Connettore complesso, valore altissimo per clienti già su TS.
 
-### `whatsapp-business` `[M]` — **Advanced**
-Conversazioni WhatsApp Business gestite dentro il CRM. Costi: provider (Meta + intermediario tipo 360dialog) + template messages.
+**`integration-fattureincloud` `[M]`** — Per partite IVA piccole già su Fatture in Cloud.
 
-### `sms` `[S]` — **Standard**
-Invio SMS transazionali (conferma appuntamento, promemoria scadenza). Provider Skebby/Twilio.
+**`integration-zucchetti` `[L]`** — Sync con Zucchetti.
 
----
+**`integration-shopify` / `integration-woocommerce` / `integration-magento` / `integration-prestashop`** — Connettori e-commerce.
 
-## 12. Analytics & BI
+**`integration-stripe` `[S]`** — → `invoicing`. Pagamenti carta su fatture (se mai serve nell'MVP per fatturare al cliente finale del cliente).
 
-### `reports-builder` `[L]` — **Advanced**
-Report builder visuale (drag campi → grid/grafici), salva report, condividi. Su dati CRM + custom fields.
+**`integration-payment-italian` `[M]`** — Nexi, Satispay, PayPal, bonifico immediato.
 
-### `embedded-bi` `[XL]` — **Advanced**
-Embed di Metabase o Apache Superset, multi-tenant aware. Dashboard avanzate, drill-down. Valutare se vale lo sforzo o se basta `reports-builder`.
+**`integration-banks-psd2` `[L]`** — → `bank-reconciliation`. Open Banking PSD2 per movimenti automatici.
 
-### `data-export` `[S]` — **Standard**
-Export programmati CSV/Excel via email o S3, per integrare con Excel/PowerBI del cliente.
+**`integration-google-workspace` / `integration-microsoft365`** — Sync mail, calendar, drive, contacts.
 
 ---
 
-## 13. Compliance & Security
+## 5. Verticali (industry-specific)
 
-### `gdpr-toolkit` `[M]` — **Advanced**
-Data export per cliente finale (diritto di portabilità), right-to-be-forgotten (cancellazione cascata), consensi tracciati.
+Moduli per un settore preciso. Tipicamente nascono come modulo custom per un cliente di quel settore e si valuta poi se promuoverli a verticale generalizzato (servirebbero 2-3 clienti dello stesso settore).
 
-### `sso-saml` `[M]` — **Advanced**
-SAML 2.0 + OIDC. Required per enterprise (Microsoft Azure AD, Okta, Google Workspace).
-
-### `audit-log-advanced` `[M]` — **Advanced**
-Estende il base `audit-log`: log granulare di ogni modifica, diff campo-per-campo, esportazione, retention configurabile.
-
-### `2fa-mfa` `[S]` — **Foundation**
-Già nel core (Better-Auth). Possibile estensione: SMS, hardware key (FIDO2).
-
-### `backup-restore` `[M]` — **Advanced**
-Backup on-demand del tenant, restore selettivo (es. ripristina solo i contatti dell'ultima settimana). Solo per piani Business+.
-
----
-
-## 14. AI & Smart features
-
-Categoria in forte crescita. Da costruire incrementalmente con API LLM (Claude, OpenAI).
-
-### `ai-assistant` `[M]` — **Advanced**
-Assistente conversazionale interno: "trovami tutti i lead non contattati da 30 giorni", "riassumi le conversazioni con Acme". Costo variabile API.
-
-### `ai-email-summary` `[S]` — **Advanced**
-→ `email-integration`
-Riassunto thread email lunghi, suggerimento risposta.
-
-### `ai-lead-scoring` `[M]` — **Advanced**  
-→ `crm-pipeline`, `email-marketing`
-Scoring lead basato su comportamento, training su dati storici del tenant.
-
-### `ai-content-gen` `[S]` — **Advanced**
-Generazione testi: bozze email, risposte ticket, descrizioni prodotto.
-
-### `ai-voice-notes` `[M]` — **Advanced**
-→ `activities`
-Note vocali su mobile → trascrizione → salvataggio come nota attività.
-
-### `ai-document-extract` `[L]` — **Advanced**
-OCR + estrazione strutturata da documenti (fatture passive, scontrini, contratti).
+| Verticale | Dimensione | Note |
+|---|---|---|
+| `vertical-studi-professionali` (avvocati, commercialisti, architetti) | L | Pratiche, timesheet professionale, parcellazione |
+| `vertical-edilizia` | XL | Cantieri, mezzi, SAL, DVR sicurezza |
+| `vertical-real-estate` | L | Immobili, contratti locazione, sync portali |
+| `vertical-sanita` | L | Pazienti (privacy potenziata), agende, cartelle minime |
+| `vertical-fitness` | M | Iscritti, abbonamenti, corsi |
+| `vertical-wedding-events` | M | Sposi, fornitori, timeline evento |
+| `vertical-automotive` | L | Officina meccanica: parco veicoli, scadenze, ricambi |
+| `vertical-ristorazione` | L | Prenotazioni tavoli, menù, allergeni, food cost |
+| `vertical-hotel-bb` | L | Prenotazioni camere, channel manager, comunicazione alloggiati |
 
 ---
 
-## 15. Integrazioni
+## 6. Moduli custom — il pattern per il modello boutique
 
-I connettori sono moduli a tutti gli effetti: ognuno con il suo manifest, le sue rotte di config, i suoi job di sync.
+Nel modello a 5 clienti, **i moduli custom non sono un caso eccezionale**: sono il modo normale di lavorare. Quasi ogni cliente avrà 1-2 moduli pensati per lui.
 
-### `integration-zapier-make` `[S]` — **Standard**
-Endpoint trigger/action per Zapier e Make. Copre il 90% delle richieste di integrazione "minore".
+### Esempi reali tipici
 
-### `integration-webhooks` `[S]` — **Standard**
-Webhook outbound configurabili su eventi tenant.
-
-### `integration-api-public` `[M]` — **Advanced**
-API REST pubblica documentata (OpenAPI), token per tenant, rate limiting.
-
-### `integration-teamsystem` `[L]` — **Vertical**
-Sync con TeamSystem (anagrafiche, fatture, articoli). Connettore complesso, valore altissimo per clienti già su TS.
-
-### `integration-fattureincloud` `[M]` — **Vertical**
-Sync con Fatture in Cloud — gestionale popolare per piccole partite IVA.
-
-### `integration-zucchetti` `[L]` — **Vertical**
-Sync con Zucchetti.
-
-### `integration-shopify` `[M]` — **Vertical (e-commerce)**
-Sync prodotti, ordini, clienti Shopify ↔ Coordinate.
-
-### `integration-woocommerce` `[M]` — **Vertical (e-commerce)**
-Come sopra per WooCommerce.
-
-### `integration-magento` `[L]` — **Vertical (e-commerce)**
-Per Magento. Più complesso.
-
-### `integration-prestashop` `[M]` — **Vertical (e-commerce)**
-Per PrestaShop.
-
-### `integration-stripe` `[S]` — **Standard**  
-→ `invoicing`
-Pagamenti carta su fatture, ricorrenti via Stripe Billing.
-
-### `integration-payment-italian` `[M]` — **Standard**
-Nexi, Satispay, PayPal, bonifico immediato. Mercato italiano.
-
-### `integration-banks-psd2` `[L]` — **Advanced**  
-→ `bank-reconciliation`
-Open Banking PSD2 per importare movimenti bancari automaticamente. Provider: Tink, Fabrick, Nordigen/GoCardless.
-
-### `integration-google-workspace` `[M]` — **Standard**
-Sync Gmail, Calendar, Drive, Contacts.
-
-### `integration-microsoft365` `[M]` — **Standard**
-Sync Outlook, Calendar, OneDrive, Contacts.
-
----
-
-## 16. Verticali (industry-specific)
-
-Moduli costruiti per un settore preciso. Vendita più chirurgica, prezzo più alto, churn più basso.
-
-### `vertical-studi-professionali` (avvocati, commercialisti, architetti) `[L]`
-Pratiche/incarichi, timesheet professionale, parcellazione, scadenzario fiscale.
-
-### `vertical-edilizia` `[XL]`
-Cantieri, mezzi, manodopera, SAL, sicurezza (DVR), gestione subappaltatori.
-
-### `vertical-real-estate` `[L]`
-Immobili (anagrafica con foto, planimetrie), visite, contratti di locazione, mandati di vendita, sync portali (Immobiliare.it, Idealista).
-
-### `vertical-sanita` `[L]`
-Pazienti (con privacy potenziata), agende mediche, cartelle cliniche minime, prescrizioni. Attenzione: requisiti GDPR forti per dati sanitari.
-
-### `vertical-fitness` `[M]`
-Iscritti, abbonamenti, prenotazione corsi, gestione istruttori, certificati medici.
-
-### `vertical-wedding-events` `[M]`
-Sposi/clienti, fornitori, timeline evento, budget, planning.
-
-### `vertical-automotive` `[L]`
-Officina meccanica: parco veicoli cliente, scadenze tagliando/revisione, preventivi lavorazioni, ricambi.
-
-### `vertical-ristorazione` `[L]`
-Prenotazioni tavoli, gestione menù, allergeni, ordini fornitori, food cost.
-
-### `vertical-hotel-bb` `[L]`
-Prenotazioni camere, channel manager (Booking, Airbnb), check-in/out, comunicazione alloggiati (questura).
-
----
-
-## 17. Custom — moduli su misura (Tier 4)
-
-Vivono in `tenants/<slug>/modules/`. Esempi reali tipici:
-- Modulo "Gestione Flotta" per un cliente di logistica
-- "Calendario Lavorazioni Macchine CNC" per un cliente metalmeccanico
-- "Cruscotto Filiali" per un cliente retail con 50 punti vendita
+- Modulo "Gestione Flotta" per un cliente logistica → veicoli, scadenze (assicurazione/bollo/revisione), itinerari, autisti
+- Modulo "Calendario Lavorazioni CNC" per un cliente metalmeccanico → ordini di lavorazione, fasi, macchinari, manutenzione
+- Modulo "Cruscotto Filiali" per un cliente retail multi-sede → KPI per filiale, confronto, alert su anomalie
+- Modulo "Pratiche Edilizia" per un cliente che gestisce permessi → SCIA, CILA, integrazione con SUE/SUAP comunali
 - Integrazione bespoke con un gestionale proprietario del cliente
 
-Pattern raccomandato: parte come Tier 4 (custom), se 3+ clienti ne hanno bisogno → si promuove a modulo standard nel catalogo.
+### Pattern di costruzione
+
+1. **Discovery col cliente**: 1-3 sessioni per capire processi, modelli dati, flussi
+2. **Quote** con setup fee one-shot + impatto sul canone annuale (manutenzione + hosting di quel modulo)
+3. **Sviluppo** come modulo normale in `packages/modules/<client>-<feature>/` (es. `acme-fleet`)
+4. **Manifest**: dichiara rotte, navigation, modelli Prisma, permessi
+5. **Attivazione**: aggiungi l'id del modulo a `TenantConfig.enabledModules` del cliente
+6. **Deploy**: stesso codice di tutti
+
+### Quando "promuovere" un modulo custom a catalog
+
+Quando 2+ clienti userebbero lo stesso modulo (anche con piccole differenze). A quel punto:
+- Si rinomina (rimuovendo il prefisso cliente, es. `acme-fleet` → `fleet`)
+- Si entra nel catalogo
+- Il cliente che ha co-finanziato lo sviluppo originale ottiene uno **sconto lifetime** (vedi `pricing.md`)
+
+### Quando NON promuovere
+
+Quando il modulo è davvero specifico (es. integra un sistema proprietario di Acme che nessun altro ha). Resta `acme-*` per sempre.
 
 ---
 
-## 18. Servizi non-modulari
+## 7. Servizi non-modulari
 
 Cose che si vendono al cliente ma non sono moduli software:
 
-- **Onboarding & Setup** — config iniziale, primo training
+- **Onboarding & Setup** — config iniziale del tenant, primo training (incluso nel setup del primo modulo custom o quotato a parte)
 - **Migrazione dati** — da Excel, da gestionale esistente, da altro CRM
-- **Training** — formazione utenti (per ruolo)
-- **Consulenza personalizzazione** — analisi processo, design custom fields/workflow
-- **Sviluppo modulo custom** — Tier 4
-- **Supporto premium** — SLA, account manager dedicato
-- **Deploy dedicato** — istanza separata per cliente enterprise
-- **White-label** — rebrand della piattaforma
-- **Manutenzione modulo custom** — manutenzione evolutiva di un modulo Tier 4
+- **Training** — formazione utenti per ruolo
+- **Consulenza personalizzazione** — analisi processo, design custom fields/workflow (quando i custom fields esisteranno)
+- **Sviluppo modulo custom** — il pattern descritto sopra
+- **Supporto premium** — SLA forte, account dedicato (sopra il canone base)
 
 ---
 
-## 19. Matrice dipendenze (le più importanti)
+## 8. Matrice dipendenze (le più importanti)
 
 ```
-crm-contacts ◄── crm-pipeline ◄── lead-scoring
-                              ◄── ai-lead-scoring
-crm-contacts ◄── activities ◄── calendar
-crm-contacts ◄── quotes ◄── orders ◄── invoicing ◄── it-fatturazione-sdi
-                                                  ◄── it-conservazione
+crm-contacts ◄── crm-pipeline ◄── lead-scoring, ai-lead-scoring
+             ◄── activities ◄── calendar
+             ◄── quotes ◄── orders ◄── invoicing ◄── it-fatturazione-sdi
+                                                 ◄── it-conservazione
                                               ◄── subscriptions
-warehouse ◄── warehouse-multi
-          ◄── barcode
-          ◄── logistics
-          ◄── production
-helpdesk ◄── sla-management
-         ◄── live-chat
-         ◄── customer-portal
+warehouse ◄── warehouse-multi, barcode, logistics, production
+helpdesk ◄── sla-management, live-chat, customer-portal
 projects ◄── time-tracking ◄── invoicing (per fatturare ore)
-         ◄── gantt
-         ◄── resource-planning
+         ◄── gantt, resource-planning
 email-integration ◄── ai-email-summary
 hr-employees ◄── hr-attendance, hr-leave, hr-expenses
 ```
 
 ---
 
-## 20. Roadmap di sviluppo suggerita
+## 9. Priorità di sviluppo
 
-In ordine di valore atteso × velocità di sviluppo:
+Con il modello boutique, **non c'è una "roadmap di sviluppo lineare"** del catalogo. Si costruisce ciò che i clienti pagano, nell'ordine in cui pagano.
 
-### Wave 1 — MVP vendibile (3-4 mesi)
-1. Foundation completa
-2. `crm-contacts`, `crm-pipeline`, `activities`, `dashboard`, `calendar`
-3. `warehouse` (base)
-4. `quotes`, `orders`
-5. `it-anagrafica-check` (P.IVA / CF) — quick win italianizzazione
+### Quello che è già pianificato di sicuro (MVP)
 
-### Wave 2 — Tier "Standard" venduto (mesi 4-7)
-6. `invoicing`
-7. `it-fatturazione-sdi` — il differenziatore italiano
-8. `helpdesk` base
-9. `email-integration`
-10. `integration-zapier-make`, `integration-webhooks`
-11. `data-export`
-12. `it-pec`
+I 5 moduli core: `crm-contacts`, `crm-pipeline`, `activities`, `warehouse`, `dashboard`.
 
-### Wave 3 — Tier "Business" (mesi 7-12)
-13. `marketing-email`
-14. `customer-portal`
-15. `reports-builder`
-16. `time-tracking` + `projects` base
-17. `e-signature`
-18. `subscriptions`
-19. `integration-stripe`, `integration-google-workspace`, `integration-microsoft365`
-20. `gdpr-toolkit`, `sso-saml`, `audit-log-advanced`
+### Ad alta probabilità nei prossimi clienti
 
-### Wave 4 — AI + Verticali (anno 2)
-21. `ai-assistant`, `ai-content-gen`, `ai-email-summary`
-22. Primi 1-2 verticali in base ai clienti acquisiti
-23. `integration-teamsystem` o `integration-fattureincloud` in base ai clienti
+In ordine indicativo (basato su quanto è "ovvio" per una PMI italiana):
 
-### Wave 5 — Espansione (anno 2+)
-24. HR completo
-25. Marketing automation visuale
-26. BI embedded
-27. Verticali aggiuntivi
+1. `calendar` — quasi tutti vivono di appuntamenti
+2. `quotes` — quasi tutti fanno preventivi
+3. `it-anagrafica-check` — quick win italiano
+4. `invoicing` + `it-fatturazione-sdi` — appena un cliente vuole fatturare
+5. `helpdesk` — appena un cliente fa anche customer service
 
 ### Da NON costruire (almeno non subito)
+
 - Accounting completo → integrazione con commercialisti
 - Microservizi proprietari (storage, search, queue) → usa managed
-- Mobile app nativa → PWA fino a quando non c'è domanda forte
-- Marketplace di moduli di terzi → solo dopo 50+ tenant attivi
+- Mobile app nativa → PWA se mai serve
+- Marketplace di moduli di terzi → non siamo platform-as-a-product
+- Workflow engine visuale → caso per caso con moduli custom o Inngest jobs
+- Custom fields dinamici → si valutano se 2+ clienti li chiedono

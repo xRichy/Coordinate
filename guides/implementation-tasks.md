@@ -18,6 +18,7 @@ Modello git: **GitFlow semplificato** — `main` (stabile) ← `develop` (integr
 ## Convenzioni dei task
 
 - **ID**: `T<fase>.<numero>` (es. `T1.5` = Fase 1, task 5)
+- **Stato**: nessuno (da fare), ✅ (fatto), ⏭ DEFERRED (rimandato post-MVP), ❌ REMOVED (eliminato dal piano)
 - **Deps**: prerequisiti — altri task che devono essere `✅` prima di iniziare questo
 - **Size**: `XS` (< 30min), `S` (30min-1h), `M` (1-3h), `L` (3-6h), `XL` (6h+, considerare di spezzare)
 - **Files**: file principali da creare/modificare (non esaustivo, ma indicativo)
@@ -28,24 +29,27 @@ Modello git: **GitFlow semplificato** — `main` (stabile) ← `develop` (integr
 
 Ogni task assume che Claude Code legga (o ricordi) questi documenti quando rilevante:
 - `guides/architecture.md` — scelte architetturali, struttura monorepo, sistema moduli
-- `guides/mvp-scope.md` — cosa è IN e OUT del MVP
+- `guides/mvp-scope.md` — cosa è IN e OUT del MVP (boutique platform, ~5 clienti)
 - `guides/modules-catalog.md` — definizione dei moduli e loro dipendenze
-- `guides/pricing.md` — tier, prezzi, modelli commerciali (solo per task billing)
+- `guides/pricing.md` — modello commerciale (canone annuale + setup fee per moduli custom)
 
 ## Stato globale
 
 ```
 Fase 0  Monorepo Setup                 [✅] 8/8 task
-Fase 1  Backend & Auth & Multi-Tenant  [✅] 17/18 task (T1.16 deferred → Fase 4)
-Fase 2  Module Registry                [ ] 2/12 task
-Fase 3  Moduli MVP                     [ ] 0/24 task
-Fase 4  Billing & Onboarding & Admin   [ ] 0/16 task
-Fase 5  Polish: i18n, search, theming  [ ] 0/10 task
+Fase 1  Backend & Auth & Multi-Tenant  [✅] 17/18 task (T1.16 deferred → post-MVP)
+Fase 2  Module Registry                [ ] 2/10 task (2 deferred)
+Fase 3  Moduli MVP Core                [ ] 0/16 task (7 deferred, 1 removed)
+Fase 4  Tenant Admin & Modules Config  [ ] 0/7 task (8 deferred, 1 removed)
+Fase 5  Polish: theming, audit, UX     [ ] 0/6 task (2 deferred, 2 removed)
 Fase 6  Testing & Hardening            [ ] 0/9 task
-Fase 7  Launch Prep                    [ ] 0/8 task
+Fase 7  Launch Prep                    [ ] 0/4 task (3 deferred, 1 removed)
                                        --------------
-                                       TOT 105 task
+                                       TOT 77 active task
+                                       + 22 deferred/removed (vedi marker ⏭/❌)
 ```
+
+> **Strategic refresh (2026-05)**: il piano è stato ridotto da 105 a ~77 task attivi dopo l'allineamento sul modello **boutique platform** (~5 clienti, vendita white-glove, canone annuale + setup fee per moduli custom). Le task ⏭ DEFERRED non sono perse: si attiveranno se/quando un cliente le richiede e le paga. Le task ❌ REMOVED sono fuori dall'architettura prevista.
 
 ---
 
@@ -92,6 +96,8 @@ touch apps/.gitkeep packages/ui/.gitkeep packages/core/.gitkeep packages/databas
 - Esistono le 7 cartelle (`apps`, `packages/ui`, `packages/core`, `packages/database`, `packages/api`, `packages/config`, `tenants`)
 - `git status` mostra le cartelle (via `.gitkeep`)
 
+> **Nota retro-strategia**: la cartella `tenants/` è stata creata in T0.2 ma con il refresh strategico (vedi `architecture.md` §6) **non viene più usata**. I moduli custom per cliente vivono in `packages/modules/<client>-<feature>/` come gli altri moduli. La cartella può essere rimossa quando si fa cleanup, ma non blocca nulla.
+
 ---
 
 ### T0.3 ✅ — Spostare il codice esistente in `apps/web`
@@ -133,7 +139,7 @@ Creare nella root del repo:
 packages:
   - "apps/*"
   - "packages/*"
-  - "tenants/*/modules/*"
+  - "packages/modules/*"
 ```
 
 **`package.json`** (root, sostituisce il vecchio):
@@ -486,6 +492,8 @@ Il seed sarà usato come fixture di riferimento per i task successivi (T1.14, T2
 - Submit → chiama Better-Auth sign-up + crea Tenant + crea Membership owner.
 - Redirect immediato a `<slug>.lvh.me:3000/dashboard` dopo signup (nessuna verifica email per ora — vedi nota T1.16).
 
+> **Nota retro-strategia**: con il refresh boutique, la pagina di signup pubblica non è più necessaria al lancio (i tenant si creano via comando admin — vedi T4.7 nuovo). Resta utile come strumento di dev e può essere disabilitata in produzione tramite env var, ma non si rimuove dal codice.
+
 **Done when**:
 - Sign-up flow end-to-end funziona
 - Nuovo tenant creato in DB con owner
@@ -581,17 +589,16 @@ Il seed sarà usato come fixture di riferimento per i task successivi (T1.14, T2
 **Size**: M  
 **Files**: `packages/core/email/`, `apps/web/src/server/email/`  
 
-> **Decisione**: la verifica email e le email transazionali non sono bloccanti per il core del prodotto. `requireEmailVerification: false` in Better-Auth. Resend viene installato e configurato in Fase 4, prima del lancio, quando servono le email di billing (trial ending, payment failed, ecc.).
+> **Decisione**: con il modello boutique, le email transazionali (welcome, payment, trial) non servono nell'MVP — il primo cliente viene onboarded via comando admin (T4.7) e riceve credenziali via canale concordato. Resend si introdurrà solo se serve invio email da dentro l'app (es. preventivi al cliente finale, inviti utente con link styled).
 
 - Installare `resend` + `@react-email/components`.
-- Creare API key Resend (piano gratuito: 3.000 email/mese).
-- Creare template React Email: `WelcomeEmail`, `PasswordResetEmail`, `InviteEmail`, `TrialEndingEmail`, `PaymentFailedEmail`.
+- Creare API key Resend.
+- Creare template React Email: `InviteEmail` (e altri se servono).
 - Helper `sendEmail({ to, template, props })` in `packages/core/email`.
-- Riabilitare `requireEmailVerification: true` in Better-Auth una volta che Resend è configurato.
 
-**Done when**:
-- Sign-up invia email reale e si vede in inbox
-- Password reset funziona via email
+**Done when (se attivato)**:
+- Invio email reale funzionante
+- Almeno un template (es. invito utente) rendered correttamente
 
 ---
 
@@ -615,7 +622,7 @@ Il seed sarà usato come fixture di riferimento per i task successivi (T1.14, T2
 
 ### ✅ T1.18 — Commit Phase 1 + smoke test end-to-end
 
-**Deps**: tutti i T1.* eccetto T1.16 (deferred a Fase 4)  
+**Deps**: tutti i T1.* eccetto T1.16 (deferred)  
 **Size**: S  
 
 - Smoke test (da eseguire manualmente): `pnpm dev` → signup su `lvh.me:3000/signup` → redirect a `<slug>.lvh.me:3000/dashboard` → logout → redirect a login.
@@ -626,9 +633,11 @@ Il seed sarà usato come fixture di riferimento per i task successivi (T1.14, T2
 
 # Fase 2 — Module Registry
 
-**Obiettivo**: implementare il sistema di moduli con manifest, e migrare i 3 moduli esistenti (CRM contacts/leads, warehouse, activities/tasks) al nuovo pattern.
+**Obiettivo**: implementare il sistema di moduli con manifest, e migrare i moduli MVP (CRM contacts/leads, warehouse, activities, dashboard) al nuovo pattern.
 
-**Durata stimata**: 2-3 settimane | **Branch consigliato**: `feat/module-registry`
+**Durata stimata**: 2 settimane | **Branch consigliato**: `feat/module-registry`
+
+> **Refresh strategico**: rispetto al piano originale, Fase 2 è stata semplificata. Niente cartella `tenants/` speciale (i moduli custom vivono in `packages/modules/` come gli altri), niente build-time route generation script complesso (le rotte sono file Next.js diretti che re-esportano dai moduli), niente schema merge cross-modulo (un solo `schema.prisma` con sezioni demarcate per modulo). Vedi `architecture.md` §6-7.
 
 ---
 
@@ -655,7 +664,7 @@ Definire i types secondo `architecture.md` §7:
 **Files**: `packages/core/module-registry/registry.ts`, `packages/core/module-registry/loader.ts`  
 
 - `registerModule(manifest)` per ogni manifest
-- `loadModules()` enumera i `packages/modules/*` e i `tenants/*/modules/*` e li registra
+- `loadModules()` enumera i `packages/modules/*` e li registra
 - Validazione: nessun duplicato di id, dipendenze esistono, no cicli
 - API: `getEnabledModules(tenantId)`, `getApiRouter(tenantId)`, `getNavigation(user)`
 
@@ -664,49 +673,43 @@ Definire i types secondo `architecture.md` §7:
 
 ---
 
-### T2.3 — Build-time route generation script
+### T2.3 — Pattern di mounting rotte: import diretto in apps/web
 
 **Deps**: T2.2  
-**Size**: L  
-**Files**: `apps/web/scripts/generate-routes.ts`, hook `prebuild`  
+**Size**: S  
+**Files**: `apps/web/src/app/(modules)/`  
 
-Script che:
-- Importa il `ModuleRegistry`
-- Per ogni modulo registrato, legge `routes[]` dal manifest
-- Genera file in `apps/web/src/app/(modules)/<module-id>/<path>/page.tsx` che re-esporta il componente dichiarato nel manifest
-- Hooka in `package.json` come `"prebuild": "tsx scripts/generate-routes.ts"` e `"predev": "tsx scripts/generate-routes.ts"`
+> **Refresh strategico**: l'approccio originale (script `prebuild` che genera codice) è stato semplificato. Con ~5 clienti tutti sullo stesso deploy, il file system di Next.js può fare il lavoro: ogni modulo espone i suoi page component, e in `apps/web/src/app/(modules)/<module-id>/<path>/page.tsx` scriviamo un file di 1 riga che fa `export { default } from "@coordinate/modules-<id>/pages/<X>";`.
+
+Lavoro effettivo del task:
+- Definire la convenzione su dove vivono i page component nei moduli (`packages/modules/<id>/src/pages/`)
+- Definire dove vivono i re-export in `apps/web` (`apps/web/src/app/(modules)/<id>/`)
+- Documentare la convenzione in `architecture.md` (se non già fatto in §7)
+- Creare un README breve in `apps/web/src/app/(modules)/` con istruzioni "come aggiungere una rotta di modulo"
 
 **Done when**:
-- Script gira a build e genera le cartelle
-- Le rotte generate funzionano in browser
+- Convenzione documentata
+- 1 esempio funzionante (anche fake placeholder) di rotta `(modules)/<id>/<x>/page.tsx` che importa da `@coordinate/modules-<id>`
 
 ---
 
-### T2.4 — Sistema di merge dello schema Prisma multi-modulo
+### T2.4 ⏭ DEFERRED — Sistema di merge dello schema Prisma multi-modulo
 
-**Deps**: T2.2  
-**Size**: L  
-**Files**: `packages/database/scripts/merge-schemas.ts`  
-
-Script che:
-- Cerca tutti i `prisma/schema.fragment.prisma` nei moduli
-- Li concatena con lo schema base in `packages/database/prisma/schema.prisma` (generato)
-- Hook in `predb:generate`
-
-**Done when**:
-- Aggiungere un fragment in un modulo lo include in schema generato
-- Migration applicata correttamente
+> **Decisione**: con il modello boutique (un singolo schema gestito da te), è più semplice avere **un solo `packages/database/prisma/schema.prisma`** con sezioni demarcate da commenti (`// ── crm-contacts ──`, `// ── warehouse ──`). Quando un cliente paga un modulo custom, aggiungi i suoi modelli nello stesso file con un comment marker del cliente. Niente build pipeline di merge.
+>
+> Si attiva: se il numero di moduli rende il file ingestibile (>2000 righe), o se serve davvero che ogni modulo gestisca le sue migration in autonomia.
 
 ---
 
 ### T2.5 — Creare packages/modules/crm-contacts (scaffold)
 
-**Deps**: T2.3, T2.4  
+**Deps**: T2.3  
 **Size**: M  
 **Files**: `packages/modules/crm-contacts/`  
 
-- `package.json`, `tsconfig.json`, `src/manifest.ts`, `src/prisma/schema.fragment.prisma`, `src/router.ts`, `src/pages/`
+- `package.json`, `tsconfig.json`, `src/manifest.ts`, `src/router.ts`, `src/pages/`
 - Manifest minimale che dichiara: 1 rotta (`/crm/customers`), 1 voce nav, permessi `crm:contact:read|write|delete`
+- I modelli Prisma del modulo vanno aggiunti direttamente in `packages/database/prisma/schema.prisma` sotto un comment marker `// ── crm-contacts ──` (vedi T2.6)
 
 **Done when**:
 - Modulo riconosciuto dal registry
@@ -718,9 +721,9 @@ Script che:
 
 **Deps**: T2.5  
 **Size**: M  
-**Files**: `packages/modules/crm-contacts/src/prisma/schema.fragment.prisma`, migration  
+**Files**: `packages/database/prisma/schema.prisma`, migration  
 
-- Definire Contact (persona+azienda in un modello con discriminator `type`)
+- Definire Contact (persona+azienda in un modello con discriminator `type`) nello schema Prisma centrale, sotto comment marker `// ── crm-contacts ──`
 - Includere `tenantId`, indici, RLS via migration
 
 **Done when**:
@@ -753,7 +756,7 @@ Script che:
 **Files**: `packages/modules/crm-pipeline/`  
 
 - Creare modulo crm-pipeline (depends on crm-contacts)
-- Modelli: Lead, Deal, PipelineStage
+- Modelli: Lead, Deal, PipelineStage (aggiunti in `schema.prisma` sotto marker `// ── crm-pipeline ──`)
 - Migrazione della Kanban board da `apps/web/src/app/crm/leads/page.tsx`
 
 **Done when**:
@@ -770,7 +773,9 @@ Script che:
 
 - Creare modulo activities con modello Activity (type: task|call|meeting|note)
 - Migrare `apps/web/src/app/tasks/page.tsx`
-- Procedure tRPC + custom fields wrapper
+- Procedure tRPC
+
+> **Cambio**: il piano originale citava "custom fields wrapper". Rimosso — niente custom fields dinamici nell'MVP (vedi `architecture.md` §8). Se un cliente vuole un campo aggiuntivo, lo si aggiunge in codice.
 
 **Done when**:
 - Pagina /tasks funzionante con DB reale
@@ -791,25 +796,17 @@ Script che:
 
 ---
 
-### T2.11 — Sistema di event bus interno
+### T2.11 ⏭ DEFERRED — Sistema di event bus interno
 
-**Deps**: T2.2  
-**Size**: M  
-**Files**: `packages/core/events/bus.ts`  
-
-- Implementare event bus in-process (EventEmitter pattern, async-safe)
-- Tipi: `tenantEvent<Name, Payload>` con Zod schemas
-- I moduli si iscrivono nel manifest via `eventHandlers`
-- Esempio: `crm-pipeline` emette `lead.status.changed`
-
-**Done when**:
-- Event bus testato unit, almeno 1 modulo emette + 1 si iscrive
+> **Decisione**: niente event bus implementato nell'MVP. I moduli che esistono al lancio (`crm-contacts`, `crm-pipeline`, `activities`, `warehouse`, `dashboard`) non hanno bisogno di comunicare tra loro in modo asincrono. Si attiva quando emerge il primo caso d'uso reale (es. "quando un Deal va in Won, crea una Activity di follow-up"). Vedi `architecture.md` §9.
+>
+> Il manifest mantiene il campo `eventHandlers` (definito in T2.1) per quando l'event bus arriverà.
 
 ---
 
 ### T2.12 — Commit Phase 2 + verifica navigazione dinamica
 
-**Deps**: tutti i T2.*  
+**Deps**: tutti i T2.* attivi  
 **Size**: S  
 
 - Verificare che la sidebar mostri voci nav generate dai manifest (non hardcoded)
@@ -819,11 +816,13 @@ Script che:
 
 ---
 
-# Fase 3 — Costruzione dei moduli mancanti del MVP
+# Fase 3 — Costruzione dei moduli core MVP
 
-**Obiettivo**: portare gli 8 moduli MVP a livello "vendibile". Include nuovi moduli (calendar, dashboard pulito, quotes, it-anagrafica-check) e potenziamenti dei moduli migrati.
+**Obiettivo**: portare i 5 moduli core MVP (`crm-contacts`, `crm-pipeline`, `activities`, `warehouse`, `dashboard`) a livello "consegnabile al primo cliente".
 
-**Durata stimata**: 4-5 settimane | **Branch consigliato**: `feat/mvp-modules`
+**Durata stimata**: 2-3 settimane | **Branch consigliato**: `feat/mvp-modules`
+
+> **Refresh strategico**: i moduli `calendar`, `quotes`, `it-anagrafica-check` sono stati spostati a catalogo (vedi `modules-catalog.md`). Si costruiscono solo quando un cliente li paga. Idem per il sistema custom fields dinamici (rimosso).
 
 ---
 
@@ -832,8 +831,6 @@ Script che:
 **Deps**: T2.7  
 **Size**: M  
 **Files**: schema fragment + UI dettaglio contatto  
-
-Vedi `mvp-scope.md` §5 M1 per scope.
 
 **Done when**:
 - Modello con relazione padre-figlio
@@ -895,7 +892,7 @@ Vedi `mvp-scope.md` §5 M1 per scope.
 
 - Modello PipelineStage (tenant-scoped, ordinato)
 - UI in settings tenant per riordinare/rinominare/aggiungere stadi
-- Default 6 stadi creati al sign-up
+- Default 6 stadi creati alla creazione del tenant (script admin T4.7)
 
 ---
 
@@ -929,36 +926,33 @@ Vedi `mvp-scope.md` §5 M1 per scope.
 
 ---
 
-### T3.10 — activities: promemoria via notifications
+### T3.10 — activities: promemoria via notifiche in-app
 
-**Deps**: T2.9, T1.16  
+**Deps**: T2.9  
 **Size**: M  
 
 - Job Inngest che ogni ora scansiona activities con `dueDate` entro X
-- Crea notifica in-app + opzionalmente email per Task in scadenza < 24h
+- Crea notifica in-app (campanella) per Task in scadenza < 24h
+
+> **Cambio rispetto al piano originale**: niente email (Resend deferred — T1.16). Solo notifiche in-app.
 
 ---
 
-### T3.11 — Modulo calendar (nuovo): vista mese + settimana
+### T3.11 ⏭ DEFERRED — Modulo calendar (nuovo): vista mese + settimana
 
-**Deps**: T2.9  
-**Size**: L  
-**Files**: `packages/modules/calendar/`  
-
-- Modulo calendar (dep on activities)
-- Vista mese (FullCalendar o lib equivalente)
-- Vista settimana
-- Eventi = activities di tipo Meeting/Call con dueDate
-- Click → drawer activity dettaglio
+> **Decisione**: il modulo `calendar` non è incluso nei core MVP (vedi `mvp-scope.md` §4 e `modules-catalog.md` §3). Si costruisce quando un cliente lo richiede e lo paga.
+>
+> Quando si attiva, lo scope è quello del piano originale:
+> - Modulo calendar (dep on activities)
+> - Vista mese + settimana (FullCalendar o lib equivalente)
+> - Eventi = activities di tipo Meeting/Call con dueDate
+> - Click → drawer activity dettaglio
 
 ---
 
-### T3.12 — calendar: creazione evento dal calendario
+### T3.12 ⏭ DEFERRED — calendar: creazione evento dal calendario
 
-**Deps**: T3.11  
-**Size**: M  
-
-- Click su slot vuoto → modal nuova activity Meeting/Call
+> Dipende da T3.11 (deferred). Stesso razionale.
 
 ---
 
@@ -968,7 +962,7 @@ Vedi `mvp-scope.md` §5 M1 per scope.
 **Size**: L  
 **Files**: `packages/modules/dashboard/`  
 
-- 6 widget fissi (vedi mvp-scope §5 M5)
+- 6 widget fissi (vedi `mvp-scope.md` §4 M5)
 - Filtri periodo + owner
 - Numeri cliccabili → drill-down
 
@@ -993,212 +987,173 @@ Vedi `mvp-scope.md` §5 M1 per scope.
 
 ---
 
-### T3.16 — Modulo quotes (nuovo): modello e UI base
+### T3.16 ⏭ DEFERRED — Modulo quotes (nuovo): modello e UI base
 
-**Deps**: T2.7, T2.10  
-**Size**: L  
-**Files**: `packages/modules/quotes/`  
-
-- Modelli Quote + QuoteLine
-- UI lista preventivi + creazione/modifica
-- Righe: prodotto da magazzino o testo libero, quantità, prezzo, sconto
+> **Decisione**: il modulo `quotes` non è incluso nei core MVP. Si costruisce quando un cliente lo richiede.
+>
+> Quando si attiva, lo scope è quello del piano originale (Quote + QuoteLine, UI lista + crea/modifica, righe con prodotto o testo libero, sconti).
 
 ---
 
-### T3.17 — quotes: generazione PDF brandato
+### T3.17 ⏭ DEFERRED — quotes: generazione PDF brandato
 
-**Deps**: T3.16  
-**Size**: L  
-
-- Template PDF con react-pdf o puppeteer/playwright server
-- Brand: logo + colore primario tenant
-- Numerazione preventivo configurabile
+> Dipende da T3.16 (deferred). Quando si attiva: template con react-pdf o puppeteer, brand cliente (logo + colore), numerazione configurabile.
 
 ---
 
-### T3.18 — quotes: invio via email + tracking stato
+### T3.18 ⏭ DEFERRED — quotes: invio via email + tracking stato
 
-**Deps**: T3.17, T1.16  
-**Size**: M  
-
-- Bottone "Send to client" → email con PDF allegato
-- Stato preventivo: bozza → inviato → accettato/rifiutato
-- Storico email inviate
+> Dipende da T3.16 + T1.16 (entrambi deferred). Quando si attiva: email con PDF allegato, stato preventivo (bozza → inviato → accettato/rifiutato), storico email.
 
 ---
 
-### T3.19 — Modulo it-anagrafica-check (nuovo): validazione P.IVA/CF
+### T3.19 ⏭ DEFERRED — Modulo it-anagrafica-check (nuovo): validazione P.IVA/CF
 
-**Deps**: T2.7  
-**Size**: M  
-**Files**: `packages/modules/it-anagrafica-check/`  
-
-- Validazione P.IVA via checksum
-- Verifica via VIES (`https://ec.europa.eu/taxation_customs/vies/api`)
-- Validazione CF via algoritmo
-- Endpoint tRPC `it.anagrafica.verifyPIVA`
+> **Decisione**: anche se è un "quick win" italiano (Size: M), non è incluso nei core MVP. Si costruisce quando il primo cliente lo richiede — probabilmente il primo modulo dal catalogo a essere costruito post-MVP.
+>
+> Quando si attiva: validazione P.IVA via checksum, verifica VIES UE, validazione CF via algoritmo, endpoint tRPC `it.anagrafica.verifyPIVA`.
 
 ---
 
-### T3.20 — it-anagrafica-check: autocompletamento azienda da P.IVA
+### T3.20 ⏭ DEFERRED — it-anagrafica-check: autocompletamento azienda da P.IVA
 
-**Deps**: T3.19  
-**Size**: L  
-
-- Integrazione provider (openapi.it o equivalente)
-- API key configurata in tenant settings
-- UI: bottone "Verifica e compila" su form azienda
-- Quota mensile per tenant (counter su Tenant model)
+> Dipende da T3.19 (deferred).
 
 ---
 
-### T3.21 — Custom fields: implementazione 5 tipi base
+### T3.21 ❌ REMOVED — Custom fields: implementazione 5 tipi base
 
-**Deps**: T2.7  
-**Size**: L  
-**Files**: `packages/core/custom-fields/`  
-
-- Modello CustomFieldDefinition (per tenant + entityType)
-- 5 tipi: text, number, date, dropdown, boolean
-- Validazione Zod compilata da definitions
-- UI builder in tenant settings
-- Form/table dinamici nei moduli (Contact, Deal, Activity, Product, Quote)
+> **Decisione**: il sistema di custom fields dinamici a runtime è **fuori dall'architettura MVP**. Con ~5 clienti, se serve un campo, si aggiunge nel codice del modulo. Vedi `architecture.md` §8 per il razionale.
+>
+> Si rivaluta se 2+ clienti chiedono lo stesso tipo di personalizzazione "voglio aggiungere il campo X" — a quel punto si introduce il sistema.
 
 ---
 
 ### T3.22 — Search globale (Postgres tsvector)
 
 **Deps**: T2.7, T2.8, T2.10  
-**Size**: L  
+**Size**: M  
 
-- Colonna `searchable tsvector` generata via trigger su Contact/Deal/Product/Quote
+- Colonna `searchable tsvector` generata via trigger su Contact, Deal, Product
 - Indice GIN
 - Procedure tRPC `search.global({ query })`
 - Componente header search bar con risultati raggruppati
+
+> **Cambio rispetto al piano originale**: scope ridotto. Niente search su Quote (modulo deferred). Size declassato da L a M.
 
 ---
 
 ### T3.23 — Notifiche in-app (campanella + dropdown)
 
-**Deps**: T1.16  
+**Deps**: T1.15  
 **Size**: M  
 
 - Modello Notification (recipient, type, message, link, readAt)
 - UI campanella header con badge unread
 - Mark as read
-- Eventi che generano notifiche: activity reminder, mention (futuro), deal won
+- Eventi che generano notifiche: activity reminder, deal won
+
+> **Cambio**: niente "mention" futuro, niente legame con T1.16 (Resend deferred). Solo in-app.
 
 ---
 
 ### T3.24 — Commit Phase 3 + acceptance review
 
-**Deps**: tutti T3.*  
+**Deps**: tutti T3.* attivi  
 **Size**: S  
 
-- Tutte le pagine MVP funzionanti su DB reale
-- Smoke test completo: signup → contatto → lead → deal → preventivo → PDF
-- Merge in main
-- ✅
+- Tutti i 5 moduli core MVP funzionanti su DB reale
+- Smoke test completo: login → contatto → lead → deal → won → activity → warehouse + movimento
+- Marcare Fase 3 come ✅
 
 ---
 
-# Fase 4 — Billing, Onboarding self-serve, Admin tenant
+# Fase 4 — Tenant Admin & Modules Config
 
-**Obiettivo**: rendere il prodotto vendibile self-serve. Stripe Checkout, onboarding completo, pagina admin tenant.
+**Obiettivo**: dare strumenti per gestire un tenant (dati azienda, branding, team, moduli abilitati) + creazione tenant manuale via comando admin (sostituisce il signup self-serve).
 
-**Durata stimata**: 3-4 settimane | **Branch consigliato**: `feat/billing-and-onboarding`
+**Durata stimata**: 1-2 settimane | **Branch consigliato**: `feat/tenant-admin`
+
+> **Refresh strategico drastico**: Fase 4 è stata ridotta da 16 a 7 task attivi. Stripe, Customer Portal, webhook, trial, onboarding wizard, knowledge base, status page sono tutti ⏭ DEFERRED o ❌ REMOVED. La fatturazione è manuale (vedi `pricing.md`), l'onboarding è white-glove via comando CLI.
 
 ---
 
-### T4.1 — Setup Stripe account + prodotti/prezzi
+### T4.1 ⏭ DEFERRED — Setup Stripe account + prodotti/prezzi
 
-**Deps**: T3.24  
+> **Decisione**: niente Stripe nell'MVP. Fatturazione manuale (contratto + fattura PDF + bonifico). Vedi `pricing.md`.
+> Si attiva: se il modello commerciale cambia (es. arriva un cliente che vuole pagare a canone mensile con carta) — improbabile a 5 clienti.
+
+---
+
+### T4.2 ⏭ DEFERRED — Modello Subscription nel DB
+
+> Dipende da T4.1 (deferred).
+
+---
+
+### T4.3 ⏭ DEFERRED — Stripe Checkout per nuovo abbonamento
+
+> Dipende da T4.1, T4.2 (deferred).
+
+---
+
+### T4.4 ⏭ DEFERRED — Webhook Stripe handler + idempotenza
+
+> Dipende da T4.3 (deferred).
+
+---
+
+### T4.5 ⏭ DEFERRED — Stripe Customer Portal per gestione abbonamento
+
+> Dipende da T4.4 (deferred).
+
+---
+
+### T4.6 ❌ REMOVED — Trial 14 giorni gestito dal sistema
+
+> **Decisione**: niente trial nell'MVP. Il cliente firma un contratto e si fattura il canone annuale. Se serve un "periodo di comfort", lo si gestisce contrattualmente, non con feature di prodotto.
+
+---
+
+### T4.7 — Comando admin per creare un nuovo tenant (CLI o pagina riservata)
+
+**Deps**: T1.18  
 **Size**: M  
+**Files**: `apps/web/src/app/admin/` (pagina riservata) **oppure** script CLI in `packages/database/scripts/create-tenant.ts`  
 
-- Account Stripe (test mode)
-- Creare prodotti su Stripe: Starter, Pro, Business (con metadata tier)
-- Creare prezzi mensili + annuali per ciascuno
-- Salvare price IDs in env / DB settings
+> **Refresh strategico**: sostituisce il "Onboarding wizard post-signup" del piano originale. Niente wizard pubblico, niente Stripe Checkout — il tenant lo crei tu via comando.
 
----
+Lavoro:
+- Comando (CLI con `tsx` o pagina admin protetta da env var `ADMIN_TOKEN`) che accetta:
+  - Slug del tenant (es. `acme`)
+  - Nome azienda
+  - Email + nome del primo utente owner
+  - Lista moduli abilitati (default: i 5 core MVP)
+  - Settings opzionali (colore primario, logo URL)
+- Esecuzione crea:
+  - Record `Tenant` con slug, settings di base
+  - Record `User` con password generata (o flag "password reset al primo login")
+  - Record `Membership` con role `owner`
+  - `TenantConfig` con `enabledModules` (vedi T4.10)
+- Output: credenziali da inviare al cliente via canale concordato (email manuale, telefono, ecc.)
 
-### T4.2 — Modello Subscription nel DB
-
-**Deps**: T4.1  
-**Size**: M  
-
-- Modello Subscription (tenantId, stripeSubId, plan, status, currentPeriodEnd, …)
-- Webhook handler che aggiorna da eventi Stripe
-
----
-
-### T4.3 — Stripe Checkout per nuovo abbonamento
-
-**Deps**: T4.2  
-**Size**: M  
-**Files**: route handler `/api/checkout`  
-
-- Crea sessione Checkout, redirect a Stripe
-- Success URL → completa setup tenant
-- Cancel URL → torna a pricing page
-
----
-
-### T4.4 — Webhook Stripe handler + idempotenza
-
-**Deps**: T4.3  
-**Size**: L  
-**Files**: route `/api/webhooks/stripe`  
-
-- Validazione firma webhook
-- Gestione eventi: `checkout.session.completed`, `customer.subscription.updated`, `invoice.payment_succeeded`, `invoice.payment_failed`, `customer.subscription.deleted`
-- Idempotency via tabella `StripeWebhookLog`
-
----
-
-### T4.5 — Stripe Customer Portal per gestione abbonamento
-
-**Deps**: T4.4  
-**Size**: S  
-
-- Bottone "Gestisci abbonamento" in settings tenant
-- Apre portal Stripe (no UI custom)
-
----
-
-### T4.6 — Trial 14 giorni gestito dal sistema (non Stripe trial)
-
-**Deps**: T4.2  
-**Size**: M  
-
-- Campo `trialEndsAt` su Tenant
-- Banner "Trial scade in N giorni"
-- Email transazionale 3gg prima della scadenza
-- Job Inngest che alla scadenza disabilita features (read-only) se nessuna sub attiva
-
----
-
-### T4.7 — Onboarding wizard post-signup
-
-**Deps**: T4.3  
-**Size**: L  
-
-- Step 1: dati azienda (P.IVA, indirizzo) — usa it-anagrafica-check
-- Step 2: scelta tier (Starter/Pro) + carta
-- Step 3: invito team (skip ok)
-- Step 4: tour guidato in-app (3-4 step)
+**Done when**:
+- Eseguendo il comando, il tenant viene creato e l'utente owner può fare login su `<slug>.coordinate.app`
+- Sono attivi solo i moduli specificati al comando
 
 ---
 
 ### T4.8 — Pagina tenant admin: dati azienda e branding
 
-**Deps**: T3.21  
+**Deps**: T1.13  
 **Size**: M  
 
-- Settings: nome, P.IVA, CF, indirizzo, fuso orario, lingua
-- Upload logo (S3/R2)
+- Settings: nome, P.IVA, CF, indirizzo, fuso orario
+- Upload logo (R2 — vedi T4.12)
 - Color picker per colore primario
 - Preview live del branding
+
+> **Cambio**: niente campo `lingua` (italiano fissato).
 
 ---
 
@@ -1208,9 +1163,11 @@ Vedi `mvp-scope.md` §5 M1 per scope.
 **Size**: M  
 
 - Lista membri con ruolo
-- Invita per email (con scelta ruolo)
+- Invita per email (con scelta ruolo) — l'utente invitato riceve link, completa setup password
 - Modifica ruolo / rimuovi membro
 - Transfer ownership
+
+> **Nota**: l'invito via email può funzionare con un link di accept-invite anche senza Resend (T1.16 deferred). Si usa SMTP di sistema o si comunica il link via altro canale finché Resend non c'è.
 
 ---
 
@@ -1219,26 +1176,25 @@ Vedi `mvp-scope.md` §5 M1 per scope.
 **Deps**: T2.12  
 **Size**: M  
 
-- Lista moduli disponibili per il tier
-- Toggle on/off (con conferma)
-- Se modulo richiesto per tier non disponibile, mostra upgrade prompt
+- Lista moduli del catalogo (`getEnabledModules` dal registry)
+- Toggle on/off per modulo (con conferma)
+- Solo per ruolo `owner` o utente con permesso speciale `admin:modules:configure`
+- Persiste in `TenantConfig.enabledModules`
+
+> **Cuore della config per-cliente**. Questo è il modo in cui ogni tenant ha la sua mix di moduli attivi.
 
 ---
 
-### T4.11 — Pagina tenant admin: billing overview
+### T4.11 ⏭ DEFERRED — Pagina tenant admin: billing overview
 
-**Deps**: T4.4  
-**Size**: M  
-
-- Mostra: piano attuale, prossima fatturazione, importo, metodo di pagamento
-- Storico fatture (lista, link a PDF Stripe)
-- Cambio piano (link Stripe portal)
+> Dipende da Stripe (T4.1-T4.4 deferred). Con fatturazione manuale, il cliente non ha una "billing page" — riceve fatture PDF via email.
 
 ---
 
 ### T4.12 — Cloudflare R2 setup per file storage
 
-**Deps**: T3.21  
+**Deps**: T3.21 (deprecato — adattare a T4.8)  
+**Deps reali**: T4.8  
 **Size**: M  
 
 - Account R2 + bucket
@@ -1248,79 +1204,63 @@ Vedi `mvp-scope.md` §5 M1 per scope.
 
 ---
 
-### T4.13 — Knowledge base seed + componente in-app
+### T4.13 ⏭ DEFERRED — Knowledge base seed + componente in-app
 
-**Deps**: T0.8  
-**Size**: M  
-
-- Tabella Article (slug, title, content markdown, category, locale)
-- Pagina pubblica `/help` con ricerca
-- Drawer "Aiuto" in-app dalla header
-- Seed iniziale: 30 articoli minimi (15 IT + 15 EN) — anche placeholder ok per ora
+> **Decisione**: con 5 clienti, la KB non è prioritaria. Il supporto è 1:1 via email. Se servono "istruzioni base", si scrivono in 1 pagina markdown linkata dall'header.
+> Si attiva: quando il volume di richieste di supporto rende inefficiente rispondere ogni volta.
 
 ---
 
-### T4.14 — Status page setup (statuspage.io o equivalente)
+### T4.14 ⏭ DEFERRED — Status page setup (statuspage.io o equivalente)
 
-**Deps**: nessuna (parallelo)  
-**Size**: S  
-
-- Account statuspage.io free / equivalente
-- Componenti: web, db, email, payments
-- Link da footer dell'app e pagina pubblica
+> **Decisione**: con un singolo deploy e 5 clienti, gli incident si comunicano via email/chat diretti. Una status page pubblica non serve nell'MVP. Si valuta se si arriva a >5 clienti o se un cliente lo richiede contrattualmente (SLA).
 
 ---
 
 ### T4.15 — GDPR: export dati tenant + privacy/terms pages
 
 **Deps**: T1.18, T4.8  
-**Size**: L  
+**Size**: M  
 
-- Endpoint admin "Export my data" → genera ZIP CSV di tutti i dati
-- Pagine pubbliche `/privacy`, `/terms`, `/dpa` (markdown content)
-- Cookie banner per analytics (PostHog)
+- Endpoint admin "Export my data" → genera ZIP CSV di tutti i dati del tenant
+- Pagine pubbliche `/privacy`, `/terms`, `/dpa` (markdown content, anche minimo per ora)
+- Cookie banner per analytics (PostHog) — solo se PostHog è attivo
+
+> **Cambio**: Size declassato da L a M. Niente compliance avanzata nell'MVP, solo il minimo legale per il primo cliente.
 
 ---
 
-### T4.16 — Commit Phase 4 + acceptance: comprare un piano end-to-end
+### T4.16 — Commit Phase 4 + smoke test creazione tenant end-to-end
 
-**Deps**: tutti T4.*  
+**Deps**: tutti T4.* attivi  
 **Size**: S  
 
-- Test in modalità test Stripe: signup → checkout → carta test → activation → uso → cancel → resync
-- ✅
+- Test: usa il comando T4.7 per creare un tenant di test → il cliente fa login → vede i moduli abilitati → admin tenant può modificare branding/team/moduli → ✅
+- Marcare Fase 4 come ✅
+
+> **Cambio**: rispetto al piano originale ("comprare un piano end-to-end con Stripe"), il test è "creare un tenant e usarlo end-to-end".
 
 ---
 
-# Fase 5 — Polish: i18n, search, theming, audit log
+# Fase 5 — Polish: theming, audit log, UX
 
-**Obiettivo**: portare l'UX al livello "vendibile". Internazionalizzazione, theming applicato, audit log visibile, polish generale.
+**Obiettivo**: portare l'UX al livello "consegnabile al primo cliente". Theming applicato, audit log visibile, empty states e responsive curati.
 
-**Durata stimata**: 2 settimane | **Branch consigliato**: `feat/polish`
+**Durata stimata**: 1 settimana | **Branch consigliato**: `feat/polish`
 
----
-
-### T5.1 — Setup next-intl + estrazione stringhe IT default
-
-**Deps**: T4.16  
-**Size**: L  
-
-- Installare next-intl
-- Configurare locale routing (default `it`, alternativa `en`)
-- Estrarre tutte le stringhe UI in messages/it.json
-- Traduzione (anche auto via DeepL/Claude) di tutte le stringhe in en.json
-- I moduli portano le proprie traduzioni in `packages/modules/*/messages/`
+> **Refresh strategico**: i task di i18n (T5.1, T5.2), pricing page pubblica (T5.8), landing page marketing (T5.9) sono ⏭ DEFERRED o ❌ REMOVED. Vedi `mvp-scope.md` §5.
 
 ---
 
-### T5.2 — i18n: formato date/numeri/valute per locale
+### T5.1 ⏭ DEFERRED — Setup next-intl + estrazione stringhe IT default
 
-**Deps**: T5.1  
-**Size**: S  
+> **Decisione**: niente i18n nell'MVP. Solo italiano hardcoded. Si attiva: se arriva un cliente non-italiano.
 
-- date-fns con locale
-- Intl.NumberFormat
-- Intl.DateTimeFormat per fuso orario tenant
+---
+
+### T5.2 ⏭ DEFERRED — i18n: formato date/numeri/valute per locale
+
+> Dipende da T5.1 (deferred). Per ora si usa `Intl.*` con locale `it-IT` hardcoded.
 
 ---
 
@@ -1352,7 +1292,6 @@ Vedi `mvp-scope.md` §5 M1 per scope.
 
 - Standardizzare empty state component
 - Skeleton per ogni tabella/lista
-- Mobile responsive verificato
 
 ---
 
@@ -1372,41 +1311,32 @@ Vedi `mvp-scope.md` §5 M1 per scope.
 **Deps**: nessuna (parallelo)  
 **Size**: S  
 
-- Logo (SVG)
+- Logo Coordinate (SVG)
 - Favicon set completo (multiple sizes)
-- OG image per share su social
+- OG image per share (anche minima)
 
 ---
 
-### T5.8 — Pagina `/pricing` pubblica
+### T5.8 ❌ REMOVED — Pagina `/pricing` pubblica
 
-**Deps**: nessuna (parallelo)  
-**Size**: M  
-
-- Versione semplificata da pricing.md §11
-- Confronto tier
-- FAQ
-- CTA al signup
+> **Decisione**: niente pricing pubblico (vedi `pricing.md`). Il pricing è negoziato col cliente.
 
 ---
 
-### T5.9 — Landing page `/` pubblica
+### T5.9 ❌ REMOVED — Landing page `/` pubblica
 
-**Deps**: T5.8  
-**Size**: L  
-
-- Hero, features, testimonials (anche placeholder), pricing teaser, CTA
-- SEO base (meta tags, sitemap, robots.txt)
-- Performance (Lighthouse ≥ 90)
+> **Decisione**: niente landing marketing nell'MVP. Sul dominio `coordinate.app` si serve una pagina statica minimale "Cosa è Coordinate + contatto" (eventuale, anche solo un mailto:). Non serve lavoro tipo SEO + Lighthouse 90 + hero animati.
+>
+> Si rivaluta: se in futuro si vuole posizionamento pubblico (improbabile col modello boutique).
 
 ---
 
 ### T5.10 — Commit Phase 5 + UX review
 
-**Deps**: tutti T5.*  
+**Deps**: tutti T5.* attivi  
 **Size**: S  
 
-- Walkthrough completo come utente nuovo
+- Walkthrough completo come utente nuovo del tenant
 - ✅
 
 ---
@@ -1419,22 +1349,27 @@ Vedi `mvp-scope.md` §5 M1 per scope.
 
 ---
 
-### T6.1 — Setup Playwright + test E2E sul flusso signup
+### T6.1 — Setup Playwright + test E2E sul flusso login
 
 **Deps**: T5.10  
 **Size**: M  
 
 - Setup Playwright in `apps/web`
-- Test: signup → email verify (intercept) → tenant created → login → dashboard
+- Test: login → dashboard del tenant → primo deal creato
+
+> **Cambio**: il flusso testato è "login → dashboard → deal", non "signup → email verify → tenant created" (signup non è il flusso primario nel modello boutique).
 
 ---
 
-### T6.2 — E2E: contatto + lead + deal + preventivo
+### T6.2 — E2E: contatto + lead + deal (golden path commerciale)
 
 **Deps**: T6.1  
 **Size**: M  
 
-- Test golden path commerciale completo
+- Test golden path: aggiungere contatto + lead + deal + spostarlo su Won
+- Verifica che il contatto diventa "customer"
+
+> **Cambio**: rimosso "preventivo" dal test (modulo quotes deferred).
 
 ---
 
@@ -1443,17 +1378,18 @@ Vedi `mvp-scope.md` §5 M1 per scope.
 **Deps**: T6.1  
 **Size**: S  
 
-- Test golden path magazzino
+- Test golden path magazzino: aggiungi prodotto + movimento In + verifica stock + verifica alert sotto soglia
 
 ---
 
-### T6.4 — E2E: it-anagrafica-check con mock VIES
+### T6.4 — E2E: creazione tenant via comando admin
 
-**Deps**: T6.1  
+**Deps**: T6.1, T4.7  
 **Size**: S  
 
-- Mock provider esterno
-- Verify P.IVA + autocompletamento
+> **Cambio**: il test originale (E2E it-anagrafica-check con mock VIES) è deferred col modulo. Lo sostituiamo con il test del comando admin T4.7.
+
+- Test: esegui comando admin → verifica record Tenant/User/Membership creati → verifica login del cliente → verifica moduli abilitati
 
 ---
 
@@ -1476,7 +1412,7 @@ Vedi `mvp-scope.md` §5 M1 per scope.
 - CSP headers configurati
 - HSTS, X-Frame-Options
 - Rate limiting su `/api/auth/*` (es. via `@upstash/ratelimit` o Vercel native)
-- Cloudflare Turnstile su signup
+- Cloudflare Turnstile su `/login` se serve (signup è meno critico dato che è admin-led)
 - Audit npm/pnpm (`pnpm audit`)
 - Verifica nessun secret nel client bundle (`grep` su build output)
 
@@ -1487,10 +1423,12 @@ Vedi `mvp-scope.md` §5 M1 per scope.
 **Deps**: T6.5  
 **Size**: M  
 
-- Lighthouse audit ≥ 90 su landing e dashboard
+- Lighthouse audit ≥ 90 su dashboard (la pagina più importante)
 - Bundle analyzer: principal chunks < 300KB gzipped
 - DB query review (slow query log su Postgres — `log_min_duration_statement` in Docker o nel provider managed)
 - Indici mancanti aggiunti
+
+> **Cambio**: niente target Lighthouse 90 su "landing" (rimossa).
 
 ---
 
@@ -1517,88 +1455,81 @@ Vedi `mvp-scope.md` §5 M1 per scope.
 
 ---
 
-# Fase 7 — Launch Prep
+# Fase 7 — Launch Prep (primo cliente)
 
-**Obiettivo**: tutto il non-tecnico necessario per lanciare. Legal, contenuti, primi clienti.
+**Obiettivo**: tutto il non-tecnico necessario per onboardare il primo cliente reale.
 
-**Durata stimata**: 1-2 settimane | **Branch consigliato**: `feat/launch-prep`
+**Durata stimata**: 1 settimana | **Branch consigliato**: `feat/launch-prep`
+
+> **Refresh strategico drastico**: Fase 7 è stata ridotta da 8 a 4 task attivi. Email transazionali, KB, video tutorial, marketing site SEO sono deferred o rimossi. La task "3 clienti pilota" diventa "primo cliente onboarded".
 
 ---
 
 ### T7.1 — Privacy policy + Terms of Service + DPA finalizzati
 
 **Deps**: T6.9  
-**Size**: L  
-
-- Revisione legale (consulenza esterna 4-6h consigliata)
-- Pubblicazione su /privacy, /terms, /dpa
-
----
-
-### T7.2 — Email transazionali finali (tutte e 8)
-
-**Deps**: T1.16  
 **Size**: M  
 
-- welcome, verify email, password reset, invite team, payment success, payment failed, trial ending, account deleted
-- Tutte brandate, IT + EN
+- Revisione legale (consulenza esterna 3-4h consigliata)
+- Pubblicazione su `/privacy`, `/terms`, `/dpa` (anche minime)
+
+> **Cambio**: Size declassato da L a M (versione minima legale, non da SaaS pubblico).
 
 ---
 
-### T7.3 — Knowledge base completata (30 articoli minimi)
+### T7.2 ⏭ DEFERRED — Email transazionali finali
 
-**Deps**: T4.13  
-**Size**: L  
-
-- 30 articoli reali (15 IT + 15 EN)
-- Categorie: Getting Started, CRM, Magazzino, Preventivi, Billing, Account
+> **Decisione**: con onboarding admin-led e fatturazione manuale, le email transazionali non sono blocker per il go-live. Si attiva con Resend (T1.16) quando serve.
 
 ---
 
-### T7.4 — Video tutorial (5 minimi)
+### T7.3 ⏭ DEFERRED — Knowledge base completata (30 articoli)
 
-**Deps**: T7.3  
-**Size**: L  
-
-- Signup walk-through (3 min)
-- Aggiungi cliente (2 min)
-- Gestisci pipeline (3 min)
-- Crea preventivo (3 min)
-- Gestisci billing (2 min)
+> **Decisione**: con un solo cliente al lancio, supporto 1:1. Si valuta quando ce ne sono 3+.
 
 ---
 
-### T7.5 — Setup supporto: email + Crisp/Intercom widget
+### T7.4 ⏭ DEFERRED — Video tutorial (5 minimi)
+
+> **Decisione**: stesso razionale di T7.3.
+
+---
+
+### T7.5 — Setup supporto: email + pagina /contact minimale
 
 **Deps**: nessuna (parallelo)  
 **Size**: S  
 
-- support@coordinate.app forward
-- Widget chat opzionale (Crisp gratis ok)
-- Pagina /contact
+- `support@coordinate.app` forward (anche su email personale)
+- Pagina `/contact` minimale (form mailto o equivalente)
+
+> **Cambio**: niente widget Crisp/Intercom — vendita boutique, email basta.
 
 ---
 
-### T7.6 — Marketing site refinement + SEO base
+### T7.6 ❌ REMOVED — Marketing site refinement + SEO base
 
-**Deps**: T5.9  
-**Size**: M  
-
-- Sitemap, robots.txt
-- Schema.org markup
-- Open Graph + Twitter cards
-- Analytics (PostHog) attivo
+> **Decisione**: niente marketing site nell'MVP (vedi T5.9). Niente SEO.
 
 ---
 
-### T7.7 — Identificare 3 clienti pilota + contratti firmati
+### T7.7 — Primo cliente onboarded
 
-**Deps**: nessuna (parallelo all'intero progetto)  
-**Size**: L  
+**Deps**: tutti i task attivi della Fase 7  
+**Size**: variabile (giorni)  
 
-- 5 prospect call durante lo sviluppo
-- 3 conversioni con contratto + carta inserita
-- 1 dei 3 su Pro tier
+> **Cambio rispetto al piano originale** ("Identificare 3 clienti pilota + contratti firmati"): con il modello boutique a ~5 clienti, l'obiettivo del go-live è **1 cliente reale**, non 3 pilota.
+
+Lavoro:
+- Contratto firmato col primo cliente
+- Esecuzione comando admin T4.7 per creare il tenant del cliente
+- Setup branding + utenti + moduli abilitati col cliente in call
+- Sessione training iniziale (2h)
+- Fattura emessa (canone annuale + eventuale setup fee modulo custom)
+
+**Done when**:
+- Cliente accede al suo tenant e usa quotidianamente i moduli
+- Fattura inviata al cliente
 
 ---
 
@@ -1607,10 +1538,10 @@ Vedi `mvp-scope.md` §5 M1 per scope.
 **Deps**: T7.1-T7.7  
 **Size**: ongoing  
 
-- Switch DNS produzione
-- Tenant pilota invitati
+- Switch DNS produzione (se non già fatto)
+- Tenant del primo cliente attivo
 - Monitoraggio attivo Sentry + uptime
-- Daily check supporto email
+- Daily check email di supporto
 - Fine MVP a 30gg con 0 bug critici → ✅ celebrazione
 
 ---
@@ -1629,3 +1560,5 @@ Le regole vincolanti sono in [task-workflow.md](task-workflow.md). Sintesi:
 - **Aggiornare lo stato globale** in cima a questo file come ultimo commit del task.
 - **In caso di blocco**, NON improvvisare scelte architetturali. Committare WIP, pushare, fermarsi (vedi task-workflow.md §10).
 - **Se un task risulta più grande del previsto** (es. un M che si rivela L), spezzarlo creando T_x.y.a, T_x.y.b in questo file prima di proseguire.
+- **Per task ⏭ DEFERRED**: NON eseguirli. Sono in attesa di un trigger esterno (richiesta cliente, scelta strategica). Se l'utente vuole attivarli, va rimosso il marker `⏭ DEFERRED` e aggiornato lo stato globale.
+- **Per task ❌ REMOVED**: NON eseguirli. Sono fuori dall'architettura prevista. Se servono in futuro, va prima rivisto questo documento e l'architettura.

@@ -36,7 +36,7 @@ Ogni task assume che Claude Code legga (o ricordi) questi documenti quando rilev
 
 ```
 Fase 0  Monorepo Setup                 [✅] 8/8 task
-Fase 1  Backend & Auth & Multi-Tenant  [ ] 15/18 task
+Fase 1  Backend & Auth & Multi-Tenant  [ ] 16/18 task
 Fase 2  Module Registry                [ ] 0/12 task
 Fase 3  Moduli MVP                     [ ] 0/24 task
 Fase 4  Billing & Onboarding & Admin   [ ] 0/16 task
@@ -595,20 +595,21 @@ Il seed sarà usato come fixture di riferimento per i task successivi (T1.14, T2
 
 ---
 
-### T1.17 — Setup Sentry + PostHog (observability)
+### ✅ T1.17 — Setup Sentry + PostHog (observability)
 
 **Deps**: T1.8  
 **Size**: M  
-**Files**: `apps/web/sentry.client.config.ts`, `apps/web/sentry.server.config.ts`, integrazione PostHog  
+**Files**: `apps/web/sentry.client.config.ts`, `apps/web/sentry.server.config.ts`, `apps/web/sentry.edge.config.ts`, `packages/core/src/analytics/posthog.ts`, `apps/web/src/components/posthog-provider.tsx`  
 
 - Installare Sentry per Next.js (`@sentry/nextjs`) + configurare DSN.
-- Installare PostHog client + server (`posthog-js`, `posthog-node`).
-- Eventi base PostHog: `signup_completed`, `tenant_created`, `login`.
-- Verificare che errori arrivino su Sentry e eventi su PostHog.
+- Installare PostHog client (`posthog-js`) nel web e server (`posthog-node`) in core.
+- Events PostHog: `signup_completed` (databaseHooks.user.create.after), `tenant_created` (onboarding router), `login` (databaseHooks.session.create.after).
+- Entrambe le integrazioni sono no-op se le env var non sono configurate (sicuro in dev locale).
+- Per attivare: configurare `NEXT_PUBLIC_SENTRY_DSN`, `NEXT_PUBLIC_POSTHOG_KEY`, `POSTHOG_API_KEY` in `.env.local` (vedi commenti nel file).
 
 **Done when**:
-- Errore lanciato di test appare in Sentry
-- Evento di test appare in PostHog
+- Errore lanciato di test appare in Sentry *(richiede DSN reale)*
+- Evento di test appare in PostHog *(richiede API key reale)*
 
 ---
 

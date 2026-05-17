@@ -7,7 +7,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./auth": "./src/auth/index.ts",
-    "./tenant": "./src/tenant/index.ts"
+    "./tenant": "./src/tenant/index.ts",
+    "./jobs": "./src/jobs/index.ts"
   },
   "scripts": {
     "lint": "eslint .",
@@ -15,8 +16,9 @@
     "clean": "rm -rf node_modules .turbo"
   },
   "dependencies": {
+    "@coordinate/database": "workspace:*",
     "better-auth": "^1.0.0",
-    "@coordinate/database": "workspace:*"
+    "inngest": "^4.4.0"
   },
   "devDependencies": {
     "eslint": "^9",

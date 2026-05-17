@@ -36,7 +36,7 @@ Ogni task assume che Claude Code legga (o ricordi) questi documenti quando rilev
 
 ```
 Fase 0  Monorepo Setup                 [✅] 8/8 task
-Fase 1  Backend & Auth & Multi-Tenant  [ ] 14/18 task
+Fase 1  Backend & Auth & Multi-Tenant  [ ] 15/18 task
 Fase 2  Module Registry                [ ] 0/12 task
 Fase 3  Moduli MVP                     [ ] 0/24 task
 Fase 4  Billing & Onboarding & Admin   [ ] 0/16 task
@@ -558,17 +558,17 @@ Il seed sarà usato come fixture di riferimento per i task successivi (T1.14, T2
 
 ---
 
-### T1.15 — Setup Inngest per background jobs
+### ✅ T1.15 — Setup Inngest per background jobs
 
 **Deps**: T1.8  
 **Size**: M  
-**Files**: `packages/core/jobs/`, `apps/web/src/app/api/inngest/route.ts`  
+**Files**: `packages/core/src/jobs/`, `apps/web/src/app/api/inngest/route.ts`  
 
 - Installare `inngest` e `inngest-cli` (dev).
-- Configurare client Inngest in `packages/core/jobs/client.ts`.
-- Creare endpoint Next.js per Inngest webhook.
-- Creare un job di test (`hello-world`) che logga in console.
-- Dev: `npx inngest-cli dev` parallelamente al `pnpm dev`.
+- Configurare client Inngest in `packages/core/src/jobs/client.ts`.
+- Creare endpoint Next.js per Inngest webhook in `apps/web/src/app/api/inngest/route.ts`.
+- Creare job di test `hello-world` in `packages/core/src/jobs/hello-world.ts`.
+- Dev: `npx inngest-cli@latest dev` parallelamente al `pnpm dev`, poi aprire http://localhost:8288.
 
 **Done when**:
 - Job di test triggerato manualmente da Inngest dashboard si esegue

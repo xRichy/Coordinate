@@ -4,15 +4,7 @@ import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { useTRPCClient } from "@/lib/trpc";
-
-function getTenantDashboardUrl(slug: string): string {
-  const { hostname, port } = window.location;
-  const portSuffix = port ? `:${port}` : "";
-  if (hostname === "localhost" || hostname === "127.0.0.1") {
-    return `http://${slug}.lvh.me${portSuffix}/dashboard`;
-  }
-  return `https://${slug}.coordinate.app/dashboard`;
-}
+import { getTenantDashboardUrl } from "@/lib/tenant-url";
 
 export default function Home() {
   const trpcClient = useTRPCClient();

@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/card";
 import { authClient } from "@/lib/auth-client";
 import { useTRPCClient } from "@/lib/trpc";
+import { getTenantDashboardUrl } from "@/lib/tenant-url";
 import type { AppRouter } from "@coordinate/api";
 import type { inferRouterOutputs } from "@trpc/server";
 
@@ -39,17 +40,6 @@ const formSchema = z.object({
 });
 
 type FormValues = z.infer<typeof formSchema>;
-
-function getTenantDashboardUrl(slug: string): string {
-  const hostname = window.location.hostname;
-  const port = window.location.port;
-  const portSuffix = port ? `:${port}` : "";
-
-  if (hostname === "localhost" || hostname === "127.0.0.1") {
-    return `http://${slug}.lvh.me${portSuffix}/dashboard`;
-  }
-  return `https://${slug}.coordinate.app/dashboard`;
-}
 
 export default function LoginPage() {
   const trpcClient = useTRPCClient();

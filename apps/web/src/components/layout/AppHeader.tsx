@@ -15,15 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { authClient, signOut } from "@/lib/auth-client";
-
-// Redirect to the root-domain login page regardless of which subdomain we're on.
-function getLoginUrl(): string {
-    const { hostname, port } = window.location;
-    const portSuffix = port ? `:${port}` : "";
-    if (hostname.endsWith(".lvh.me")) return `http://lvh.me${portSuffix}/login`;
-    if (hostname.endsWith(".coordinate.app")) return "https://coordinate.app/login";
-    return "/login";
-}
+import { getLoginUrl } from "@/lib/tenant-url";
 
 export function AppHeader() {
     const [userName, setUserName] = useState<string | null>(null);

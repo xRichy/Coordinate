@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { authClient } from "@/lib/auth-client";
 import { useTRPC } from "@/lib/trpc";
+import { getTenantDashboardUrl } from "@/lib/tenant-url";
 
 const formSchema = z.object({
   firstName: z.string().min(1, "Il nome è obbligatorio"),
@@ -32,17 +33,6 @@ const formSchema = z.object({
 });
 
 type FormValues = z.infer<typeof formSchema>;
-
-function getTenantDashboardUrl(slug: string): string {
-  const hostname = window.location.hostname;
-  const port = window.location.port;
-  const portSuffix = port ? `:${port}` : "";
-
-  if (hostname === "localhost" || hostname === "127.0.0.1") {
-    return `http://${slug}.lvh.me${portSuffix}/dashboard`;
-  }
-  return `https://${slug}.coordinate.app/dashboard`;
-}
 
 export default function SignupPage() {
   const trpc = useTRPC();

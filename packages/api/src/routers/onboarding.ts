@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure } from "../trpc";
-import { prisma, withTenant } from "@coordinate/database";
+import { prisma, prismaAdmin, withTenant } from "@coordinate/database";
 
 function slugify(name: string): string {
   return name
@@ -40,4 +40,15 @@ export const onboardingRouter = router({
 
       return { tenant };
     }),
+
+  // Uses prismaAdmin (superuser, bypasses RLS) to list all tenants a user
+  // belongs to across all orgs — needed on the login page before tenant context is set.
+  getMyTenants: protectedProcedure.query(async ({ ctx }) => {
+    const memberships = await prismaAdmin.membership.findMany({
+      where: { userId: ctx.session.user.id },
+      include: { tenant: true },
+      orderBy: { createdAt: "asc" },
+    });
+    return memberships.map((m) => m.tenant);
+  }),
 });

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure } from "../trpc";
-import { prisma, prismaAdmin, withTenant } from "@coordinate/database";
+import { prisma, prismaAdmin, withTenant, type MemberRole } from "@coordinate/database";
 
 function slugify(name: string): string {
   return name
@@ -50,5 +50,22 @@ export const onboardingRouter = router({
       orderBy: { createdAt: "asc" },
     });
     return memberships.map((m) => m.tenant);
+  }),
+
+  // Returns the current user's role in the tenant identified by the x-tenant-slug
+  // header. Used by useCan() on tenant subdomains for UI permission gating.
+  getMyMembership: protectedProcedure.query(async ({ ctx }) => {
+    if (!ctx.tenantSlug) return null;
+
+    const membership = await prismaAdmin.membership.findFirst({
+      where: {
+        userId: ctx.session.user.id,
+        tenant: { slug: ctx.tenantSlug },
+      },
+    });
+
+    if (!membership) return null;
+
+    return { role: membership.role as MemberRole };
   }),
 });

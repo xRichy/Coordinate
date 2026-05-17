@@ -16,10 +16,12 @@ import {
 import { ThemeToggle } from "@/components/theme-toggle";
 import { authClient, signOut } from "@/lib/auth-client";
 import { getLoginUrl } from "@/lib/tenant-url";
+import { useCan } from "@/hooks/useCan";
 
 export function AppHeader() {
     const [userName, setUserName] = useState<string | null>(null);
     const [isSigningOut, setIsSigningOut] = useState(false);
+    const canReadSettings = useCan("tenant:settings:read");
 
     useEffect(() => {
         authClient.getSession().then(({ data }) => {
@@ -70,7 +72,7 @@ export function AppHeader() {
                             <p className="text-sm font-medium">{userName ?? "Account"}</p>
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem>Impostazioni</DropdownMenuItem>
+                        {canReadSettings && <DropdownMenuItem>Impostazioni</DropdownMenuItem>}
                         <DropdownMenuItem>Supporto</DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem

@@ -1,0 +1,11 @@
+{
+  "extends": "../config/tsconfig/base.json",
+  "compilerOptions": {
+    "paths": {
+      "@coordinate/core": ["../../packages/core/src/index.ts"],
+      "@coordinate/core/*": ["../../packages/core/src/*"],
+      "@coordinate/database": ["../../packages/database/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*"]
+}

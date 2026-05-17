@@ -8,5 +8,11 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf node_modules .turbo"
+  },
+  "dependencies": {
+    "@coordinate/core": "workspace:^",
+    "@coordinate/database": "workspace:^",
+    "@trpc/server": "^11.17.0",
+    "zod": "^4.3.6"
   }
 }

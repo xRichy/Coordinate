@@ -36,7 +36,7 @@ Ogni task assume che Claude Code legga (o ricordi) questi documenti quando rilev
 
 ```
 Fase 0  Monorepo Setup                 [✅] 8/8 task
-Fase 1  Backend & Auth & Multi-Tenant  [ ] 0/18 task
+Fase 1  Backend & Auth & Multi-Tenant  [ ] 1/18 task
 Fase 2  Module Registry                [ ] 0/12 task
 Fase 3  Moduli MVP                     [ ] 0/24 task
 Fase 4  Billing & Onboarding & Admin   [ ] 0/16 task
@@ -287,20 +287,23 @@ Se ci sono import path che si sono rotti durante il move, fixarli ora.
 
 ---
 
-### T1.1 — Setup Neon Postgres dev e configurare DATABASE_URL
+### T1.1 ✅ — Setup Postgres locale via Docker e configurare DATABASE_URL
 
 **Deps**: T0.8  
 **Size**: S  
-**Files**: `apps/web/.env`, `packages/database/.env.example`  
+**Files**: `docker-compose.yml`, `apps/web/.env`, `packages/database/.env.example`  
 
-- Creare account su Neon (https://neon.tech), creare progetto `coordinate-dev` in regione EU.
-- Copiare `DATABASE_URL` con `?sslmode=require&pgbouncer=true&connection_limit=1`.
-- Creare anche `DIRECT_URL` (senza pgbouncer) per migrations.
-- Salvare in `apps/web/.env` (NON commit, è in gitignore).
+- Creare `docker-compose.yml` alla root con servizio `postgres:16` (user/password/db: `coordinate`).
+- Avviare il DB con `docker compose up -d`.
 - Creare `packages/database/.env.example` con le variabili documentate (DATABASE_URL, DIRECT_URL).
+- Creare `apps/web/.env` (NON committato) con le stringhe di connessione locali.
+- `.gitignore`: aggiunta negazione `!**/.env.example` per permettere commit dei template.
+
+**Note**: in produzione si userà Neon (o altro provider Postgres managed). Le variabili in `.env.example` sono pronte per essere adattate.
 
 **Done when**:
-- DB Neon attivo, raggiungibile via `psql`
+- `docker compose up -d` avvia il container
+- DB raggiungibile (`SELECT 1` risponde)
 - `.env` configurato
 
 ---

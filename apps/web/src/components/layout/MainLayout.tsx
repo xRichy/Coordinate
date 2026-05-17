@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 
 export function MainLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
-    const isAuthPage = pathname === "/login" || pathname === "/signup";
+    const isAuthPage = pathname === "/" || pathname === "/login" || pathname === "/signup";
 
     if (isAuthPage) {
         return <main className="flex-1">{children}</main>;

@@ -1,28 +1,60 @@
-import { redirect } from "next/navigation";
-import { headers } from "next/headers";
+"use client";
 
-export default async function Home() {
-  const headersList = await headers();
-  const tenantSlug = headersList.get("x-tenant-slug");
+import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
+import { authClient } from "@/lib/auth-client";
+import { useTRPCClient } from "@/lib/trpc";
 
-  // On a tenant subdomain → go to dashboard
-  if (tenantSlug) {
-    redirect("/dashboard");
+function getTenantDashboardUrl(slug: string): string {
+  const { hostname, port } = window.location;
+  const portSuffix = port ? `:${port}` : "";
+  if (hostname === "localhost" || hostname === "127.0.0.1") {
+    return `http://${slug}.lvh.me${portSuffix}/dashboard`;
   }
+  return `https://${slug}.coordinate.app/dashboard`;
+}
 
-  // On root domain (no tenant) → landing placeholder
+export default function Home() {
+  const trpcClient = useTRPCClient();
+
+  useEffect(() => {
+    async function resolveDestination() {
+      const { data: session } = await authClient.getSession();
+
+      if (!session?.user) {
+        window.location.assign("/login");
+        return;
+      }
+
+      let tenants: { slug: string }[] = [];
+      try {
+        tenants = await trpcClient.onboarding.getMyTenants.query();
+      } catch {
+        window.location.assign("/login");
+        return;
+      }
+
+      if (tenants.length === 0) {
+        window.location.assign("/signup");
+        return;
+      }
+
+      if (tenants.length === 1) {
+        window.location.assign(getTenantDashboardUrl(tenants[0].slug));
+        return;
+      }
+
+      // Multiple tenants: go to login where the tenant picker is shown.
+      window.location.assign("/login");
+    }
+
+    resolveDestination();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-4 p-8">
-      <h1 className="text-4xl font-bold">Coordinate</h1>
-      <p className="text-muted-foreground text-lg">
-        Il CRM pensato per le PMI italiane.
-      </p>
-      <a
-        href="/login"
-        className="rounded-md bg-primary px-6 py-2 text-primary-foreground font-medium hover:opacity-90"
-      >
-        Accedi
-      </a>
-    </main>
+    <div className="flex min-h-screen items-center justify-center">
+      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+    </div>
   );
 }

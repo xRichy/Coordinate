@@ -7,6 +7,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { MainLayout } from "@/components/layout/MainLayout";
+import { Providers } from "@/components/providers";
 import { resolveTenantBySlug } from "@coordinate/core/tenant";
 import "./globals.css";
 const geistSans = Geist({
@@ -48,14 +49,16 @@ export default async function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <TooltipProvider>
-            <SidebarProvider>
-              <MainLayout>
-                {children}
-              </MainLayout>
-            </SidebarProvider>
-            <Toaster />
-          </TooltipProvider>
+          <Providers>
+            <TooltipProvider>
+              <SidebarProvider>
+                <MainLayout>
+                  {children}
+                </MainLayout>
+              </SidebarProvider>
+              <Toaster />
+            </TooltipProvider>
+          </Providers>
         </ThemeProvider>
       </body>
     </html>

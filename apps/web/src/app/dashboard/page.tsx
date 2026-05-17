@@ -1,9 +1,11 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 import { DollarSign, Users, TrendingUp, Activity } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
+import { useTRPC } from "@/lib/trpc";
 
 const revenueData = [
     { name: "Jan", revenue: 4000 },
@@ -24,6 +26,9 @@ const leadsData = [
 ];
 
 export default function DashboardPage() {
+    const trpc = useTRPC();
+    const { data: health } = useQuery(trpc.healthcheck.queryOptions());
+
     const { leads, tasks } = useAppStore();
 
     const totalValue = leads.reduce((acc, lead) => acc + lead.value, 0);
@@ -35,6 +40,9 @@ export default function DashboardPage() {
         <div className="flex-1 space-y-6 pb-20 md:pb-6">
             <div className="flex items-center justify-between space-y-2">
                 <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+                {health && (
+                    <span className="text-xs text-muted-foreground">API {health.status}</span>
+                )}
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

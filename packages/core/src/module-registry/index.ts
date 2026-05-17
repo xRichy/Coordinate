@@ -11,3 +11,6 @@ export type {
   TenantContext,
   ModuleRegistry,
 } from "./types";
+
+export { ModuleRegistryImpl, moduleRegistry } from "./registry";
+export { loadModules } from "./loader";

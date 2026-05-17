@@ -299,7 +299,7 @@ Se ci sono import path che si sono rotti durante il move, fixarli ora.
 - Creare `apps/web/.env` (NON committato) con le stringhe di connessione locali.
 - `.gitignore`: aggiunta negazione `!**/.env.example` per permettere commit dei template.
 
-**Note**: in produzione si userà Neon (o altro provider Postgres managed). Le variabili in `.env.example` sono pronte per essere adattate.
+**Note**: in produzione si userà un provider Postgres managed (es. Neon, Supabase, Railway). Le variabili in `.env.example` sono pronte per essere adattate — basta sostituire l'URL.
 
 **Done when**:
 - `docker compose up -d` avvia il container
@@ -327,11 +327,11 @@ Se ci sono import path che si sono rotti durante il move, fixarli ora.
 
 ---
 
-### T1.3 — Definire schema Prisma base multi-tenant
+### T1.3 — Definire schema Prisma base multi-tenant + seed demo
 
 **Deps**: T1.2  
 **Size**: M  
-**Files**: `packages/database/prisma/schema.prisma`, prima migration  
+**Files**: `packages/database/prisma/schema.prisma`, prima migration, `packages/database/prisma/seed.ts`  
 
 Modelli da definire (con `tenantId` dove rilevante):
 - `Tenant` (id, slug, name, plan, status, createdAt)
@@ -344,10 +344,20 @@ Modelli da definire (con `tenantId` dove rilevante):
 
 Eseguire `pnpm -F @coordinate/database db:migrate` per creare la prima migration.
 
+**Seed demo** — creare `packages/database/prisma/seed.ts` che popola il DB con:
+- 1 tenant demo (`slug: "demo"`, plan: Pro)
+- 1 utente owner (email: `demo@coordinate.app`, password: `demo1234`)
+- Dati campione per ogni modulo: ~5 contatti, ~5 lead su stadi diversi, ~5 task, ~5 prodotti con movimenti stock
+- Aggiungere script `"db:seed": "tsx prisma/seed.ts"` in `packages/database/package.json`
+- Eseguire `pnpm -F @coordinate/database db:seed`
+
+Il seed sarà usato come fixture di riferimento per i task successivi (T1.14, T2.x).
+
 **Done when**:
 - Schema commit-able
-- Migration applicata su Neon
-- `prisma studio` mostra le tabelle vuote
+- Migration applicata sul DB Docker locale
+- `prisma studio` mostra le tabelle e i dati seed
+- `docker compose up -d && pnpm -F @coordinate/database db:seed` funziona da zero
 
 ---
 
@@ -1476,7 +1486,7 @@ Vedi `mvp-scope.md` §5 M1 per scope.
 
 - Lighthouse audit ≥ 90 su landing e dashboard
 - Bundle analyzer: principal chunks < 300KB gzipped
-- DB query review (slow query log su Neon)
+- DB query review (slow query log su Postgres — `log_min_duration_statement` in Docker o nel provider managed)
 - Indici mancanti aggiunti
 
 ---
@@ -1486,7 +1496,7 @@ Vedi `mvp-scope.md` §5 M1 per scope.
 **Deps**: T6.5  
 **Size**: M  
 
-- Verificare backup giornaliero Neon
+- Verificare strategia backup del provider Postgres di produzione (pg_dump schedulato o backup managed)
 - Test restore in DB di staging
 - Scrivere runbook per 5 scenari incident in `guides/runbook.md`
 

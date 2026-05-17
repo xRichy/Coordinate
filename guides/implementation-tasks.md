@@ -37,7 +37,7 @@ Ogni task assume che Claude Code legga (o ricordi) questi documenti quando rilev
 ```
 Fase 0  Monorepo Setup                 [✅] 8/8 task
 Fase 1  Backend & Auth & Multi-Tenant  [✅] 17/18 task (T1.16 deferred → Fase 4)
-Fase 2  Module Registry                [ ] 1/12 task
+Fase 2  Module Registry                [ ] 2/12 task
 Fase 3  Moduli MVP                     [ ] 0/24 task
 Fase 4  Billing & Onboarding & Admin   [ ] 0/16 task
 Fase 5  Polish: i18n, search, theming  [ ] 0/10 task
@@ -648,7 +648,7 @@ Definire i types secondo `architecture.md` §7:
 
 ---
 
-### T2.2 — Implementare ModuleRegistry con loader
+### T2.2 ✅ — Implementare ModuleRegistry con loader
 
 **Deps**: T2.1  
 **Size**: L  

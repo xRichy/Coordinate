@@ -2,6 +2,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure } from "../trpc";
 import { prisma, prismaAdmin, withTenant, type MemberRole } from "@coordinate/database";
+import { captureEvent } from "@coordinate/core/analytics";
 
 function slugify(name: string): string {
   return name
@@ -37,6 +38,12 @@ export const onboardingRouter = router({
           data: { tenantId: tenant.id, userId: ctx.session.user.id, role: "owner" },
         })
       );
+
+      captureEvent(ctx.session.user.id, "tenant_created", {
+        tenant_id: tenant.id,
+        tenant_slug: tenant.slug,
+        plan: tenant.plan,
+      });
 
       return { tenant };
     }),

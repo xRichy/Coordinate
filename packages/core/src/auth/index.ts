@@ -2,6 +2,7 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { organization, twoFactor } from "better-auth/plugins";
 import { prisma } from "@coordinate/database";
+import { captureEvent } from "../analytics";
 
 // Parent domain (with leading dot) for cross-subdomain session cookies.
 // Without this, the cookie is set host-only, so signOut on a tenant
@@ -60,6 +61,23 @@ export const auth = betterAuth({
     organization(),
     twoFactor(),
   ],
+
+  databaseHooks: {
+    user: {
+      create: {
+        after: async (user) => {
+          captureEvent(user.id, "signup_completed", { email: user.email });
+        },
+      },
+    },
+    session: {
+      create: {
+        after: async (session) => {
+          captureEvent(session.userId, "login");
+        },
+      },
+    },
+  },
 });
 
 export type Auth = typeof auth;

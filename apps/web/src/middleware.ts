@@ -5,6 +5,7 @@ const PUBLIC_PATH_PATTERNS = [
   /^\/_next\//,
   /^\/favicon\.ico$/,
   /^\/api\/auth\//,
+  /^\/api\/trpc\//,
   /^\/api\/tenant-check/,
   /^\/$/,
   /^\/login(\/.*)?$/,

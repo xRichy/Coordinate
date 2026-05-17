@@ -5,7 +5,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Target, Loader2 } from "lucide-react";
 import Link from "next/link";
@@ -46,7 +45,6 @@ function getTenantDashboardUrl(slug: string): string {
 }
 
 export default function SignupPage() {
-  const router = useRouter();
   const trpc = useTRPC();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -90,7 +88,7 @@ export default function SignupPage() {
       });
 
       toast.success("Account creato! Reindirizzamento…");
-      window.location.href = getTenantDashboardUrl(tenant.slug);
+      window.location.assign(getTenantDashboardUrl(tenant.slug));
     } catch {
       toast.error("Si è verificato un errore imprevisto");
     } finally {

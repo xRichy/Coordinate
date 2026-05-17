@@ -1,1 +1,1 @@
-// placeholder
+export { prisma } from "./client";

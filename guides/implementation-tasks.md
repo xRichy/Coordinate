@@ -37,7 +37,7 @@ Ogni task assume che Claude Code legga (o ricordi) questi documenti quando rilev
 ```
 Fase 0  Monorepo Setup                 [✅] 8/8 task
 Fase 1  Backend & Auth & Multi-Tenant  [✅] 17/18 task (T1.16 deferred → Fase 4)
-Fase 2  Module Registry                [ ] 2/12 task
+Fase 2  Module Registry                [ ] 3/12 task
 Fase 3  Moduli MVP                     [ ] 0/24 task
 Fase 4  Billing & Onboarding & Admin   [ ] 0/16 task
 Fase 5  Polish: i18n, search, theming  [ ] 0/10 task
@@ -664,21 +664,18 @@ Definire i types secondo `architecture.md` §7:
 
 ---
 
-### T2.3 — Build-time route generation script
+### T2.3 ✅ — Pattern di mounting rotte: import diretto in apps/web
 
 **Deps**: T2.2  
-**Size**: L  
-**Files**: `apps/web/scripts/generate-routes.ts`, hook `prebuild`  
+**Size**: S  
+**Files**: `apps/web/src/app/(modules)/`  
 
-Script che:
-- Importa il `ModuleRegistry`
-- Per ogni modulo registrato, legge `routes[]` dal manifest
-- Genera file in `apps/web/src/app/(modules)/<module-id>/<path>/page.tsx` che re-esporta il componente dichiarato nel manifest
-- Hooka in `package.json` come `"prebuild": "tsx scripts/generate-routes.ts"` e `"predev": "tsx scripts/generate-routes.ts"`
+> **Refresh strategico**: l'approccio originale (script `prebuild` che genera codice) è stato semplificato. Con ~5 clienti tutti sullo stesso deploy, il file system di Next.js può fare il lavoro: ogni modulo espone i suoi page component, e in `apps/web/src/app/(modules)/<module-id>/<path>/page.tsx` scriviamo un file di 1 riga che fa `export { default } from "@coordinate/modules-<id>/pages/<X>";`.
 
-**Done when**:
-- Script gira a build e genera le cartelle
-- Le rotte generate funzionano in browser
+- Convenzione documentata in `architecture.md` §7 e in `apps/web/src/app/(modules)/README.md`
+- Esempio funzionante: `packages/modules/example/src/pages/DemoPage.tsx` → `apps/web/src/app/(modules)/example/demo/page.tsx`
+- `pnpm-workspace.yaml` aggiornato con `packages/modules/*`
+- TypeScript path alias configurato in `apps/web/tsconfig.json`
 
 ---
 

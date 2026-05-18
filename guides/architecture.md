@@ -230,12 +230,32 @@ Un manifest di modulo dichiara:
 
 ### Caricamento frontend
 
-App Router non supporta nativamente le rotte dinamiche da moduli. Due approcci:
+**Approccio scelto: import diretto in `apps/web`**, niente generazione build-time né catch-all dispatcher.
 
-- **(a) Catch-all route + dispatcher**: una rotta `app/[...slug]/page.tsx` che chiede al registry di risolvere il componente. Più dinamico, ma perdi alcuni vantaggi di Next (es. layout statici per rotta).
-- **(b) Generazione build-time**: uno script `prebuild` genera le cartelle `app/(modules)/*` dai manifest dei moduli abilitati nel build. Più "Next-native", ma il set di moduli per build deve essere noto in anticipo.
+Per ogni rotta di un modulo, si crea manualmente un file di una riga in `apps/web/src/app/(modules)/<module-id>/<path>/page.tsx`:
 
-**[DECISIONE APERTA]** Tra (a) e (b). Raccomando **(b)** per il MVP (un build per profilo standard) e valutare (a) solo se serve abilitazione moduli a caldo.
+```ts
+export { default } from "@coordinate/modules-<module-id>/pages/<PageName>";
+```
+
+Il modulo espone i suoi page component da `packages/modules/<id>/src/pages/`. Ogni componente è un normale React Server Component (o client se serve `"use client"`).
+
+**Perché questo approccio**: con ~5 clienti tutti sullo stesso deploy, il file system di Next.js fa il lavoro senza infrastruttura. Si aggiungono file a mano quando si aggiunge un modulo — nessuno script da mantenere, nessun prebuild, nessuna magia.
+
+**Struttura convenzione**:
+```
+packages/modules/<id>/
+  src/
+    pages/           ← page component del modulo (default export)
+    manifest.ts      ← ModuleManifest
+    router.ts        ← tRPC sub-router
+    index.ts         ← re-export pubblico del pacchetto
+
+apps/web/src/app/(modules)/<id>/<path>/
+  page.tsx           ← 1 riga: export { default } from "@coordinate/modules-<id>/pages/<PageName>"
+```
+
+Vedi `apps/web/src/app/(modules)/README.md` per istruzioni operative.
 
 ### Trade-off da capire bene
 
@@ -419,7 +439,7 @@ Lo stato attuale: Next.js singolo app, Zustand con mock data, nessun backend. Pe
 | # | Decisione | Opzioni | Mia raccomandazione |
 |---|---|---|---|
 | ~~D1~~ | ~~Identificazione tenant~~ | ~~Sottodominio / Path / Header~~ | ✅ **Chiusa: sottodominio** (`*.coordinate.app`, in dev `lvh.me`) |
-| ~~D2~~ | ~~Caricamento rotte moduli~~ | ~~Catch-all dispatcher / Generazione build-time~~ | ✅ **Chiusa: build-time** (prebuild script genera `app/(modules)/*` dai manifest) |
+| ~~D2~~ | ~~Caricamento rotte moduli~~ | ~~Catch-all dispatcher / Generazione build-time / Import diretto~~ | ✅ **Chiusa: import diretto** — file manuali `app/(modules)/<id>/<path>/page.tsx` che re-esportano dal pacchetto modulo. Niente prebuild. |
 | D3 | API layer | tRPC / REST / GraphQL | **tRPC** |
 | ~~D4~~ | ~~Auth provider~~ | ~~Better-Auth / NextAuth / Clerk~~ | ✅ **Chiusa: Better-Auth** (organizzazioni native, self-hosted, zero canone) |
 | D5 | Background jobs | Inngest / Trigger.dev / BullMQ | **Inngest** (gratis fino a soglia generosa) |

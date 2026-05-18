@@ -13,61 +13,109 @@ pnpm clean         # Remove build artifacts (all packages)
 
 # Run a command in a specific package:
 pnpm -F @coordinate/web dev
-pnpm -F @coordinate/web build
+pnpm -F @coordinate/core test
+pnpm -F @coordinate/database db:migrate
+pnpm -F @coordinate/database db:seed
 ```
 
-There are no tests currently set up in this project.
+Tests live in the packages that have them (`@coordinate/core`, `@coordinate/database` use Vitest).
+
+## Product context
+
+Coordinate is a **boutique modular platform** built for a small number of clients (~5 total target). Not a public SaaS — vendita white-glove, tenant creati manualmente, fatturazione tramite contratto + canone annuale + setup fee per moduli custom. Vedi `guides/mvp-scope.md` e `guides/pricing.md` per il contesto strategico.
+
+Ogni cliente ha una mix di moduli **core** (condivisi) e moduli **custom** (scritti su misura per lui). Architetturalmente, core e custom sono identici: la differenza è solo quale tenant li ha in `TenantConfig.enabledModules`.
 
 ## Tech Stack
 
 - **Next.js 16** with App Router, React 19, TypeScript 5
-- **Tailwind CSS 4** + **Shadcn/UI** (New York style, CSS variables) for all UI components
-- **Zustand** for global client-side state (all app data lives here — no server calls yet)
-- **Prisma** + PostgreSQL (schema is minimal; DB is not yet wired to the UI)
-- **Socket.io** installed but not yet used
-- **Framer Motion**, **Recharts**, **Sonner** (toasts), **React Hook Form** + **Zod**
-- **Turborepo** + **pnpm workspaces** for monorepo orchestration
+- **Tailwind CSS 4** + **Shadcn/UI** (New York style, CSS variables)
+- **Better-Auth** with `organizations` plugin (= tenants)
+- **Prisma 6** + PostgreSQL with Row-Level Security
+- **tRPC** end-to-end type-safety
+- **TanStack Query** for server state (via tRPC), **Zustand** only for UI state
+- **Inngest** for background jobs
+- **Sentry** + **PostHog** for observability (both no-op if env vars not set)
+- **Framer Motion**, **Recharts**, **Sonner**, **React Hook Form** + **Zod**
+- **Turborepo** + **pnpm workspaces** monorepo
+
+Installed but unused: Socket.io (in `apps/web` deps, not wired anywhere — real-time features deferred).
+
+Deferred (will be added if/when needed): Stripe (boutique uses manual invoicing), Resend (no transactional emails at launch), next-intl (italian only at launch).
 
 ## Monorepo Structure
 
 ```
 apps/
-  web/              ← Next.js app (@coordinate/web)
+  web/                  ← Next.js app (@coordinate/web)
 packages/
-  ui/               ← Shared UI components (@coordinate/ui)
-  core/             ← Business logic, auth, events (@coordinate/core)
-  database/         ← Prisma client + DB helpers (@coordinate/database)
-  api/              ← tRPC router definitions (@coordinate/api)
-  config/           ← Shared tsconfig and tooling config (@coordinate/config)
-tenants/            ← Tenant-specific module overrides (future)
+  ui/                   ← Shared UI components (@coordinate/ui)
+  core/                 ← Business logic, auth, module-registry (@coordinate/core)
+  database/             ← Prisma client + RLS helpers (@coordinate/database)
+  api/                  ← tRPC root router (@coordinate/api)
+  config/               ← Shared tsconfig (@coordinate/config)
+  modules/              ← Individual modules (created in Fase 2.5+)
+    crm-contacts/       ← e.g. core CRM module
+    acme-fleet/         ← e.g. custom module for client "acme"
 ```
 
-All packages use `pnpm-workspace.yaml` and are orchestrated by `turbo.json`.
+> **Note**: an empty `tenants/` folder exists from T0.2 but is no longer used — custom modules per client live in `packages/modules/<client>-<feature>/` like any other module (vedi `guides/architecture.md` §6).
+
+`pnpm-workspace.yaml` enumerates `apps/*`, `packages/*`, `packages/modules/*`. Turborepo orchestrates builds via `turbo.json`.
 
 ## Architecture
 
-This is a SaaS MVP in active development. The frontend is fully implemented; the backend is being added incrementally (Fase 1+).
+The platform is multi-tenant, isolated via Postgres Row-Level Security. Tenant identification is via subdomain (`acme.coordinate.app`, in dev `acme.lvh.me:3000`). Vedi `guides/architecture.md` per il dettaglio.
+
+**Current state**:
+- ✅ Fase 0 complete (monorepo)
+- ✅ Fase 1 complete (auth + multi-tenant + tRPC + RLS + Inngest + Sentry/PostHog)
+- 🚧 Fase 2 in progress (module-registry built; module migration in corso)
+
+**Module system** (`packages/core/src/module-registry/`):
+- `types.ts` — `ModuleManifest`, `RegisteredModule`, `ModuleRegistry` interface
+- `registry.ts` — `ModuleRegistryImpl` + `moduleRegistry` singleton
+- `loader.ts` — filesystem discovery of `packages/modules/*`
 
 **App code lives in `apps/web/`:**
-- `apps/web/src/app/layout.tsx` — root layout wrapping `ThemeProvider`, `SidebarProvider`, `TooltipProvider`, `Toaster`
-- `apps/web/src/components/layout/MainLayout.tsx` — conditionally shows `AppSidebar` and `AppHeader` (hidden on `/login`)
-- Each module is a folder under `apps/web/src/app/` with its own pages
+- `apps/web/src/app/layout.tsx` — root layout wrapping providers
+- `apps/web/src/middleware.ts` — extracts subdomain → resolves tenant → injects `x-tenant-slug` header
+- `apps/web/src/app/api/trpc/[trpc]/route.ts` — tRPC handler
+- `apps/web/src/app/api/auth/[...all]/route.ts` — Better-Auth handler
+- `apps/web/src/app/api/inngest/route.ts` — Inngest webhook
+- Page routes still under `apps/web/src/app/` until modules are migrated (T2.5–T2.10)
 
-**Navigation modules (sidebar routes):**
-- `/dashboard` — KPI cards + Recharts area/bar charts
-- `/crm/customers` — customer table with add/edit modals
-- `/crm/leads` — Kanban board across 6 stages
-- `/tasks` — task table with priority/status management
-- `/warehouse` — inventory table + stock movement history
+**Auth & sessions**:
+- Better-Auth at `packages/core/src/auth/index.ts`
+- Cross-subdomain cookies configured via `BETTER_AUTH_COOKIE_DOMAIN`
+- 4 RBAC roles (`owner`, `admin`, `member`, `viewer`) in `packages/core/src/permissions/`
+- tRPC procedures: `publicProcedure`, `protectedProcedure`, `tenantProcedure` (auto-wraps with `withTenant()`)
 
-**State:** `apps/web/src/store/useAppStore.ts` holds all mock entities (customers, leads, tasks, products, stock movements). Will be replaced by tRPC + TanStack Query in Fase 1.
+**Database**:
+- Schema in `packages/database/prisma/schema.prisma` (single file, sections demarcated by `// ── module-name ──` comments — no schema merge pipeline)
+- RLS migration enforces `tenant_id = current_setting('app.tenant_id')::uuid` on all multi-tenant tables
+- `withTenant(tenantId, callback)` helper acquires a connection, sets `app.tenant_id`, runs the callback
+- Seed: `pnpm -F @coordinate/database db:seed` populates the demo tenant
 
-**Path aliases:**
-- `@/*` maps to `apps/web/src/*` (internal imports)
-- `@coordinate/ui`, `@coordinate/core`, etc. map to the respective packages
+**Path aliases**:
+- `@/*` → `apps/web/src/*` (internal imports)
+- `@coordinate/ui`, `@coordinate/core`, `@coordinate/database`, `@coordinate/api` → respective packages
+- `@coordinate/core/auth`, `@coordinate/core/tenant`, `@coordinate/core/jobs`, `@coordinate/core/analytics`, `@coordinate/core/module-registry` → core subpath exports
 
-**Adding UI components:** Use `pnpm -F @coordinate/web exec npx shadcn@latest add <component>` — placed in `apps/web/src/components/ui/`.
+**Adding UI components**: `pnpm -F @coordinate/web exec npx shadcn@latest add <component>` — placed in `apps/web/src/components/ui/`.
 
-**Theme:** Dark/light mode via `next-themes`. Use CSS variables (`--primary`, `--card`, `--border`, etc.) rather than hardcoded colors. Toggle component is `apps/web/src/components/theme-toggle.tsx`.
+**Theming**: Dark/light global via `next-themes`. Per-tenant branding (logo + primary color) via CSS variables, injected by `<TenantThemeProvider>` (built in Fase 5, T5.3).
 
-**Not yet implemented:** API routes, real database queries, authentication middleware, WebSocket real-time features. See `guides/implementation-tasks.md` for the full roadmap.
+## Task & branch workflow
+
+When asked to execute a task from `guides/implementation-tasks.md`:
+1. Read the task spec entirely + read `guides/task-workflow.md` for git rules
+2. Verify dependencies are ✅ in the global state
+3. Branch off `develop`: `feat/t<x>-<y>/<slug>` (or `fix/`, `chore/`, `docs/`)
+4. Execute only what the task specifies — bug correlati vanno in `guides/known-issues.md`
+5. Verify every "Done when" criterion explicitly
+6. Update task state in `implementation-tasks.md` as the last commit
+7. Push the branch and **stop** — never merge to `develop` or `main`
+8. Deliver a structured report to the user
+
+Tasks marked **⏭ DEFERRED** or **❌ REMOVED** must NOT be executed without first removing the marker and updating strategy.

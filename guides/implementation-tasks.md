@@ -37,7 +37,7 @@ Ogni task assume che Claude Code legga (o ricordi) questi documenti quando rilev
 ```
 Fase 0  Monorepo Setup                 [✅] 8/8 task
 Fase 1  Backend & Auth & Multi-Tenant  [✅] 17/18 task (T1.16 deferred → Fase 4)
-Fase 2  Module Registry                [ ] 4/11 task  (T2.4 deferred)
+Fase 2  Module Registry                [ ] 5/11 task  (T2.4 deferred)
 Fase 3  Moduli MVP                     [ ] 0/24 task
 Fase 4  Billing & Onboarding & Admin   [ ] 0/16 task
 Fase 5  Polish: i18n, search, theming  [ ] 0/10 task
@@ -711,18 +711,20 @@ Definire i types secondo `architecture.md` §7:
 
 ---
 
-### T2.6 — Migrare modello Contact al modulo crm-contacts
+### T2.6 — Migrare modello Contact al modulo crm-contacts ✅
 
 **Deps**: T2.5  
 **Size**: M  
-**Files**: `packages/modules/crm-contacts/src/prisma/schema.fragment.prisma`, migration  
+**Files**: `packages/database/prisma/schema.prisma`, migration `20260518105043_add_contact_model`
 
-- Definire Contact (persona+azienda in un modello con discriminator `type`)
-- Includere `tenantId`, indici, RLS via migration
+- Aggiunto enums `ContactType` (person/company) e `ContactStatus` (active/inactive) sotto marker `// ── crm-contacts ──`
+- Definito modello `Contact` con `tenantId`, `type`, `name`, `email?`, `phone?`, `company?`, `status`, timestamps, relazione Tenant, indici `@@index([tenantId])` e `@@index([tenantId, status])`, `@@map("contacts")`
+- Migration applicata; RLS aggiunta sia nel file SQL che applicata al DB live: `ALTER TABLE contacts ENABLE ROW LEVEL SECURITY` + policy `contacts_tenant_isolation`
+- Prisma client rigenerato — `prisma.contact` tipizzato correttamente
 
 **Done when**:
-- Modello Contact in DB con RLS
-- Prisma client tipizza Contact
+- Modello Contact in DB con RLS ✅
+- Prisma client tipizza Contact ✅
 
 ---
 

@@ -30,6 +30,18 @@ enum MemberRole {
   viewer
 }
 
+// ── crm-contacts ──────────────────────────────────────────────────────────────
+
+enum ContactType {
+  person
+  company
+}
+
+enum ContactStatus {
+  active
+  inactive
+}
+
 // ─── Core multi-tenant models ─────────────────────────────────────────────────
 
 model Tenant {
@@ -44,6 +56,7 @@ model Tenant {
   memberships Membership[]
   settings    TenantSetting[]
   auditLogs   AuditLog[]
+  contacts    Contact[]
 }
 
 model User {
@@ -201,4 +214,25 @@ model TwoFactor {
   verified    Boolean? @default(true)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ── crm-contacts: Contact ─────────────────────────────────────────────────────
+
+model Contact {
+  id        String        @id @default(cuid())
+  tenantId  String
+  type      ContactType   @default(person)
+  name      String
+  email     String?
+  phone     String?
+  company   String?
+  status    ContactStatus @default(active)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@map("contacts")
 }

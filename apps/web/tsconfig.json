@@ -19,6 +19,8 @@
       "@coordinate/database": ["../../packages/database/src/index.ts"],
       "@coordinate/api": ["../../packages/api/src/index.ts"],
       "@coordinate/config": ["../../packages/config"],
+      "@coordinate/modules-crm-contacts": ["../../packages/modules/crm-contacts/src/index.ts"],
+      "@coordinate/modules-crm-contacts/pages/*": ["../../packages/modules/crm-contacts/src/pages/*.tsx"],
       "@coordinate/modules-example": ["../../packages/modules/example/src/index.ts"],
       "@coordinate/modules-example/pages/*": ["../../packages/modules/example/src/pages/*.tsx"]
     }

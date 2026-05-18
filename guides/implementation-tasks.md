@@ -37,7 +37,7 @@ Ogni task assume che Claude Code legga (o ricordi) questi documenti quando rilev
 ```
 Fase 0  Monorepo Setup                 [✅] 8/8 task
 Fase 1  Backend & Auth & Multi-Tenant  [✅] 17/18 task (T1.16 deferred → Fase 4)
-Fase 2  Module Registry                [ ] 3/12 task
+Fase 2  Module Registry                [ ] 3/11 task  (T2.4 deferred)
 Fase 3  Moduli MVP                     [ ] 0/24 task
 Fase 4  Billing & Onboarding & Admin   [ ] 0/16 task
 Fase 5  Polish: i18n, search, theming  [ ] 0/10 task
@@ -679,31 +679,31 @@ Definire i types secondo `architecture.md` §7:
 
 ---
 
-### T2.4 — Sistema di merge dello schema Prisma multi-modulo
+### T2.4 ⏭ DEFERRED — Sistema di merge dello schema Prisma multi-modulo
 
 **Deps**: T2.2  
 **Size**: L  
 **Files**: `packages/database/scripts/merge-schemas.ts`  
 
-Script che:
-- Cerca tutti i `prisma/schema.fragment.prisma` nei moduli
-- Li concatena con lo schema base in `packages/database/prisma/schema.prisma` (generato)
-- Hook in `predb:generate`
+> **Decisione**: con il modello boutique (~5 clienti, un solo deploy gestito internamente), è più semplice avere **un solo `packages/database/prisma/schema.prisma`** con sezioni demarcate da commenti (`// ── crm-contacts ──`, `// ── warehouse ──`). Quando un cliente paga un modulo custom, i suoi modelli si aggiungono nello stesso file con un comment marker. Niente build pipeline di merge.
+>
+> **Si attiva se**: il file supera ~2000 righe e diventa ingestibile, oppure un modulo custom richiede migration indipendenti dal core.
 
-**Done when**:
-- Aggiungere un fragment in un modulo lo include in schema generato
-- Migration applicata correttamente
+---
+
+
 
 ---
 
 ### T2.5 — Creare packages/modules/crm-contacts (scaffold)
 
-**Deps**: T2.3, T2.4  
+**Deps**: T2.3  
 **Size**: M  
 **Files**: `packages/modules/crm-contacts/`  
 
-- `package.json`, `tsconfig.json`, `src/manifest.ts`, `src/prisma/schema.fragment.prisma`, `src/router.ts`, `src/pages/`
+- `package.json`, `tsconfig.json`, `src/manifest.ts`, `src/router.ts`, `src/pages/`
 - Manifest minimale che dichiara: 1 rotta (`/crm/customers`), 1 voce nav, permessi `crm:contact:read|write|delete`
+- I modelli Prisma del modulo vanno aggiunti direttamente in `packages/database/prisma/schema.prisma` sotto un comment marker `// ── crm-contacts ──` (vedi T2.6)
 
 **Done when**:
 - Modulo riconosciuto dal registry

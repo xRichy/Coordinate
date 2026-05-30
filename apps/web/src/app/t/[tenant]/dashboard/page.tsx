@@ -35,9 +35,9 @@ export default function DashboardPage() {
     const { data: leads = [] } = useQuery(trpc.crm.lead.list.queryOptions());
     const { data: tasks = [] } = useQuery(trpc.activities.task.list.queryOptions());
 
-    const totalValue = leads.reduce((acc: number, lead: Lead) => acc + lead.value, 0);
-    const activeLeads = leads.filter((l: Lead) => l.status !== "Won" && l.status !== "Lost").length;
-    const wonLeads = leads.filter((l: Lead) => l.status === "Won").length;
+    const totalValue = leads.reduce((acc: number, lead: Lead) => acc + (lead.value ?? 0), 0);
+    const activeLeads = leads.filter((l: Lead) => l.status !== "won" && l.status !== "lost").length;
+    const wonLeads = leads.filter((l: Lead) => l.status === "won").length;
     const conversionRate = leads.length > 0 ? Math.round((wonLeads / leads.length) * 100) : 0;
 
     return (

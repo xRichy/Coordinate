@@ -53,10 +53,13 @@ model Tenant {
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
 
-  memberships Membership[]
-  settings    TenantSetting[]
-  auditLogs   AuditLog[]
-  contacts    Contact[]
+  memberships    Membership[]
+  settings       TenantSetting[]
+  auditLogs      AuditLog[]
+  contacts       Contact[]
+  pipelineStages PipelineStage[]
+  leads          Lead[]
+  deals          Deal[]
 }
 
 model User {
@@ -216,6 +219,17 @@ model TwoFactor {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+// ── crm-pipeline ──────────────────────────────────────────────────────────────
+
+enum LeadStatus {
+  new
+  contacted
+  qualified
+  proposal
+  won
+  lost
+}
+
 // ── crm-contacts: Contact ─────────────────────────────────────────────────────
 
 model Contact {
@@ -235,4 +249,57 @@ model Contact {
   @@index([tenantId])
   @@index([tenantId, status])
   @@map("contacts")
+}
+
+// ── crm-pipeline: PipelineStage, Lead, Deal ───────────────────────────────────
+
+model PipelineStage {
+  id        String   @id @default(cuid())
+  tenantId  String
+  name      String
+  order     Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  leads  Lead[]
+
+  @@index([tenantId])
+  @@index([tenantId, order])
+  @@map("pipeline_stages")
+}
+
+model Lead {
+  id          String     @id @default(cuid())
+  tenantId    String
+  title       String
+  value       Float      @default(0)
+  status      LeadStatus @default(new)
+  contactName String?
+  stageId     String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  tenant Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  stage  PipelineStage? @relation(fields: [stageId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@map("leads")
+}
+
+model Deal {
+  id        String    @id @default(cuid())
+  tenantId  String
+  title     String
+  value     Float     @default(0)
+  leadId    String?
+  closedAt  DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("deals")
 }

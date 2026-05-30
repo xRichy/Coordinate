@@ -1,46 +1,32 @@
 import { z } from "zod";
 import { router, tenantProcedure } from "../trpc";
+import { ContactType, ContactStatus } from "@coordinate/database";
 
-// ── Shared output shapes ──────────────────────────────────────────────────────
-// These types will be replaced by real Prisma models in T2.6 / T2.7.
-
-const contactSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  email: z.string(),
-  phone: z.string(),
-  company: z.string(),
-  status: z.enum(["Active", "Inactive"]),
-});
-
-const leadSchema = z.object({
-  id: z.string(),
-  title: z.string(),
-  value: z.number(),
-  status: z.enum(["New", "Contacted", "Qualified", "Proposal", "Won", "Lost"]),
-  customerName: z.string(),
-});
-
-// ── Routers ───────────────────────────────────────────────────────────────────
+// ── Contact CRUD ──────────────────────────────────────────────────────────────
 
 const contactRouter = router({
-  list: tenantProcedure.output(z.array(contactSchema)).query(() => []),
+  list: tenantProcedure.query(async ({ ctx }) => {
+    return ctx.db.contact.findMany({
+      orderBy: { createdAt: "desc" },
+    });
+  }),
 
   create: tenantProcedure
     .input(
       z.object({
         name: z.string().min(2),
-        email: z.string().email(),
-        phone: z.string().min(5),
-        company: z.string().min(2),
-        status: z.enum(["Active", "Inactive"]),
+        type: z.nativeEnum(ContactType).optional(),
+        email: z.string().email().optional(),
+        phone: z.string().optional(),
+        company: z.string().optional(),
+        status: z.nativeEnum(ContactStatus).optional(),
       })
     )
-    .output(contactSchema)
-    .mutation(({ input }) => ({
-      id: crypto.randomUUID(),
-      ...input,
-    })),
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db.contact.create({
+        data: { tenantId: ctx.tenantId, ...input },
+      });
+    }),
 
   update: tenantProcedure
     .input(
@@ -48,15 +34,37 @@ const contactRouter = router({
         id: z.string(),
         data: z.object({
           name: z.string().min(2).optional(),
-          email: z.string().email().optional(),
-          phone: z.string().min(5).optional(),
-          company: z.string().min(2).optional(),
-          status: z.enum(["Active", "Inactive"]).optional(),
+          type: z.nativeEnum(ContactType).optional(),
+          email: z.string().email().nullish(),
+          phone: z.string().nullish(),
+          company: z.string().nullish(),
+          status: z.nativeEnum(ContactStatus).optional(),
         }),
       })
     )
-    .output(z.object({ id: z.string() }))
-    .mutation(({ input }) => ({ id: input.id })),
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db.contact.update({
+        where: { id: input.id },
+        data: input.data,
+      });
+    }),
+
+  delete: tenantProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db.contact.delete({ where: { id: input.id } });
+      return { id: input.id };
+    }),
+});
+
+// ── Leads (stub — full implementation in T2.8 crm-pipeline) ──────────────────
+
+const leadSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  value: z.number(),
+  status: z.enum(["New", "Contacted", "Qualified", "Proposal", "Won", "Lost"]),
+  customerName: z.string(),
 });
 
 const leadRouter = router({

@@ -76,8 +76,8 @@ async function main() {
   });
 
   console.log("\nSeed complete.");
-  console.log(`  Tenant:  ${tenant.slug}.lvh.me:3000`);
-  console.log(`  User:    ${user.email}  (password auth: pending T1.10)`);
+  console.log(`  Tenant:  http://localhost:3000/t/${tenant.slug}`);
+  console.log(`  User:    ${user.email}  (set a password via Better-Auth signUp or seed a hash)`);
 }
 
 main()

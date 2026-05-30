@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { router, tenantProcedure } from "../trpc";
-import { ContactType, ContactStatus } from "@coordinate/database";
+import { ContactType, ContactStatus, LeadStatus } from "@coordinate/database";
 
 // ── Contact CRUD ──────────────────────────────────────────────────────────────
 
@@ -57,28 +57,50 @@ const contactRouter = router({
     }),
 });
 
-// ── Leads (stub — full implementation in T2.8 crm-pipeline) ──────────────────
-
-const leadSchema = z.object({
-  id: z.string(),
-  title: z.string(),
-  value: z.number(),
-  status: z.enum(["New", "Contacted", "Qualified", "Proposal", "Won", "Lost"]),
-  customerName: z.string(),
-});
+// ── Lead CRUD ─────────────────────────────────────────────────────────────────
 
 const leadRouter = router({
-  list: tenantProcedure.output(z.array(leadSchema)).query(() => []),
+  list: tenantProcedure.query(async ({ ctx }) => {
+    return ctx.db.lead.findMany({
+      orderBy: { createdAt: "desc" },
+    });
+  }),
+
+  create: tenantProcedure
+    .input(
+      z.object({
+        title: z.string().min(2),
+        value: z.number().min(0).optional(),
+        contactName: z.string().optional(),
+        status: z.nativeEnum(LeadStatus).optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db.lead.create({
+        data: { tenantId: ctx.tenantId, ...input },
+      });
+    }),
 
   updateStatus: tenantProcedure
     .input(
       z.object({
         id: z.string(),
-        status: z.enum(["New", "Contacted", "Qualified", "Proposal", "Won", "Lost"]),
+        status: z.nativeEnum(LeadStatus),
       })
     )
-    .output(z.object({ id: z.string() }))
-    .mutation(({ input }) => ({ id: input.id })),
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db.lead.update({
+        where: { id: input.id },
+        data: { status: input.status },
+      });
+    }),
+
+  delete: tenantProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db.lead.delete({ where: { id: input.id } });
+      return { id: input.id };
+    }),
 });
 
 export const crmRouter = router({

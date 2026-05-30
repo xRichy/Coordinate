@@ -4,24 +4,9 @@ import { organization, twoFactor } from "better-auth/plugins";
 import { prisma } from "@coordinate/database";
 import { captureEvent } from "../analytics";
 
-// Parent domain (with leading dot) for cross-subdomain session cookies.
-// Without this, the cookie is set host-only, so signOut on a tenant
-// subdomain can't clear the session held on the root domain.
-const cookieDomain = process.env.BETTER_AUTH_COOKIE_DOMAIN;
-
-// Comma-separated list of origins (wildcards allowed, e.g. http://*.lvh.me:3000)
-// that may issue auth requests. Required when the same Better-Auth instance
-// is reached from multiple subdomains.
-const trustedOrigins =
-  process.env.BETTER_AUTH_TRUSTED_ORIGINS?.split(",")
-    .map((s) => s.trim())
-    .filter(Boolean) ?? [];
-
 export const auth = betterAuth({
   secret: process.env.BETTER_AUTH_SECRET!,
   baseURL: process.env.BETTER_AUTH_URL ?? "http://localhost:3000",
-
-  trustedOrigins,
 
   database: prismaAdapter(prisma, {
     provider: "postgresql",
@@ -42,20 +27,6 @@ export const auth = betterAuth({
       clientSecret: process.env.MICROSOFT_CLIENT_SECRET!,
     },
   },
-
-  ...(cookieDomain
-    ? {
-        advanced: {
-          crossSubDomainCookies: {
-            enabled: true,
-            domain: cookieDomain,
-          },
-          defaultCookieAttributes: {
-            sameSite: "lax" as const,
-          },
-        },
-      }
-    : {}),
 
   plugins: [
     organization(),

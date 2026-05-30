@@ -57,7 +57,7 @@ Dettagli sui range di prezzo: vedi `pricing.md`.
 **OUT**: branding avanzato (font, email template), white-label.
 
 ### `tenant-onboarding` (white-glove, no UI pubblica)
-**IN**: comando CLI o pagina admin riservata per creare un nuovo tenant: crei record `Tenant`, primo utente `owner`, lista moduli abilitati, dati azienda. Mandi credenziali al cliente via email/canale concordato.
+**IN**: comando CLI o pagina admin riservata per creare un nuovo tenant: crei record `Tenant`, primo utente `owner`, lista moduli abilitati, dati azienda. Mandi credenziali al cliente via email/canale concordato. Il cliente accede da `coordinate.app/login` e lavora nella sua sezione `coordinate.app/t/<slug>`.
 **OUT**: signup self-serve, pricing page pubblica, trial automatico, onboarding wizard.
 
 ### `notifications` (in-app, base)
@@ -215,8 +215,8 @@ Hosting:    Vercel (web)
 
 Monorepo:   Turborepo + pnpm workspaces
 
-URL:        coordinate.app (eventuale sito pubblico minimo)
-            *.coordinate.app (tenants) — in dev: *.lvh.me:3000
+URL:        coordinate.app (login + eventuale sito pubblico minimo)
+            coordinate.app/t/<slug> (sezione tenant) — in dev: localhost:3000/t/<slug>
 ```
 
 Cosa **NON** è nello stack al lancio:

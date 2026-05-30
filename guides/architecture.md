@@ -56,14 +56,18 @@ Come si fa concretamente:
 
 Per i tenant enterprise (C), si fa un deploy dedicato col loro `DATABASE_URL`. Il codice non cambia.
 
-### [DECISIONE APERTA] Identificazione del tenant
+### Identificazione del tenant — ✅ chiusa (rivista 2026-05-30): path prefix su dominio unico
 
-Come capisce il backend chi è il tenant della richiesta?
-- **Sottodominio** (`acme.coordinate.app`) → più professionale, richiede wildcard DNS + certificati wildcard
-- **Path prefix** (`coordinate.app/t/acme`) → più semplice, meno carino
-- **Header / JWT claim** → flessibile ma meno user-facing
+Il backend capisce chi è il tenant dallo **slug nel path dell'URL**: `coordinate.app/t/<slug>/…` (in dev `localhost:3000/t/<slug>/…`). Si accede da `coordinate.app/login` e dopo il login si entra nella propria sezione `coordinate.app/t/<slug>/dashboard`.
 
-Raccomandato: **sottodominio** per produzione, fallback su JWT claim nello sviluppo.
+> **Storia della decisione**: in origine si era scelto il **sottodominio** (`<slug>.coordinate.app`). Per una boutique con ~5 clienti è stato rivisto in favore del **dominio unico con tenant nel path**, perché:
+> - niente **DNS wildcard** né **certificato TLS wildcard** (basta il dominio apex + `www`);
+> - **stateless**: lo slug è nell'URL, niente cookie di tenant; i cookie di sessione tornano **host-only** (niente cross-subdomain);
+> - "la sezione di ognuno" è esplicita e bookmarkabile nell'indirizzo, e l'operatore può tenere più clienti aperti in tab diverse.
+>
+> Il piano operativo della migrazione è in [`single-domain-tasks.md`](single-domain-tasks.md). L'architettura a sottodominio resta documentata in [`implementation-tasks.md`](implementation-tasks.md) per eventuale rollback.
+
+**Contratto interno**: qualunque sia la sorgente, il middleware produce sempre l'header **`x-tenant-slug`**, che è l'unica sorgente di verità lato server (tRPC context, layout SSR, `useCan`). La membership dell'utente sul tenant è verificata in `tenantProcedure` (la RLS protegge per `tenantId`, il controllo membership impedisce di puntare a uno slug non proprio manipolando l'URL).
 
 ---
 
@@ -232,7 +236,7 @@ Un manifest di modulo dichiara:
 
 **Approccio scelto: import diretto in `apps/web`**, niente generazione build-time né catch-all dispatcher.
 
-Per ogni rotta di un modulo, si crea manualmente un file di una riga in `apps/web/src/app/(modules)/<module-id>/<path>/page.tsx`:
+Per ogni rotta di un modulo, si crea manualmente un file di una riga in `apps/web/src/app/t/[tenant]/(modules)/<module-id>/<path>/page.tsx` (le rotte dei moduli sono tenant-scoped, quindi vivono sotto il segmento dinamico `t/[tenant]`):
 
 ```ts
 export { default } from "@coordinate/modules-<module-id>/pages/<PageName>";
@@ -251,7 +255,7 @@ packages/modules/<id>/
     router.ts        ← tRPC sub-router
     index.ts         ← re-export pubblico del pacchetto
 
-apps/web/src/app/(modules)/<id>/<path>/
+apps/web/src/app/t/[tenant]/(modules)/<id>/<path>/
   page.tsx           ← 1 riga: export { default } from "@coordinate/modules-<id>/pages/<PageName>"
 ```
 
@@ -323,6 +327,7 @@ I moduli dichiarano gli eventi che emettono e quelli che ascoltano nel manifest.
 - Estensione **organizations** di Better-Auth = i nostri tenant.
 - Un utente può appartenere a più organizzazioni (utile per consulenti / partner).
 - Provider OAuth (Google, Microsoft) configurabili per tenant (alcuni enterprise lo richiedono).
+- **Dominio unico** → cookie di sessione **host-only** (niente cross-subdomain). Login da `coordinate.app/login`, poi accesso a `coordinate.app/t/<slug>/…`. Se l'utente appartiene a più tenant, dopo il login sceglie il workspace; la membership sul tenant è verificata server-side in `tenantProcedure`.
 
 ### Modello di permessi
 
@@ -376,6 +381,7 @@ Per il MVP del Tier 3, raccomando: **Inngest** per l'esecuzione + una semplice U
 ### Default (90% dei clienti)
 - Un singolo deploy multi-tenant su **Vercel** (frontend) + **Railway / Neon** (Postgres).
 - Tutti i tenant condividono lo stesso `web` e lo stesso DB, isolati via RLS.
+- Routing tenant via **path** (`coordinate.app/t/<slug>`): **niente DNS wildcard né certificato TLS wildcard** — basta il dominio apex + `www`.
 - Costo marginale per tenant ≈ zero.
 
 ### Enterprise (clienti con requisiti di isolamento)
@@ -438,7 +444,7 @@ Lo stato attuale: Next.js singolo app, Zustand con mock data, nessun backend. Pe
 
 | # | Decisione | Opzioni | Mia raccomandazione |
 |---|---|---|---|
-| ~~D1~~ | ~~Identificazione tenant~~ | ~~Sottodominio / Path / Header~~ | ✅ **Chiusa: sottodominio** (`*.coordinate.app`, in dev `lvh.me`) |
+| ~~D1~~ | ~~Identificazione tenant~~ | ~~Sottodominio / Path / Header~~ | ✅ **Chiusa, rivista 2026-05-30: path prefix su dominio unico** (`coordinate.app/t/<slug>`). Era sottodominio — vedi §3 e [`single-domain-tasks.md`](single-domain-tasks.md) |
 | ~~D2~~ | ~~Caricamento rotte moduli~~ | ~~Catch-all dispatcher / Generazione build-time / Import diretto~~ | ✅ **Chiusa: import diretto** — file manuali `app/(modules)/<id>/<path>/page.tsx` che re-esportano dal pacchetto modulo. Niente prebuild. |
 | D3 | API layer | tRPC / REST / GraphQL | **tRPC** |
 | ~~D4~~ | ~~Auth provider~~ | ~~Better-Auth / NextAuth / Clerk~~ | ✅ **Chiusa: Better-Auth** (organizzazioni native, self-hosted, zero canone) |

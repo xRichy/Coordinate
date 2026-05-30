@@ -1,5 +1,7 @@
 # Coordinate — Implementation Tasks
 
+> 🗄️ **ARCHIVIO (dal 2026-05-30).** Questo file documenta il piano **originale**: architettura **multi-tenant a sottodominio** (`<slug>.coordinate.app`) + scope SaaS pieno. **Non è più il piano attivo.** Il piano di lavoro corrente — migrazione a **dominio unico con tenant nel path** (`coordinate.app/t/<slug>`) + roadmap di prodotto **allineata allo scope boutique** — è in [`single-domain-tasks.md`](single-domain-tasks.md). Questo file resta **intatto** per: (1) rollback alla vecchia architettura, (2) consultare lo spec completo dei task che nel piano attivo sono marcati `⏭ DEFERRED`. Lo stato globale qui sotto indica dove ci si era fermati (Fase 2, ultimo completato T2.6).
+
 Task plan operativo per costruire l'MVP. Ogni task è **autonomo e di dimensione "una sessione Claude Code focalizzata"** (tipicamente 30 min – 3 ore di lavoro). I task vanno eseguiti **uno alla volta, in ordine**, salvo dove esplicitamente dichiarato che sono paralleli.
 
 ## Come usare questo file

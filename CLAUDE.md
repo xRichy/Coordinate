@@ -65,7 +65,7 @@ packages/
 
 ## Architecture
 
-The platform is multi-tenant, isolated via Postgres Row-Level Security. Tenant identification is via subdomain (`acme.coordinate.app`, in dev `acme.lvh.me:3000`). Vedi `guides/architecture.md` per il dettaglio.
+The platform is multi-tenant, isolated via Postgres Row-Level Security. Tenant identification is via URL path on a single domain (`coordinate.app/t/<slug>`, in dev `localhost:3000/t/<slug>`). Vedi `guides/architecture.md` §3 per il dettaglio. Il piano di lavoro **attivo** (migrazione single-domain + roadmap di prodotto boutique) è `guides/single-domain-tasks.md`; `guides/implementation-tasks.md` è l'**archivio** del piano originale (sottodominio + scope SaaS), conservato per rollback e per lo spec dei task lì marcati DEFERRED.
 
 **Current state**:
 - ✅ Fase 0 complete (monorepo)
@@ -79,7 +79,7 @@ The platform is multi-tenant, isolated via Postgres Row-Level Security. Tenant i
 
 **App code lives in `apps/web/`:**
 - `apps/web/src/app/layout.tsx` — root layout wrapping providers
-- `apps/web/src/middleware.ts` — extracts subdomain → resolves tenant → injects `x-tenant-slug` header
+- `apps/web/src/middleware.ts` — extracts the tenant slug from the `/t/<slug>` path → injects `x-tenant-slug` header
 - `apps/web/src/app/api/trpc/[trpc]/route.ts` — tRPC handler
 - `apps/web/src/app/api/auth/[...all]/route.ts` — Better-Auth handler
 - `apps/web/src/app/api/inngest/route.ts` — Inngest webhook
@@ -87,7 +87,7 @@ The platform is multi-tenant, isolated via Postgres Row-Level Security. Tenant i
 
 **Auth & sessions**:
 - Better-Auth at `packages/core/src/auth/index.ts`
-- Cross-subdomain cookies configured via `BETTER_AUTH_COOKIE_DOMAIN`
+- Single-origin session cookies (host-only); tenant membership verified server-side in `tenantProcedure`
 - 4 RBAC roles (`owner`, `admin`, `member`, `viewer`) in `packages/core/src/permissions/`
 - tRPC procedures: `publicProcedure`, `protectedProcedure`, `tenantProcedure` (auto-wraps with `withTenant()`)
 
@@ -108,7 +108,7 @@ The platform is multi-tenant, isolated via Postgres Row-Level Security. Tenant i
 
 ## Task & branch workflow
 
-When asked to execute a task from `guides/implementation-tasks.md`:
+When asked to execute a task, use the active plan `guides/single-domain-tasks.md` (`guides/implementation-tasks.md` is archive only):
 1. Read the task spec entirely + read `guides/task-workflow.md` for git rules
 2. Verify dependencies are ✅ in the global state
 3. Branch off `develop`: `feat/t<x>-<y>/<slug>` (or `fix/`, `chore/`, `docs/`)

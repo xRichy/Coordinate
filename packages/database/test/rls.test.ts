@@ -174,6 +174,24 @@ describe("RLS: tenant isolation on RLS-protected tables", () => {
     });
   });
 
+  // ── Membership check (mirrors tenantProcedure guard) ─────────────────────
+
+  describe("cross-tenant membership check via superClient (mirrors tenantProcedure)", () => {
+    it("user has membership for tenant A", async () => {
+      const m = await superClient.membership.findFirst({
+        where: { userId, tenantId: tenantAId },
+      });
+      expect(m).not.toBeNull();
+    });
+
+    it("user has no membership for tenant B — tenantProcedure would throw FORBIDDEN", async () => {
+      const m = await superClient.membership.findFirst({
+        where: { userId, tenantId: tenantBId },
+      });
+      expect(m).toBeNull();
+    });
+  });
+
   // ── Context isolation between transactions ────────────────────────────────
 
   describe("tenant context isolation between transactions", () => {

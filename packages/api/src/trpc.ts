@@ -2,7 +2,7 @@ import { initTRPC, TRPCError } from "@trpc/server";
 import type { FetchCreateContextFnOptions } from "@trpc/server/adapters/fetch";
 import { auth } from "@coordinate/core/auth";
 import { resolveTenantBySlug } from "@coordinate/core/tenant";
-import { withTenant } from "@coordinate/database";
+import { prismaAdmin, withTenant } from "@coordinate/database";
 
 // ── Context ───────────────────────────────────────────────────────────────────
 
@@ -68,6 +68,19 @@ export const tenantProcedure = protectedProcedure.use(async ({ ctx, next }) => {
     throw new TRPCError({
       code: "NOT_FOUND",
       message: `Tenant not found: ${ctx.tenantSlug}`,
+    });
+  }
+
+  // Verify the authenticated user is a member of this tenant.
+  // Uses prismaAdmin (bypasses RLS) since no tenant context is set yet.
+  const membership = await prismaAdmin.membership.findFirst({
+    where: { userId: ctx.session.user.id, tenantId: tenant.id },
+    select: { id: true },
+  });
+  if (!membership) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "You are not a member of this tenant",
     });
   }
 

@@ -100,7 +100,7 @@ export default function SignupPage() {
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">Crea il tuo account</CardTitle>
           <CardDescription className="text-center">
-            Inizia la prova gratuita di 14 giorni — nessuna carta richiesta
+            Crea il tuo workspace e inizia subito
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -206,7 +206,7 @@ export default function SignupPage() {
                     Creazione account…
                   </>
                 ) : (
-                  "Crea account gratuito"
+                  "Crea account"
                 )}
               </Button>
 

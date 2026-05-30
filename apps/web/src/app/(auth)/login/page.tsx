@@ -161,7 +161,7 @@ export default function LoginPage() {
                 </div>
                 <div className="min-w-0">
                   <p className="font-semibold text-foreground truncate">{tenant.name}</p>
-                  <p className="text-xs text-muted-foreground truncate">{tenant.slug}.coordinate.app</p>
+                  <p className="text-xs text-muted-foreground truncate">/t/{tenant.slug}</p>
                 </div>
               </button>
             ))}

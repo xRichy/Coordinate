@@ -42,7 +42,7 @@ Già fatte, non rientrano nel lavoro attivo — riassunte qui per le dipendenze.
 ## Stato globale
 
 ```
-Fase 1  Single-domain migration         [ ] 5/8   attivi
+Fase 1  Single-domain migration         [ ] 6/8   attivi
 Fase 2  Completamento migrazione moduli  [ ] 0/6   attivi
 Fase 3  Moduli MVP boutique              [ ] 0/16  attivi  (+8 deferred)
 Fase 4  Admin tenant & provisioning      [ ] 0/7   attivi  (+10 deferred)
@@ -140,7 +140,7 @@ Fase 7  Launch white-glove               [ ] 0/4   attivi  (+4 deferred)
 
 ---
 
-### T1.6 — URL helper + redirect pagine auth
+### T1.6 ✅ — URL helper + redirect pagine auth
 
 **Deps**: T1.1
 **Size**: M

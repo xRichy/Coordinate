@@ -15,4 +15,4 @@ export type {
   ModuleRegistry,
 } from "./module-registry";
 
-export { ModuleRegistryImpl, moduleRegistry, loadModules } from "./module-registry";
+export { ModuleRegistryImpl, moduleRegistry } from "./module-registry";

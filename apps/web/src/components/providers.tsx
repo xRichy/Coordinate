@@ -19,6 +19,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
       links: [
         httpBatchLink({
           url: `${getBaseUrl()}/api/trpc`,
+          headers() {
+            if (typeof window === "undefined") return {};
+            const match = /^\/t\/([^/]+)(\/|$)/.exec(window.location.pathname);
+            if (!match) return {};
+            return { "x-tenant-slug": match[1] };
+          },
         }),
       ],
     })

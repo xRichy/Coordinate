@@ -13,4 +13,5 @@ export type {
 } from "./types";
 
 export { ModuleRegistryImpl, moduleRegistry } from "./registry";
-export { loadModules } from "./loader";
+// loadModules (./loader.ts) is server-only (uses node:fs) — import directly
+// from "@coordinate/core/src/module-registry/loader" in server-only code.

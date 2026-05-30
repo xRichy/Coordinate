@@ -61,6 +61,8 @@ model Tenant {
   leads          Lead[]
   deals          Deal[]
   activities     Activity[]
+  products       Product[]
+  stockMovements StockMovement[]
 }
 
 model User {
@@ -220,6 +222,13 @@ model TwoFactor {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+// ── warehouse ────────────────────────────────────────────────────────────────
+
+enum StockMovementType {
+  in
+  out
+}
+
 // ── activities ────────────────────────────────────────────────────────────────
 
 enum ActivityType {
@@ -324,6 +333,44 @@ model Deal {
 
   @@index([tenantId])
   @@map("deals")
+}
+
+// ── warehouse: Product, StockMovement ────────────────────────────────────────
+
+model Product {
+  id            String   @id @default(cuid())
+  tenantId      String
+  sku           String
+  name          String
+  category      String
+  price         Float
+  stockQuantity Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  stockMovements StockMovement[]
+
+  @@unique([tenantId, sku])
+  @@index([tenantId])
+  @@map("products")
+}
+
+model StockMovement {
+  id        String            @id @default(cuid())
+  tenantId  String
+  productId String
+  type      StockMovementType
+  quantity  Int
+  note      String?
+  createdAt DateTime          @default(now())
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([productId])
+  @@map("stock_movements")
 }
 
 // ── activities: Activity ──────────────────────────────────────────────────────

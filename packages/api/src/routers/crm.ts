@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { router, tenantProcedure } from "../trpc";
 import { ContactType, ContactStatus, LeadStatus } from "@coordinate/database";
+import { eventBus, crmPipelineEvents } from "@coordinate/core/events";
 
 // ── Contact CRUD ──────────────────────────────────────────────────────────────
 
@@ -89,10 +90,19 @@ const leadRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      return ctx.db.lead.update({
+      const lead = await ctx.db.lead.findFirstOrThrow({ where: { id: input.id } });
+      const updated = await ctx.db.lead.update({
         where: { id: input.id },
         data: { status: input.status },
       });
+      // Emit event outside the withTenant transaction (fire-and-forget).
+      void eventBus.emit(crmPipelineEvents.leadStatusChanged, ctx.tenantId, {
+        leadId: updated.id,
+        title: updated.title,
+        previousStatus: lead.status,
+        newStatus: updated.status,
+      });
+      return updated;
     }),
 
   delete: tenantProcedure

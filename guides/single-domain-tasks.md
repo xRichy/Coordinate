@@ -43,7 +43,7 @@ Già fatte, non rientrano nel lavoro attivo — riassunte qui per le dipendenze.
 
 ```
 Fase 1  Single-domain migration         [x] 8/8   attivi
-Fase 2  Completamento migrazione moduli  [ ] 5/6   attivi
+Fase 2  Completamento migrazione moduli  [x] 6/6   attivi
 Fase 3  Moduli MVP boutique              [ ] 0/16  attivi  (+8 deferred)
 Fase 4  Admin tenant & provisioning      [ ] 0/7   attivi  (+10 deferred)
 Fase 5  Polish                           [ ] 0/8   attivi  (+2 deferred)
@@ -250,7 +250,7 @@ Fase 7  Launch white-glove               [ ] 0/4   attivi  (+4 deferred)
 
 ---
 
-### T2.12 — Chiusura Fase 2 + navigazione dinamica
+### T2.12 ✅ — Chiusura Fase 2 + navigazione dinamica
 
 **Deps**: T2.7–T2.11
 **Size**: S

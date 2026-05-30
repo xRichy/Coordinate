@@ -9,7 +9,7 @@ import { DollarSign, Users, TrendingUp, Activity } from "lucide-react";
 import { useTRPC } from "@/lib/trpc";
 
 type Lead = inferRouterOutputs<AppRouter>["crm"]["lead"]["list"][number];
-type Task = inferRouterOutputs<AppRouter>["activities"]["task"]["list"][number];
+type Activity = inferRouterOutputs<AppRouter>["activities"]["activity"]["list"][number];
 
 const revenueData = [
     { name: "Jan", revenue: 4000 },
@@ -33,7 +33,7 @@ export default function DashboardPage() {
     const trpc = useTRPC();
     const { data: health } = useQuery(trpc.healthcheck.queryOptions());
     const { data: leads = [] } = useQuery(trpc.crm.lead.list.queryOptions());
-    const { data: tasks = [] } = useQuery(trpc.activities.task.list.queryOptions());
+    const { data: activities = [] } = useQuery(trpc.activities.activity.list.queryOptions());
 
     const totalValue = leads.reduce((acc: number, lead: Lead) => acc + (lead.value ?? 0), 0);
     const activeLeads = leads.filter((l: Lead) => l.status !== "won" && l.status !== "lost").length;
@@ -86,7 +86,7 @@ export default function DashboardPage() {
                         <Activity className="h-4 w-4 text-primary" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{tasks.filter((t: Task) => t.status !== "Done").length}</div>
+                        <div className="text-2xl font-bold">{activities.filter((a: Activity) => a.status !== "done").length}</div>
                         <p className="text-xs text-muted-foreground">Requires immediate attention</p>
                     </CardContent>
                 </Card>

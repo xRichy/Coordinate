@@ -1,38 +1,26 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "@coordinate/api";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+  Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { X, Plus } from "lucide-react";
 import { useTRPC } from "@/lib/trpc";
 
 type Contact = inferRouterOutputs<AppRouter>["crm"]["contact"]["list"][number];
@@ -45,6 +33,7 @@ const contactSchema = z.object({
   phone: z.string().optional(),
   status: z.enum(["active", "inactive"]),
   parentId: z.string().optional(),
+  ownerId: z.string().optional(),
 });
 
 type ContactFormValues = z.infer<typeof contactSchema>;
@@ -58,27 +47,37 @@ interface CustomerModalProps {
 }
 
 export function CustomerModal({
-  isOpen,
-  onClose,
-  contactToEdit,
-  companies = [],
-  defaultParentId,
+  isOpen, onClose, contactToEdit, companies = [], defaultParentId,
 }: CustomerModalProps) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
+  const tagInputRef = useRef<HTMLInputElement>(null);
 
-  const invalidate = () =>
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
+
+  const { data: allTags = [] } = useQuery(trpc.crm.tag.list.queryOptions());
+  const { data: members = [] } = useQuery(trpc.crm.contact.listMembers.queryOptions());
+
+  const createTag = useMutation(trpc.crm.tag.create.mutationOptions({
+    onSuccess: (tag) => {
+      queryClient.invalidateQueries(trpc.crm.tag.list.queryOptions());
+      setSelectedTagIds((prev) => [...prev, tag.id]);
+      setTagInput("");
+    },
+  }));
+
+  const invalidateContacts = () =>
     queryClient.invalidateQueries(trpc.crm.contact.list.queryOptions());
 
   const createContact = useMutation(
     trpc.crm.contact.create.mutationOptions({
-      onSuccess: () => { invalidate(); toast.success("Contatto creato."); onClose(); },
+      onSuccess: () => { invalidateContacts(); toast.success("Contatto creato."); onClose(); },
     })
   );
-
   const updateContact = useMutation(
     trpc.crm.contact.update.mutationOptions({
-      onSuccess: () => { invalidate(); toast.success("Contatto aggiornato."); onClose(); },
+      onSuccess: () => { invalidateContacts(); toast.success("Contatto aggiornato."); onClose(); },
     })
   );
 
@@ -86,7 +85,7 @@ export function CustomerModal({
     resolver: zodResolver(contactSchema),
     defaultValues: {
       name: "", type: "person", company: "", email: "",
-      phone: "", status: "active", parentId: defaultParentId ?? "",
+      phone: "", status: "active", parentId: defaultParentId ?? "", ownerId: "",
     },
   });
 
@@ -103,15 +102,39 @@ export function CustomerModal({
           phone: contactToEdit.phone ?? "",
           status: (contactToEdit.status as "active" | "inactive") ?? "active",
           parentId: contactToEdit.parentId ?? "",
+          ownerId: contactToEdit.ownerId ?? "",
         });
+        setSelectedTagIds(contactToEdit.tags.map((ct) => ct.tag.id));
       } else {
         form.reset({
           name: "", type: "person", company: "", email: "",
-          phone: "", status: "active", parentId: defaultParentId ?? "",
+          phone: "", status: "active", parentId: defaultParentId ?? "", ownerId: "",
         });
+        setSelectedTagIds([]);
       }
+      setTagInput("");
     }
   }, [contactToEdit, isOpen, form, defaultParentId]);
+
+  function handleTagKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      const name = tagInput.trim();
+      if (!name) return;
+      const existing = allTags.find((t) => t.name.toLowerCase() === name.toLowerCase());
+      if (existing) {
+        if (!selectedTagIds.includes(existing.id))
+          setSelectedTagIds((prev) => [...prev, existing.id]);
+        setTagInput("");
+      } else {
+        createTag.mutate({ name });
+      }
+    }
+  }
+
+  function removeTag(id: string) {
+    setSelectedTagIds((prev) => prev.filter((t) => t !== id));
+  }
 
   function onSubmit(values: ContactFormValues) {
     const payload = {
@@ -122,6 +145,8 @@ export function CustomerModal({
       phone: values.phone || undefined,
       status: values.status as "active" | "inactive",
       parentId: values.parentId || undefined,
+      ownerId: values.ownerId || undefined,
+      tagIds: selectedTagIds,
     };
 
     if (contactToEdit) {
@@ -135,10 +160,11 @@ export function CustomerModal({
   const parentCompanies = companies.filter((c) =>
     c.type === "company" && c.id !== contactToEdit?.id
   );
+  const selectedTags = allTags.filter((t) => selectedTagIds.includes(t.id));
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[480px]">
+      <DialogContent className="sm:max-w-[520px]">
         <DialogHeader>
           <DialogTitle>{contactToEdit ? "Modifica contatto" : "Nuovo contatto"}</DialogTitle>
           <DialogDescription>
@@ -148,8 +174,7 @@ export function CustomerModal({
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-2">
             <FormField
-              control={form.control}
-              name="name"
+              control={form.control} name="name"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Nome *</FormLabel>
@@ -160,9 +185,7 @@ export function CustomerModal({
             />
 
             <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="type"
+              <FormField control={form.control} name="type"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Tipo</FormLabel>
@@ -177,9 +200,7 @@ export function CustomerModal({
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="status"
+              <FormField control={form.control} name="status"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Stato</FormLabel>
@@ -196,11 +217,8 @@ export function CustomerModal({
               />
             </div>
 
-            {/* Azienda di appartenenza (solo per persone) */}
             {watchedType === "person" && parentCompanies.length > 0 && (
-              <FormField
-                control={form.control}
-                name="parentId"
+              <FormField control={form.control} name="parentId"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Azienda di appartenenza</FormLabel>
@@ -219,9 +237,28 @@ export function CustomerModal({
               />
             )}
 
-            <FormField
-              control={form.control}
-              name="company"
+            {/* Owner */}
+            {members.length > 0 && (
+              <FormField control={form.control} name="ownerId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Owner</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value ?? ""}>
+                      <FormControl><SelectTrigger><SelectValue placeholder="Nessuno" /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        <SelectItem value="">Nessuno</SelectItem>
+                        {members.map((m) => (
+                          <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            <FormField control={form.control} name="company"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Azienda (testo libero)</FormLabel>
@@ -232,9 +269,7 @@ export function CustomerModal({
             />
 
             <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="email"
+              <FormField control={form.control} name="email"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Email</FormLabel>
@@ -243,9 +278,7 @@ export function CustomerModal({
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="phone"
+              <FormField control={form.control} name="phone"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Telefono</FormLabel>
@@ -254,6 +287,54 @@ export function CustomerModal({
                   </FormItem>
                 )}
               />
+            </div>
+
+            {/* Chip-input tag */}
+            <div>
+              <p className="text-sm font-medium mb-1.5">Tag</p>
+              <div
+                className="flex flex-wrap gap-1.5 min-h-[38px] border border-border/50 rounded-md px-3 py-2 bg-background/50 cursor-text"
+                onClick={() => tagInputRef.current?.focus()}
+              >
+                {selectedTags.map((t) => (
+                  <Badge key={t.id} variant="secondary" className="gap-1 pr-1">
+                    {t.name}
+                    <button type="button" onClick={() => removeTag(t.id)} className="hover:text-destructive">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+                <input
+                  ref={tagInputRef}
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={handleTagKeyDown}
+                  placeholder={selectedTags.length === 0 ? "Digita un tag e premi Invio…" : ""}
+                  className="flex-1 min-w-[120px] text-sm bg-transparent outline-none"
+                />
+                {tagInput && (
+                  <button
+                    type="button"
+                    className="text-xs text-primary flex items-center gap-1"
+                    onClick={() => {
+                      const name = tagInput.trim();
+                      if (!name) return;
+                      const existing = allTags.find((t) => t.name.toLowerCase() === name.toLowerCase());
+                      if (existing) {
+                        if (!selectedTagIds.includes(existing.id))
+                          setSelectedTagIds((prev) => [...prev, existing.id]);
+                        setTagInput("");
+                      } else {
+                        createTag.mutate({ name });
+                      }
+                    }}
+                  >
+                    <Plus className="h-3 w-3" />
+                    {tagInput}
+                  </button>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Invio o virgola per aggiungere</p>
             </div>
 
             <DialogFooter>

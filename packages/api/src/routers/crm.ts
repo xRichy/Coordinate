@@ -5,12 +5,29 @@ import { eventBus, crmPipelineEvents } from "@coordinate/core/events";
 
 // ── Contact CRUD ──────────────────────────────────────────────────────────────
 
+const CONTACT_WITH_RELATIONS = {
+  include: {
+    parent: { select: { id: true, name: true, type: true } },
+    persons: { select: { id: true, name: true, email: true, phone: true, status: true } },
+  },
+} as const;
+
 const contactRouter = router({
   list: tenantProcedure.query(async ({ ctx }) => {
     return ctx.db.contact.findMany({
       orderBy: { createdAt: "desc" },
+      ...CONTACT_WITH_RELATIONS,
     });
   }),
+
+  byId: tenantProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ ctx, input }) => {
+      return ctx.db.contact.findFirstOrThrow({
+        where: { id: input.id },
+        ...CONTACT_WITH_RELATIONS,
+      });
+    }),
 
   create: tenantProcedure
     .input(
@@ -21,11 +38,13 @@ const contactRouter = router({
         phone: z.string().optional(),
         company: z.string().optional(),
         status: z.nativeEnum(ContactStatus).optional(),
+        parentId: z.string().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
       return ctx.db.contact.create({
         data: { tenantId: ctx.tenantId, ...input },
+        ...CONTACT_WITH_RELATIONS,
       });
     }),
 
@@ -40,6 +59,7 @@ const contactRouter = router({
           phone: z.string().nullish(),
           company: z.string().nullish(),
           status: z.nativeEnum(ContactStatus).optional(),
+          parentId: z.string().nullish(),
         }),
       })
     )
@@ -47,6 +67,7 @@ const contactRouter = router({
       return ctx.db.contact.update({
         where: { id: input.id },
         data: input.data,
+        ...CONTACT_WITH_RELATIONS,
       });
     }),
 

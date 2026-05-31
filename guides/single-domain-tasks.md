@@ -267,7 +267,7 @@ Fase 7  Launch white-glove               [ ] 0/4   attivi  (+4 deferred)
 
 ---
 
-### T3.1 — crm-contacts: relazione Persona ↔ Azienda
+### T3.1 ✅ — crm-contacts: relazione Persona ↔ Azienda
 **Deps**: T2.7 · **Size**: M — modello con relazione padre-figlio; UI dettaglio mostra persone dell'azienda.
 
 ### T3.2 — crm-contacts: tag e owner

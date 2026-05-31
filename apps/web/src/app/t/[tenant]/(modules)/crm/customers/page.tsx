@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Users } from "lucide-react";
+import { Plus, Pencil, Trash2, Users, Building2, User, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -15,6 +15,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
+import { Separator } from "@/components/ui/separator";
 import { useTRPC } from "@/lib/trpc";
 import { CustomerModal } from "./customer-modal";
 import type { inferRouterOutputs } from "@trpc/server";
@@ -28,6 +36,7 @@ export default function CustomersPage() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editContact, setEditContact] = useState<Contact | null>(null);
+  const [detailContact, setDetailContact] = useState<Contact | null>(null);
 
   const { data: contacts = [], isLoading } = useQuery(
     trpc.crm.contact.list.queryOptions()
@@ -37,11 +46,10 @@ export default function CustomersPage() {
     trpc.crm.contact.delete.mutationOptions({
       onSuccess: () => {
         queryClient.invalidateQueries(trpc.crm.contact.list.queryOptions());
+        setDetailContact(null);
         toast.success("Contatto eliminato.");
       },
-      onError: () => {
-        toast.error("Errore durante l'eliminazione.");
-      },
+      onError: () => toast.error("Errore durante l'eliminazione."),
     })
   );
 
@@ -50,16 +58,18 @@ export default function CustomersPage() {
     setModalOpen(true);
   }
 
-  function openEdit(contact: Contact) {
+  function openEdit(contact: Contact, e: React.MouseEvent) {
+    e.stopPropagation();
     setEditContact(contact);
     setModalOpen(true);
   }
 
-  function handleDelete(id: string) {
-    if (confirm("Eliminare questo contatto?")) {
-      deleteContact.mutate({ id });
-    }
+  function handleDelete(id: string, e: React.MouseEvent) {
+    e.stopPropagation();
+    if (confirm("Eliminare questo contatto?")) deleteContact.mutate({ id });
   }
+
+  const companies = contacts.filter((c) => c.type === "company");
 
   return (
     <div className="flex-1 space-y-6">
@@ -67,7 +77,7 @@ export default function CustomersPage() {
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Contatti</h2>
           <p className="text-muted-foreground mt-1">
-            Gestisci i tuoi contatti e clienti.
+            Gestisci persone e aziende.
           </p>
         </div>
         <Button onClick={openCreate}>
@@ -100,49 +110,57 @@ export default function CustomersPage() {
                 <TableHead>Tipo</TableHead>
                 <TableHead>Azienda</TableHead>
                 <TableHead>Email</TableHead>
-                <TableHead>Telefono</TableHead>
                 <TableHead>Stato</TableHead>
-                <TableHead className="w-[100px]" />
+                <TableHead className="w-[90px]" />
               </TableRow>
             </TableHeader>
             <TableBody>
               {contacts.map((contact) => (
-                <TableRow key={contact.id}>
-                  <TableCell className="font-medium">{contact.name}</TableCell>
-                  <TableCell className="text-muted-foreground capitalize">
+                <TableRow
+                  key={contact.id}
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => setDetailContact(contact)}
+                >
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-2">
+                      {contact.type === "company" ? (
+                        <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
+                      ) : (
+                        <User className="h-4 w-4 text-muted-foreground shrink-0" />
+                      )}
+                      {contact.name}
+                      {contact.type === "company" && contact.persons.length > 0 && (
+                        <Badge variant="secondary" className="text-xs ml-1">
+                          {contact.persons.length}
+                        </Badge>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
                     {contact.type === "company" ? "Azienda" : "Persona"}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {contact.company ?? "—"}
+                    {contact.parent?.name ?? contact.company ?? "—"}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {contact.email ?? "—"}
                   </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {contact.phone ?? "—"}
-                  </TableCell>
                   <TableCell>
-                    <Badge
-                      variant={contact.status === "active" ? "default" : "secondary"}
-                    >
+                    <Badge variant={contact.status === "active" ? "default" : "secondary"}>
                       {contact.status === "active" ? "Attivo" : "Inattivo"}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
                       <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => openEdit(contact)}
+                        variant="ghost" size="icon" className="h-8 w-8"
+                        onClick={(e) => openEdit(contact, e)}
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
                       <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive hover:text-destructive"
-                        onClick={() => handleDelete(contact.id)}
+                        variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"
+                        onClick={(e) => handleDelete(contact.id, e)}
                         disabled={deleteContact.isPending}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -156,10 +174,138 @@ export default function CustomersPage() {
         )}
       </div>
 
+      {/* Detail sheet */}
+      <Sheet open={!!detailContact} onOpenChange={(open) => !open && setDetailContact(null)}>
+        <SheetContent className="w-[400px] sm:w-[480px]">
+          {detailContact && (
+            <>
+              <SheetHeader className="mb-4">
+                <div className="flex items-center gap-2">
+                  {detailContact.type === "company" ? (
+                    <Building2 className="h-5 w-5 text-primary" />
+                  ) : (
+                    <User className="h-5 w-5 text-primary" />
+                  )}
+                  <SheetTitle>{detailContact.name}</SheetTitle>
+                </div>
+                <SheetDescription>
+                  {detailContact.type === "company" ? "Azienda" : "Persona"} ·{" "}
+                  {detailContact.status === "active" ? "Attivo" : "Inattivo"}
+                </SheetDescription>
+              </SheetHeader>
+
+              <div className="space-y-4 text-sm">
+                {detailContact.email && (
+                  <div>
+                    <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">Email</p>
+                    <p>{detailContact.email}</p>
+                  </div>
+                )}
+                {detailContact.phone && (
+                  <div>
+                    <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">Telefono</p>
+                    <p>{detailContact.phone}</p>
+                  </div>
+                )}
+
+                {/* Person → show parent company */}
+                {detailContact.type === "person" && detailContact.parent && (
+                  <div>
+                    <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">Azienda</p>
+                    <button
+                      className="flex items-center gap-2 text-primary hover:underline"
+                      onClick={() => {
+                        const parent = contacts.find((c) => c.id === detailContact.parent!.id);
+                        if (parent) setDetailContact(parent);
+                      }}
+                    >
+                      <Building2 className="h-4 w-4" />
+                      {detailContact.parent.name}
+                      <ChevronRight className="h-3 w-3" />
+                    </button>
+                  </div>
+                )}
+
+                {/* Company → show list of persons */}
+                {detailContact.type === "company" && (
+                  <>
+                    <Separator />
+                    <div>
+                      <p className="text-muted-foreground text-xs uppercase tracking-wide mb-2">
+                        Persone ({detailContact.persons.length})
+                      </p>
+                      {detailContact.persons.length === 0 ? (
+                        <p className="text-muted-foreground text-sm">Nessuna persona associata.</p>
+                      ) : (
+                        <ul className="space-y-2">
+                          {detailContact.persons.map((p) => (
+                            <li key={p.id}>
+                              <button
+                                className="flex items-center gap-2 w-full text-left hover:bg-muted/50 rounded p-1.5 transition-colors"
+                                onClick={() => {
+                                  const full = contacts.find((c) => c.id === p.id);
+                                  if (full) setDetailContact(full);
+                                }}
+                              >
+                                <User className="h-4 w-4 text-muted-foreground shrink-0" />
+                                <div className="min-w-0">
+                                  <p className="font-medium truncate">{p.name}</p>
+                                  {p.email && (
+                                    <p className="text-xs text-muted-foreground truncate">{p.email}</p>
+                                  )}
+                                </div>
+                                <ChevronRight className="h-3 w-3 ml-auto text-muted-foreground shrink-0" />
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+
+                      <Button
+                        variant="outline" size="sm" className="mt-3 w-full"
+                        onClick={() => {
+                          setModalOpen(true);
+                          setEditContact(null);
+                          // Pre-select the company as parent — handled in modal via prop
+                        }}
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Aggiungi persona
+                      </Button>
+                    </div>
+                  </>
+                )}
+
+                <Separator />
+                <div className="flex gap-2 pt-1">
+                  <Button
+                    variant="outline" size="sm" className="flex-1"
+                    onClick={() => { setEditContact(detailContact); setModalOpen(true); }}
+                  >
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Modifica
+                  </Button>
+                  <Button
+                    variant="outline" size="sm"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => { if (confirm("Eliminare?")) deleteContact.mutate({ id: detailContact.id }); }}
+                    disabled={deleteContact.isPending}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
+
       <CustomerModal
         isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
+        onClose={() => { setModalOpen(false); setEditContact(null); }}
         contactToEdit={editContact}
+        companies={companies}
+        defaultParentId={detailContact?.type === "company" ? detailContact.id : undefined}
       />
     </div>
   );

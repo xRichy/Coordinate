@@ -272,13 +272,17 @@ model Contact {
   phone     String?
   company   String?
   status    ContactStatus @default(active)
+  parentId  String?
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant  Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  parent  Contact?  @relation("ContactPersons", fields: [parentId], references: [id])
+  persons Contact[] @relation("ContactPersons")
 
   @@index([tenantId])
   @@index([tenantId, status])
+  @@index([parentId])
   @@map("contacts")
 }
 

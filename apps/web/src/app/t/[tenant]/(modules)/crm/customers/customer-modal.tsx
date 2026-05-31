@@ -44,6 +44,7 @@ const contactSchema = z.object({
   email: z.string().email("Email non valida").optional().or(z.literal("")),
   phone: z.string().optional(),
   status: z.enum(["active", "inactive"]),
+  parentId: z.string().optional(),
 });
 
 type ContactFormValues = z.infer<typeof contactSchema>;
@@ -52,43 +53,44 @@ interface CustomerModalProps {
   isOpen: boolean;
   onClose: () => void;
   contactToEdit?: Contact | null;
+  companies?: Contact[];
+  defaultParentId?: string;
 }
 
-export function CustomerModal({ isOpen, onClose, contactToEdit }: CustomerModalProps) {
+export function CustomerModal({
+  isOpen,
+  onClose,
+  contactToEdit,
+  companies = [],
+  defaultParentId,
+}: CustomerModalProps) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
 
+  const invalidate = () =>
+    queryClient.invalidateQueries(trpc.crm.contact.list.queryOptions());
+
   const createContact = useMutation(
     trpc.crm.contact.create.mutationOptions({
-      onSuccess: () => {
-        queryClient.invalidateQueries(trpc.crm.contact.list.queryOptions());
-        toast.success("Contatto creato.");
-        onClose();
-      },
+      onSuccess: () => { invalidate(); toast.success("Contatto creato."); onClose(); },
     })
   );
 
   const updateContact = useMutation(
     trpc.crm.contact.update.mutationOptions({
-      onSuccess: () => {
-        queryClient.invalidateQueries(trpc.crm.contact.list.queryOptions());
-        toast.success("Contatto aggiornato.");
-        onClose();
-      },
+      onSuccess: () => { invalidate(); toast.success("Contatto aggiornato."); onClose(); },
     })
   );
 
   const form = useForm<ContactFormValues>({
     resolver: zodResolver(contactSchema),
     defaultValues: {
-      name: "",
-      type: "person",
-      company: "",
-      email: "",
-      phone: "",
-      status: "active",
+      name: "", type: "person", company: "", email: "",
+      phone: "", status: "active", parentId: defaultParentId ?? "",
     },
   });
+
+  const watchedType = form.watch("type");
 
   useEffect(() => {
     if (isOpen) {
@@ -100,12 +102,16 @@ export function CustomerModal({ isOpen, onClose, contactToEdit }: CustomerModalP
           email: contactToEdit.email ?? "",
           phone: contactToEdit.phone ?? "",
           status: (contactToEdit.status as "active" | "inactive") ?? "active",
+          parentId: contactToEdit.parentId ?? "",
         });
       } else {
-        form.reset({ name: "", type: "person", company: "", email: "", phone: "", status: "active" });
+        form.reset({
+          name: "", type: "person", company: "", email: "",
+          phone: "", status: "active", parentId: defaultParentId ?? "",
+        });
       }
     }
-  }, [contactToEdit, isOpen, form]);
+  }, [contactToEdit, isOpen, form, defaultParentId]);
 
   function onSubmit(values: ContactFormValues) {
     const payload = {
@@ -115,6 +121,7 @@ export function CustomerModal({ isOpen, onClose, contactToEdit }: CustomerModalP
       email: values.email || undefined,
       phone: values.phone || undefined,
       status: values.status as "active" | "inactive",
+      parentId: values.parentId || undefined,
     };
 
     if (contactToEdit) {
@@ -125,6 +132,9 @@ export function CustomerModal({ isOpen, onClose, contactToEdit }: CustomerModalP
   }
 
   const isPending = createContact.isPending || updateContact.isPending;
+  const parentCompanies = companies.filter((c) =>
+    c.type === "company" && c.id !== contactToEdit?.id
+  );
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -132,9 +142,7 @@ export function CustomerModal({ isOpen, onClose, contactToEdit }: CustomerModalP
         <DialogHeader>
           <DialogTitle>{contactToEdit ? "Modifica contatto" : "Nuovo contatto"}</DialogTitle>
           <DialogDescription>
-            {contactToEdit
-              ? "Modifica i dati del contatto."
-              : "Inserisci i dati del nuovo contatto."}
+            {contactToEdit ? "Modifica i dati del contatto." : "Inserisci i dati del nuovo contatto."}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -145,9 +153,7 @@ export function CustomerModal({ isOpen, onClose, contactToEdit }: CustomerModalP
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Nome *</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Mario Rossi" {...field} />
-                  </FormControl>
+                  <FormControl><Input placeholder="Mario Rossi" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -161,11 +167,7 @@ export function CustomerModal({ isOpen, onClose, contactToEdit }: CustomerModalP
                   <FormItem>
                     <FormLabel>Tipo</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
+                      <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                       <SelectContent>
                         <SelectItem value="person">Persona</SelectItem>
                         <SelectItem value="company">Azienda</SelectItem>
@@ -175,7 +177,6 @@ export function CustomerModal({ isOpen, onClose, contactToEdit }: CustomerModalP
                   </FormItem>
                 )}
               />
-
               <FormField
                 control={form.control}
                 name="status"
@@ -183,11 +184,7 @@ export function CustomerModal({ isOpen, onClose, contactToEdit }: CustomerModalP
                   <FormItem>
                     <FormLabel>Stato</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
+                      <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                       <SelectContent>
                         <SelectItem value="active">Attivo</SelectItem>
                         <SelectItem value="inactive">Inattivo</SelectItem>
@@ -199,15 +196,36 @@ export function CustomerModal({ isOpen, onClose, contactToEdit }: CustomerModalP
               />
             </div>
 
+            {/* Azienda di appartenenza (solo per persone) */}
+            {watchedType === "person" && parentCompanies.length > 0 && (
+              <FormField
+                control={form.control}
+                name="parentId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Azienda di appartenenza</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value ?? ""}>
+                      <FormControl><SelectTrigger><SelectValue placeholder="Nessuna" /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        <SelectItem value="">Nessuna</SelectItem>
+                        {parentCompanies.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
             <FormField
               control={form.control}
               name="company"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Azienda</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Rossi Srl" {...field} />
-                  </FormControl>
+                  <FormLabel>Azienda (testo libero)</FormLabel>
+                  <FormControl><Input placeholder="Rossi Srl" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -220,9 +238,7 @@ export function CustomerModal({ isOpen, onClose, contactToEdit }: CustomerModalP
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="mario@rossisrl.it" {...field} />
-                    </FormControl>
+                    <FormControl><Input type="email" placeholder="mario@rossisrl.it" {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -233,9 +249,7 @@ export function CustomerModal({ isOpen, onClose, contactToEdit }: CustomerModalP
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Telefono</FormLabel>
-                    <FormControl>
-                      <Input placeholder="+39 02 1234567" {...field} />
-                    </FormControl>
+                    <FormControl><Input placeholder="+39 02 1234567" {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}

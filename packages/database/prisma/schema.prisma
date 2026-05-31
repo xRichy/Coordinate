@@ -63,6 +63,7 @@ model Tenant {
   activities     Activity[]
   products       Product[]
   stockMovements StockMovement[]
+  tags           Tag[]
 }
 
 model User {
@@ -77,13 +78,14 @@ model User {
   // Two-factor extension (added by twoFactor plugin)
   twoFactorEnabled Boolean?
 
-  sessions    Session[]
-  accounts    Account[]
-  memberships Membership[]
-  auditLogs   AuditLog[]
-  baMembers   Member[]
-  invitations Invitation[]
-  twoFactors  TwoFactor[]
+  sessions      Session[]
+  accounts      Account[]
+  memberships   Membership[]
+  auditLogs     AuditLog[]
+  baMembers     Member[]
+  invitations   Invitation[]
+  twoFactors    TwoFactor[]
+  ownedContacts Contact[]   @relation("ContactOwner")
 }
 
 model Session {
@@ -273,17 +275,47 @@ model Contact {
   company   String?
   status    ContactStatus @default(active)
   parentId  String?
+  ownerId   String?
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 
-  tenant  Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  parent  Contact?  @relation("ContactPersons", fields: [parentId], references: [id])
-  persons Contact[] @relation("ContactPersons")
+  tenant  Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  parent  Contact?     @relation("ContactPersons", fields: [parentId], references: [id])
+  persons Contact[]    @relation("ContactPersons")
+  owner   User?        @relation("ContactOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  tags    ContactTag[]
 
   @@index([tenantId])
   @@index([tenantId, status])
   @@index([parentId])
+  @@index([ownerId])
   @@map("contacts")
+}
+
+// ── crm-contacts: Tag + ContactTag ───────────────────────────────────────────
+
+model Tag {
+  id       String @id @default(cuid())
+  tenantId String
+  name     String
+
+  tenant   Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contacts ContactTag[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("tags")
+}
+
+model ContactTag {
+  contactId String
+  tagId     String
+
+  contact Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([contactId, tagId])
+  @@map("contact_tags")
 }
 
 // ── crm-pipeline: PipelineStage, Lead, Deal ───────────────────────────────────

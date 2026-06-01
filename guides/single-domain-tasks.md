@@ -279,7 +279,7 @@ Fase 7  Launch white-glove               [ ] 0/4   attivi  (+4 deferred)
 ### T3.4 ✅ — crm-contacts: export CSV
 **Deps**: T3.2 · **Size**: S — export CSV filtrato.
 
-### T3.5 — crm-contacts: soft delete con ripristino 30gg
+### T3.5 ✅ — crm-contacts: soft delete con ripristino 30gg
 **Deps**: T3.2 · **Size**: M — `deletedAt`, filtro default escluso, "Cestino" admin, job Inngest hard-delete dopo 30gg. (Allineato a GDPR mvp-scope §6.)
 
 ### T3.6 — crm-pipeline: stadi configurabili dal tenant

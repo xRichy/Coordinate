@@ -276,6 +276,7 @@ model Contact {
   status    ContactStatus @default(active)
   parentId  String?
   ownerId   String?
+  deletedAt DateTime?
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 
@@ -287,6 +288,7 @@ model Contact {
 
   @@index([tenantId])
   @@index([tenantId, status])
+  @@index([tenantId, deletedAt])
   @@index([parentId])
   @@index([ownerId])
   @@map("contacts")

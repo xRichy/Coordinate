@@ -18,7 +18,16 @@ const CONTACT_WITH_RELATIONS = {
 const contactRouter = router({
   list: tenantProcedure.query(async ({ ctx }) => {
     return ctx.db.contact.findMany({
+      where: { deletedAt: null },
       orderBy: { createdAt: "desc" },
+      ...CONTACT_WITH_RELATIONS,
+    });
+  }),
+
+  listDeleted: tenantProcedure.query(async ({ ctx }) => {
+    return ctx.db.contact.findMany({
+      where: { deletedAt: { not: null } },
+      orderBy: { deletedAt: "desc" },
       ...CONTACT_WITH_RELATIONS,
     });
   }),
@@ -103,6 +112,26 @@ const contactRouter = router({
     }),
 
   delete: tenantProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db.contact.update({
+        where: { id: input.id },
+        data: { deletedAt: new Date() },
+      });
+      return { id: input.id };
+    }),
+
+  restore: tenantProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db.contact.update({
+        where: { id: input.id },
+        data: { deletedAt: null },
+      });
+      return { id: input.id };
+    }),
+
+  hardDelete: tenantProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
       await ctx.db.contact.delete({ where: { id: input.id } });

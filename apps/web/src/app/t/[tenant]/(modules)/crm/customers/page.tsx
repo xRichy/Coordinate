@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Users, Building2, User, ChevronRight, Tag as TagIcon, Upload } from "lucide-react";
+import { Plus, Pencil, Trash2, Users, Building2, User, ChevronRight, Tag as TagIcon, Upload, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -55,6 +55,32 @@ export default function CustomersPage() {
 
   const companies = contacts.filter((c) => c.type === "company");
 
+  function exportCSV() {
+    const rows = filtered.length > 0 ? filtered : contacts;
+    const header = ["id", "nome", "tipo", "azienda_padre", "azienda", "email", "telefono", "stato", "owner", "tag"];
+    const lines = rows.map((c) => [
+      c.id,
+      c.name,
+      c.type,
+      c.parent?.name ?? "",
+      c.company ?? "",
+      c.email ?? "",
+      c.phone ?? "",
+      c.status,
+      c.owner?.name ?? "",
+      c.tags.map((ct) => ct.tag.name).join(";"),
+    ].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","));
+
+    const csv = [header.join(","), ...lines].join("\r\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `contatti_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   function openCreate() { setEditContact(null); setModalOpen(true); }
   function openEdit(contact: Contact, e: React.MouseEvent) {
     e.stopPropagation(); setEditContact(contact); setModalOpen(true);
@@ -75,6 +101,10 @@ export default function CustomersPage() {
           <Button variant="outline" onClick={() => setImportOpen(true)}>
             <Upload className="mr-2 h-4 w-4" />
             Importa CSV
+          </Button>
+          <Button variant="outline" onClick={exportCSV} disabled={contacts.length === 0}>
+            <Download className="mr-2 h-4 w-4" />
+            Esporta CSV
           </Button>
           <Button onClick={openCreate}>
             <Plus className="mr-2 h-4 w-4" />

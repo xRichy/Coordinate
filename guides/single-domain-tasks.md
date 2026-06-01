@@ -276,7 +276,7 @@ Fase 7  Launch white-glove               [ ] 0/4   attivi  (+4 deferred)
 ### T3.3 ✅ — crm-contacts: import CSV con mapping manuale
 **Deps**: T3.2 · **Size**: L — upload CSV, mapping colonne→campi, preview 5 righe, import batch con progress.
 
-### T3.4 — crm-contacts: export CSV
+### T3.4 ✅ — crm-contacts: export CSV
 **Deps**: T3.2 · **Size**: S — export CSV filtrato.
 
 ### T3.5 — crm-contacts: soft delete con ripristino 30gg

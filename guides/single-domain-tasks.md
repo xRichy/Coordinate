@@ -273,7 +273,7 @@ Fase 7  Launch white-glove               [ ] 0/4   attivi  (+4 deferred)
 ### T3.2 ✅ — crm-contacts: tag e owner
 **Deps**: T3.1 · **Size**: M — modello `Tag` (tenant-scoped) m2m con Contact; chip-input + filtro; owner = utente del tenant.
 
-### T3.3 — crm-contacts: import CSV con mapping manuale
+### T3.3 ✅ — crm-contacts: import CSV con mapping manuale
 **Deps**: T3.2 · **Size**: L — upload CSV, mapping colonne→campi, preview 5 righe, import batch con progress.
 
 ### T3.4 — crm-contacts: export CSV

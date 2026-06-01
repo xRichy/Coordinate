@@ -108,6 +108,27 @@ const contactRouter = router({
       await ctx.db.contact.delete({ where: { id: input.id } });
       return { id: input.id };
     }),
+
+  importBatch: tenantProcedure
+    .input(
+      z.array(
+        z.object({
+          name: z.string().min(1),
+          type: z.nativeEnum(ContactType).optional(),
+          email: z.string().email().optional(),
+          phone: z.string().optional(),
+          company: z.string().optional(),
+          status: z.nativeEnum(ContactStatus).optional(),
+        })
+      ).min(1).max(500)
+    )
+    .mutation(async ({ ctx, input }) => {
+      const result = await ctx.db.contact.createMany({
+        data: input.map((c) => ({ tenantId: ctx.tenantId, ...c })),
+        skipDuplicates: false,
+      });
+      return { count: result.count };
+    }),
 });
 
 // ── Tag CRUD ──────────────────────────────────────────────────────────────────

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Users, Building2, User, ChevronRight, Tag as TagIcon } from "lucide-react";
+import { Plus, Pencil, Trash2, Users, Building2, User, ChevronRight, Tag as TagIcon, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -19,6 +19,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { useTRPC } from "@/lib/trpc";
 import { CustomerModal } from "./customer-modal";
+import { ImportModal } from "./import-modal";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "@coordinate/api";
 
@@ -29,6 +30,7 @@ export default function CustomersPage() {
   const queryClient = useQueryClient();
 
   const [modalOpen, setModalOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [editContact, setEditContact] = useState<Contact | null>(null);
   const [detailContact, setDetailContact] = useState<Contact | null>(null);
   const [filterTagId, setFilterTagId] = useState<string>("");
@@ -69,10 +71,16 @@ export default function CustomersPage() {
           <h2 className="text-3xl font-bold tracking-tight">Contatti</h2>
           <p className="text-muted-foreground mt-1">Gestisci persone e aziende.</p>
         </div>
-        <Button onClick={openCreate}>
-          <Plus className="mr-2 h-4 w-4" />
-          Nuovo contatto
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setImportOpen(true)}>
+            <Upload className="mr-2 h-4 w-4" />
+            Importa CSV
+          </Button>
+          <Button onClick={openCreate}>
+            <Plus className="mr-2 h-4 w-4" />
+            Nuovo contatto
+          </Button>
+        </div>
       </div>
 
       {/* Tag filter */}
@@ -296,6 +304,8 @@ export default function CustomersPage() {
           )}
         </SheetContent>
       </Sheet>
+
+      <ImportModal isOpen={importOpen} onClose={() => setImportOpen(false)} />
 
       <CustomerModal
         isOpen={modalOpen}

@@ -285,7 +285,7 @@ Fase 7  Launch white-glove               [ ] 0/4   attivi  (+4 deferred)
 ### T3.6 ✅ — crm-pipeline: stadi configurabili dal tenant
 **Deps**: T2.8 · **Size**: M — `PipelineStage` ordinato; UI settings riordina/rinomina; 6 stadi default al setup tenant.
 
-### T3.7 — crm-pipeline: conversione Lead → Deal e Deal Won → Customer
+### T3.7 ✅ — crm-pipeline: conversione Lead → Deal e Deal Won → Customer
 **Deps**: T3.6 · **Size**: M — pulsante "Convert to Deal"; Deal in "Won" marca Contact come customer.
 
 ### T3.8 — crm-pipeline: vista tabella alternativa al Kanban

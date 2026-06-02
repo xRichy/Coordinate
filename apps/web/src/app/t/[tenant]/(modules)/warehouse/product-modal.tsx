@@ -165,6 +165,7 @@ export function ProductModal({ isOpen, onClose, productToEdit }: ProductModalPro
                         type="number"
                         step="0.01"
                         {...field}
+                        onFocus={(e) => e.target.select()}
                         onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                       />
                     </FormControl>
@@ -182,6 +183,7 @@ export function ProductModal({ isOpen, onClose, productToEdit }: ProductModalPro
                       <Input
                         type="number"
                         {...field}
+                        onFocus={(e) => e.target.select()}
                         onChange={(e) => field.onChange(parseInt(e.target.value, 10) || 0)}
                       />
                     </FormControl>

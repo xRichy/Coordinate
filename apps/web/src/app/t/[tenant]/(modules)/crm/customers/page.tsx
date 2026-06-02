@@ -5,8 +5,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   Plus, Pencil, Trash2, Users, Building2, User,
-  ChevronRight, Tag as TagIcon, Upload, Download, RotateCcw, AlertTriangle,
+  Tag as TagIcon, Upload, Download, RotateCcw, AlertTriangle,
 } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -14,17 +15,14 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
-} from "@/components/ui/sheet";
-import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import { useTRPC } from "@/lib/trpc";
 import { CustomerModal } from "./customer-modal";
 import { ImportModal } from "./import-modal";
+import { ContactDetailModal } from "./contact-detail-modal";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "@coordinate/api";
 
@@ -40,7 +38,7 @@ export default function CustomersPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [editContact, setEditContact] = useState<Contact | null>(null);
   const [detailContact, setDetailContact] = useState<Contact | null>(null);
-  const [filterTagId, setFilterTagId] = useState<string>("");
+  const [filterTagId, setFilterTagId] = useState<string>("all");
 
   const { data: contacts = [], isLoading } = useQuery(trpc.crm.contact.list.queryOptions());
   const { data: deletedContacts = [], isLoading: isLoadingTrash } = useQuery(
@@ -74,7 +72,7 @@ export default function CustomersPage() {
     })
   );
 
-  const filtered = filterTagId
+  const filtered = filterTagId && filterTagId !== "all"
     ? contacts.filter((c) => c.tags.some((ct) => ct.tag.id === filterTagId))
     : contacts;
 
@@ -238,14 +236,14 @@ export default function CustomersPage() {
               <SelectValue placeholder="Filtra per tag…" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Tutti i contatti</SelectItem>
+              <SelectItem value="all">Tutti i contatti</SelectItem>
               {tags.map((t) => (
                 <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
-          {filterTagId && (
-            <Button variant="ghost" size="sm" onClick={() => setFilterTagId("")}>
+          {filterTagId !== "all" && (
+            <Button variant="ghost" size="sm" onClick={() => setFilterTagId("all")}>
               Rimuovi filtro
             </Button>
           )}
@@ -260,8 +258,8 @@ export default function CustomersPage() {
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center text-muted-foreground gap-3">
             <Users className="h-10 w-10 opacity-30" />
-            <p className="text-sm">{filterTagId ? "Nessun contatto con questo tag." : "Nessun contatto ancora."}</p>
-            {!filterTagId && (
+            <p className="text-sm">{filterTagId !== "all" ? "Nessun contatto con questo tag." : "Nessun contatto ancora."}</p>
+            {filterTagId === "all" && (
               <Button variant="outline" size="sm" onClick={openCreate}>
                 <Plus className="mr-2 h-4 w-4" />Aggiungi il primo
               </Button>
@@ -309,8 +307,11 @@ export default function CustomersPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={contact.status === "active" ? "default" : "secondary"}>
-                      {contact.status === "active" ? "Attivo" : "Inattivo"}
+                    <Badge variant={
+                      contact.status === "active" ? "default" :
+                      contact.status === "customer" ? "default" : "secondary"
+                    } className={contact.status === "customer" ? "bg-green-600 hover:bg-green-700" : ""}>
+                      {contact.status === "active" ? "Attivo" : contact.status === "customer" ? "Cliente" : "Inattivo"}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -334,119 +335,19 @@ export default function CustomersPage() {
         )}
       </div>
 
-      {/* Detail sheet */}
-      <Sheet open={!!detailContact} onOpenChange={(open) => !open && setDetailContact(null)}>
-        <SheetContent className="w-[400px] sm:w-[480px]">
-          {detailContact && (
-            <>
-              <SheetHeader className="mb-4">
-                <div className="flex items-center gap-2">
-                  {detailContact.type === "company"
-                    ? <Building2 className="h-5 w-5 text-primary" />
-                    : <User className="h-5 w-5 text-primary" />}
-                  <SheetTitle>{detailContact.name}</SheetTitle>
-                </div>
-                <SheetDescription>
-                  {detailContact.type === "company" ? "Azienda" : "Persona"} ·{" "}
-                  {detailContact.status === "active" ? "Attivo" : "Inattivo"}
-                </SheetDescription>
-              </SheetHeader>
-              <div className="space-y-4 text-sm">
-                {detailContact.email && (
-                  <div>
-                    <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">Email</p>
-                    <p>{detailContact.email}</p>
-                  </div>
-                )}
-                {detailContact.phone && (
-                  <div>
-                    <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">Telefono</p>
-                    <p>{detailContact.phone}</p>
-                  </div>
-                )}
-                {detailContact.owner && (
-                  <div>
-                    <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">Owner</p>
-                    <p>{detailContact.owner.name}</p>
-                  </div>
-                )}
-                {detailContact.tags.length > 0 && (
-                  <div>
-                    <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">Tag</p>
-                    <div className="flex flex-wrap gap-1">
-                      {detailContact.tags.map((ct) => (
-                        <Badge key={ct.tag.id} variant="outline">{ct.tag.name}</Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {detailContact.type === "person" && detailContact.parent && (
-                  <div>
-                    <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">Azienda</p>
-                    <button className="flex items-center gap-2 text-primary hover:underline"
-                      onClick={() => {
-                        const parent = contacts.find((c) => c.id === detailContact.parent!.id);
-                        if (parent) setDetailContact(parent);
-                      }}>
-                      <Building2 className="h-4 w-4" />
-                      {detailContact.parent.name}
-                      <ChevronRight className="h-3 w-3" />
-                    </button>
-                  </div>
-                )}
-                {detailContact.type === "company" && (
-                  <>
-                    <Separator />
-                    <div>
-                      <p className="text-muted-foreground text-xs uppercase tracking-wide mb-2">
-                        Persone ({detailContact.persons.length})
-                      </p>
-                      {detailContact.persons.length === 0 ? (
-                        <p className="text-muted-foreground text-sm">Nessuna persona associata.</p>
-                      ) : (
-                        <ul className="space-y-2">
-                          {detailContact.persons.map((p) => (
-                            <li key={p.id}>
-                              <button className="flex items-center gap-2 w-full text-left hover:bg-muted/50 rounded p-1.5 transition-colors"
-                                onClick={() => { const full = contacts.find((c) => c.id === p.id); if (full) setDetailContact(full); }}>
-                                <User className="h-4 w-4 text-muted-foreground shrink-0" />
-                                <div className="min-w-0">
-                                  <p className="font-medium truncate">{p.name}</p>
-                                  {p.email && <p className="text-xs text-muted-foreground truncate">{p.email}</p>}
-                                </div>
-                                <ChevronRight className="h-3 w-3 ml-auto text-muted-foreground shrink-0" />
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                      <Button variant="outline" size="sm" className="mt-3 w-full"
-                        onClick={() => { setEditContact(null); setModalOpen(true); }}>
-                        <Plus className="mr-2 h-4 w-4" />Aggiungi persona
-                      </Button>
-                    </div>
-                  </>
-                )}
-                <Separator />
-                <div className="flex gap-2 pt-1">
-                  <Button variant="outline" size="sm" className="flex-1"
-                    onClick={() => { setEditContact(detailContact); setModalOpen(true); }}>
-                    <Pencil className="mr-2 h-4 w-4" />Modifica
-                  </Button>
-                  <Button variant="outline" size="sm" className="text-destructive hover:text-destructive"
-                    onClick={() => {
-                      if (confirm("Spostare nel cestino?"))
-                        deleteContact.mutate({ id: detailContact.id });
-                    }}
-                    disabled={deleteContact.isPending}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </>
-          )}
-        </SheetContent>
-      </Sheet>
+      <ContactDetailModal
+        contact={detailContact}
+        contacts={contacts}
+        onClose={() => setDetailContact(null)}
+        onNavigate={(c) => setDetailContact(c)}
+        onEdit={() => { setEditContact(detailContact); setModalOpen(true); }}
+        onDelete={() => {
+          if (confirm("Spostare nel cestino? Verrà eliminato definitivamente dopo 30 giorni."))
+            deleteContact.mutate({ id: detailContact!.id });
+        }}
+        onAddPerson={() => { setEditContact(null); setModalOpen(true); }}
+        isDeleting={deleteContact.isPending}
+      />
 
       <ImportModal isOpen={importOpen} onClose={() => setImportOpen(false)} />
       <CustomerModal

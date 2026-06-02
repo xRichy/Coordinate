@@ -209,6 +209,7 @@ export function CustomerModal({
                       <SelectContent>
                         <SelectItem value="active">Attivo</SelectItem>
                         <SelectItem value="inactive">Inattivo</SelectItem>
+                        <SelectItem value="customer">Cliente</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -222,10 +223,10 @@ export function CustomerModal({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Azienda di appartenenza</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value ?? ""}>
+                    <Select onValueChange={(v) => field.onChange(v === "none" ? "" : v)} value={field.value || "none"}>
                       <FormControl><SelectTrigger><SelectValue placeholder="Nessuna" /></SelectTrigger></FormControl>
                       <SelectContent>
-                        <SelectItem value="">Nessuna</SelectItem>
+                        <SelectItem value="none">Nessuna</SelectItem>
                         {parentCompanies.map((c) => (
                           <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                         ))}
@@ -243,10 +244,10 @@ export function CustomerModal({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Owner</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value ?? ""}>
+                    <Select onValueChange={(v) => field.onChange(v === "none" ? "" : v)} value={field.value || "none"}>
                       <FormControl><SelectTrigger><SelectValue placeholder="Nessuno" /></SelectTrigger></FormControl>
                       <SelectContent>
-                        <SelectItem value="">Nessuno</SelectItem>
+                        <SelectItem value="none">Nessuno</SelectItem>
                         {members.map((m) => (
                           <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
                         ))}

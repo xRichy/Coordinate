@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "@coordinate/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,6 +32,9 @@ const leadsData = [
 
 export default function DashboardPage() {
     const trpc = useTRPC();
+    const [chartsReady, setChartsReady] = useState(false);
+    useEffect(() => { setChartsReady(true); }, []);
+
     const { data: health } = useQuery(trpc.healthcheck.queryOptions());
     const { data: leads = [] } = useQuery(trpc.crm.lead.list.queryOptions());
     const { data: activities = [] } = useQuery(trpc.activities.activity.list.queryOptions());
@@ -99,24 +103,26 @@ export default function DashboardPage() {
                     </CardHeader>
                     <CardContent className="pl-2">
                         <div className="h-[300px]">
-                            <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
-                                <AreaChart data={revenueData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                                    <defs>
-                                        <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.8} />
-                                            <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
-                                        </linearGradient>
-                                    </defs>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} strokeOpacity={0.4} />
-                                    <XAxis dataKey="name" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
-                                    <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
-                                    <Tooltip
-                                        contentStyle={{ backgroundColor: 'var(--card)', borderRadius: '8px', border: '1px solid var(--border)', color: 'var(--foreground)' }}
-                                        itemStyle={{ color: 'var(--foreground)' }}
-                                    />
-                                    <Area type="monotone" dataKey="revenue" stroke="var(--primary)" fillOpacity={1} fill="url(#colorRevenue)" />
-                                </AreaChart>
-                            </ResponsiveContainer>
+                            {chartsReady && (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <AreaChart data={revenueData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                                        <defs>
+                                            <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.8} />
+                                                <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
+                                            </linearGradient>
+                                        </defs>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} strokeOpacity={0.4} />
+                                        <XAxis dataKey="name" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
+                                        <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
+                                        <Tooltip
+                                            contentStyle={{ backgroundColor: 'var(--card)', borderRadius: '8px', border: '1px solid var(--border)', color: 'var(--foreground)' }}
+                                            itemStyle={{ color: 'var(--foreground)' }}
+                                        />
+                                        <Area type="monotone" dataKey="revenue" stroke="var(--primary)" fillOpacity={1} fill="url(#colorRevenue)" />
+                                    </AreaChart>
+                                </ResponsiveContainer>
+                            )}
                         </div>
                     </CardContent>
                 </Card>
@@ -128,18 +134,20 @@ export default function DashboardPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="h-[300px]">
-                            <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
-                                <BarChart data={leadsData}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} strokeOpacity={0.4} />
-                                    <XAxis dataKey="name" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
-                                    <Tooltip
-                                        cursor={{ fill: 'var(--muted)', opacity: 0.5 }}
-                                        contentStyle={{ backgroundColor: 'var(--card)', borderRadius: '8px', border: '1px solid var(--border)', color: 'var(--foreground)' }}
-                                        itemStyle={{ color: 'var(--foreground)' }}
-                                    />
-                                    <Bar dataKey="count" fill="var(--primary)" radius={[4, 4, 0, 0]} />
-                                </BarChart>
-                            </ResponsiveContainer>
+                            {chartsReady && (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={leadsData}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} strokeOpacity={0.4} />
+                                        <XAxis dataKey="name" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
+                                        <Tooltip
+                                            cursor={{ fill: 'var(--muted)', opacity: 0.5 }}
+                                            contentStyle={{ backgroundColor: 'var(--card)', borderRadius: '8px', border: '1px solid var(--border)', color: 'var(--foreground)' }}
+                                            itemStyle={{ color: 'var(--foreground)' }}
+                                        />
+                                        <Bar dataKey="count" fill="var(--primary)" radius={[4, 4, 0, 0]} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            )}
                         </div>
                     </CardContent>
                 </Card>

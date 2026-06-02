@@ -136,6 +136,7 @@ export function StockMovementModal({ isOpen, onClose, product }: StockMovementMo
                       type="number"
                       min="1"
                       {...field}
+                      onFocus={(e) => e.target.select()}
                       onChange={(e) => field.onChange(parseInt(e.target.value, 10) || 1)}
                     />
                   </FormControl>

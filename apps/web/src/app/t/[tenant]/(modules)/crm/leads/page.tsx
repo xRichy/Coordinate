@@ -10,11 +10,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Plus, Trash2, Settings2, ArrowRight, Trophy, X } from "lucide-react";
+import { Plus, Trash2, Settings2, ArrowRight, Trophy, X, LayoutGrid, Table2 } from "lucide-react";
 import { toast } from "sonner";
 import { useTRPC } from "@/lib/trpc";
 import { LeadModal } from "./lead-modal";
 import { StagesModal } from "./stages-modal";
+import { LeadsTable } from "./leads-table";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "@coordinate/api";
 
@@ -35,6 +36,8 @@ export default function LeadsBoardPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [stagesOpen, setStagesOpen] = useState(false);
   const [draggedLead, setDraggedLead] = useState<Lead | null>(null);
+  const [leadsView, setLeadsView] = useState<"kanban" | "table">("kanban");
+  const [activeTab, setActiveTab] = useState<"leads" | "deals">("leads");
 
   const { data: leads = [], isLoading: leadsLoading } = useQuery(trpc.crm.lead.list.queryOptions());
   const { data: stages = [], isLoading: stagesLoading } = useQuery(trpc.crm.stage.list.queryOptions());
@@ -122,23 +125,52 @@ export default function LeadsBoardPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="leads" className="flex-1 flex flex-col overflow-hidden">
-        <TabsList className="w-fit">
-          <TabsTrigger value="leads">
-            Lead
-            {leads.length > 0 && (
-              <Badge variant="secondary" className="ml-2 text-xs">{leads.length}</Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="deals">
-            Deal
-            {openDeals.length > 0 && (
-              <Badge variant="secondary" className="ml-2 text-xs">{openDeals.length}</Badge>
-            )}
-          </TabsTrigger>
-        </TabsList>
+      <Tabs
+        value={activeTab}
+        onValueChange={(v) => setActiveTab(v as "leads" | "deals")}
+        className="flex-1 flex flex-col overflow-hidden"
+      >
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <TabsList className="w-fit">
+            <TabsTrigger value="leads">
+              Lead
+              {leads.length > 0 && (
+                <Badge variant="secondary" className="ml-2 text-xs">{leads.length}</Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="deals">
+              Deal
+              {openDeals.length > 0 && (
+                <Badge variant="secondary" className="ml-2 text-xs">{openDeals.length}</Badge>
+              )}
+            </TabsTrigger>
+          </TabsList>
 
-        {/* ── Kanban ─────────────────────────────────────────────────────── */}
+          {activeTab === "leads" && (
+            <div className="flex items-center gap-0.5 border border-border/50 rounded-lg p-0.5 bg-muted/30">
+              <Button
+                variant={leadsView === "kanban" ? "secondary" : "ghost"}
+                size="sm"
+                className="h-7 w-8 p-0"
+                title="Vista Kanban"
+                onClick={() => setLeadsView("kanban")}
+              >
+                <LayoutGrid className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant={leadsView === "table" ? "secondary" : "ghost"}
+                size="sm"
+                className="h-7 w-8 p-0"
+                title="Vista tabella"
+                onClick={() => setLeadsView("table")}
+              >
+                <Table2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* ── Leads: Kanban or Table ─────────────────────────────────────── */}
         <TabsContent value="leads" className="flex-1 overflow-hidden mt-4">
           {isLoading ? (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -146,6 +178,15 @@ export default function LeadsBoardPage() {
                 <Skeleton key={i} className="h-48 rounded-xl" />
               ))}
             </div>
+          ) : leadsView === "table" ? (
+            <LeadsTable
+              leads={leads}
+              stages={sorted}
+              onConvert={(id) => convertToDeal.mutate({ id })}
+              onDelete={(id) => { if (confirm("Eliminare il lead?")) deleteLead.mutate({ id }); }}
+              isConverting={convertToDeal.isPending}
+              isDeleting={deleteLead.isPending}
+            />
           ) : (
             <div className="overflow-x-auto pb-4">
               <div className="flex gap-4 min-w-max items-start">

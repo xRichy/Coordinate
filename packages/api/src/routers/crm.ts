@@ -185,11 +185,66 @@ const tagRouter = router({
     }),
 });
 
+// ── PipelineStage CRUD ────────────────────────────────────────────────────────
+
+const DEFAULT_STAGES = ["Nuovo", "Contattato", "Qualificato", "Proposta", "Vinto", "Perso"];
+
+const stageRouter = router({
+  list: tenantProcedure.query(async ({ ctx }) => {
+    const stages = await ctx.db.pipelineStage.findMany({ orderBy: { order: "asc" } });
+    if (stages.length === 0) {
+      await ctx.db.pipelineStage.createMany({
+        data: DEFAULT_STAGES.map((name, i) => ({ tenantId: ctx.tenantId, name, order: i + 1 })),
+      });
+      return ctx.db.pipelineStage.findMany({ orderBy: { order: "asc" } });
+    }
+    return stages;
+  }),
+
+  create: tenantProcedure
+    .input(z.object({ name: z.string().min(1).max(50) }))
+    .mutation(async ({ ctx, input }) => {
+      const agg = await ctx.db.pipelineStage.aggregate({ _max: { order: true } });
+      return ctx.db.pipelineStage.create({
+        data: { tenantId: ctx.tenantId, name: input.name, order: (agg._max.order ?? 0) + 1 },
+      });
+    }),
+
+  update: tenantProcedure
+    .input(z.object({ id: z.string(), name: z.string().min(1).max(50) }))
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db.pipelineStage.update({ where: { id: input.id }, data: { name: input.name } });
+    }),
+
+  reorder: tenantProcedure
+    .input(z.array(z.object({ id: z.string(), order: z.number().int().min(1) })))
+    .mutation(async ({ ctx, input }) => {
+      await Promise.all(
+        input.map((item) =>
+          ctx.db.pipelineStage.update({ where: { id: item.id }, data: { order: item.order } })
+        )
+      );
+      return { ok: true };
+    }),
+
+  delete: tenantProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db.lead.updateMany({ where: { stageId: input.id }, data: { stageId: null } });
+      await ctx.db.pipelineStage.delete({ where: { id: input.id } });
+      return { id: input.id };
+    }),
+});
+
 // ── Lead CRUD ─────────────────────────────────────────────────────────────────
+
+const LEAD_WITH_STAGE = {
+  include: { stage: { select: { id: true, name: true, order: true } } },
+} as const;
 
 const leadRouter = router({
   list: tenantProcedure.query(async ({ ctx }) => {
-    return ctx.db.lead.findMany({ orderBy: { createdAt: "desc" } });
+    return ctx.db.lead.findMany({ orderBy: { createdAt: "desc" }, ...LEAD_WITH_STAGE });
   }),
 
   create: tenantProcedure
@@ -197,27 +252,35 @@ const leadRouter = router({
       title: z.string().min(2),
       value: z.number().min(0).optional(),
       contactName: z.string().optional(),
-      status: z.nativeEnum(LeadStatus).optional(),
+      stageId: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      return ctx.db.lead.create({ data: { tenantId: ctx.tenantId, ...input } });
+      return ctx.db.lead.create({ data: { tenantId: ctx.tenantId, ...input }, ...LEAD_WITH_STAGE });
     }),
 
-  updateStatus: tenantProcedure
-    .input(z.object({ id: z.string(), status: z.nativeEnum(LeadStatus) }))
+  updateStage: tenantProcedure
+    .input(z.object({ id: z.string(), stageId: z.string().nullable() }))
     .mutation(async ({ ctx, input }) => {
-      const lead = await ctx.db.lead.findFirstOrThrow({ where: { id: input.id } });
+      const lead = await ctx.db.lead.findFirstOrThrow({ where: { id: input.id }, ...LEAD_WITH_STAGE });
       const updated = await ctx.db.lead.update({
         where: { id: input.id },
-        data: { status: input.status },
+        data: { stageId: input.stageId },
+        ...LEAD_WITH_STAGE,
       });
       void eventBus.emit(crmPipelineEvents.leadStatusChanged, ctx.tenantId, {
         leadId: updated.id,
         title: updated.title,
-        previousStatus: lead.status,
-        newStatus: updated.status,
+        previousStatus: lead.stage?.name ?? "—",
+        newStatus: updated.stage?.name ?? "—",
       });
       return updated;
+    }),
+
+  // kept for backward-compat; updateStage is preferred
+  updateStatus: tenantProcedure
+    .input(z.object({ id: z.string(), status: z.nativeEnum(LeadStatus) }))
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db.lead.update({ where: { id: input.id }, data: { status: input.status } });
     }),
 
   delete: tenantProcedure
@@ -231,5 +294,6 @@ const leadRouter = router({
 export const crmRouter = router({
   contact: contactRouter,
   tag: tagRouter,
+  stage: stageRouter,
   lead: leadRouter,
 });

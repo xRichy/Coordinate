@@ -40,6 +40,13 @@ enum ContactType {
 enum ContactStatus {
   active
   inactive
+  customer
+}
+
+enum DealStatus {
+  open
+  won
+  lost
 }
 
 // ─── Core multi-tenant models ─────────────────────────────────────────────────
@@ -285,6 +292,7 @@ model Contact {
   persons Contact[]    @relation("ContactPersons")
   owner   User?        @relation("ContactOwner", fields: [ownerId], references: [id], onDelete: SetNull)
   tags    ContactTag[]
+  deals   Deal[]       @relation("DealContact")
 
   @@index([tenantId])
   @@index([tenantId, status])
@@ -358,18 +366,22 @@ model Lead {
 }
 
 model Deal {
-  id        String    @id @default(cuid())
+  id        String     @id @default(cuid())
   tenantId  String
   title     String
-  value     Float     @default(0)
+  value     Float      @default(0)
+  status    DealStatus @default(open)
   leadId    String?
+  contactId String?
   closedAt  DateTime?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contact Contact? @relation("DealContact", fields: [contactId], references: [id], onDelete: SetNull)
 
   @@index([tenantId])
+  @@index([tenantId, status])
   @@map("deals")
 }
 

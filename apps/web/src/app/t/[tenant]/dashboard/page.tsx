@@ -1,157 +1,156 @@
 "use client";
 
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
-import type { inferRouterOutputs } from "@trpc/server";
-import type { AppRouter } from "@coordinate/api";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
-import { DollarSign, Users, TrendingUp, Activity } from "lucide-react";
+import { useParams } from "next/navigation";
+import Link from "next/link";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
+  CircleDollarSign, Trophy, Target, Clock, UserPlus, Package, ArrowUpRight,
+} from "lucide-react";
 import { useTRPC } from "@/lib/trpc";
 
-type Lead = inferRouterOutputs<AppRouter>["crm"]["lead"]["list"][number];
-type Activity = inferRouterOutputs<AppRouter>["activities"]["activity"]["list"][number];
+type Period = "month" | "quarter" | "year" | "all";
 
-const revenueData = [
-    { name: "Jan", revenue: 4000 },
-    { name: "Feb", revenue: 3000 },
-    { name: "Mar", revenue: 5000 },
-    { name: "Apr", revenue: 4500 },
-    { name: "May", revenue: 6000 },
-    { name: "Jun", revenue: 8000 },
-    { name: "Jul", revenue: 7500 },
-];
+const PERIOD_LABELS: Record<Period, string> = {
+  month: "Questo mese",
+  quarter: "Questo trimestre",
+  year: "Quest'anno",
+  all: "Sempre",
+};
 
-const leadsData = [
-    { name: "New", count: 12 },
-    { name: "Contacted", count: 8 },
-    { name: "Qualified", count: 15 },
-    { name: "Proposal", count: 5 },
-    { name: "Won", count: 20 },
-];
+const eur = (n: number) => `€ ${Math.round(n).toLocaleString("it-IT")}`;
 
 export default function DashboardPage() {
-    const trpc = useTRPC();
-    const [chartsReady, setChartsReady] = useState(false);
-    useEffect(() => { setChartsReady(true); }, []);
+  const trpc = useTRPC();
+  const { tenant } = useParams<{ tenant: string }>();
+  const base = `/t/${tenant}`;
 
-    const { data: health } = useQuery(trpc.healthcheck.queryOptions());
-    const { data: leads = [] } = useQuery(trpc.crm.lead.list.queryOptions());
-    const { data: activities = [] } = useQuery(trpc.activities.activity.list.queryOptions());
+  const [period, setPeriod] = useState<Period>("month");
+  const [ownerId, setOwnerId] = useState<string>("all");
 
-    const totalValue = leads.reduce((acc: number, lead: Lead) => acc + (lead.value ?? 0), 0);
-    const activeLeads = leads.filter((l: Lead) => l.status !== "won" && l.status !== "lost").length;
-    const wonLeads = leads.filter((l: Lead) => l.status === "won").length;
-    const conversionRate = leads.length > 0 ? Math.round((wonLeads / leads.length) * 100) : 0;
+  const { data: stats, isLoading } = useQuery(
+    trpc.dashboard.stats.queryOptions({
+      period,
+      ownerId: ownerId === "all" ? undefined : ownerId,
+    })
+  );
+  const { data: members = [] } = useQuery(trpc.crm.contact.listMembers.queryOptions());
 
-    return (
-        <div className="flex-1 space-y-6 pb-20 md:pb-6">
-            <div className="flex items-center justify-between space-y-2">
-                <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-                {health && (
-                    <span className="text-xs text-muted-foreground">API {health.status}</span>
-                )}
-            </div>
+  const periodLabel = PERIOD_LABELS[period].toLowerCase();
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Card className="bg-card/40 backdrop-blur-md border-border/50 shadow-sm transition-all hover:bg-card/60">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Pipeline Value</CardTitle>
-                        <DollarSign className="h-4 w-4 text-primary" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">${totalValue.toLocaleString("en-US")}</div>
-                        <p className="text-xs text-muted-foreground">+20.1% from last month</p>
-                    </CardContent>
-                </Card>
-                <Card className="bg-card/40 backdrop-blur-md border-border/50 shadow-sm transition-all hover:bg-card/60">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Active CRM Leads</CardTitle>
-                        <Users className="h-4 w-4 text-primary" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">+{activeLeads}</div>
-                        <p className="text-xs text-muted-foreground">+180.1% from last month</p>
-                    </CardContent>
-                </Card>
-                <Card className="bg-card/40 backdrop-blur-md border-border/50 shadow-sm transition-all hover:bg-card/60">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
-                        <TrendingUp className="h-4 w-4 text-primary" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{conversionRate}%</div>
-                        <p className="text-xs text-muted-foreground">+19% from last month</p>
-                    </CardContent>
-                </Card>
-                <Card className="bg-card/40 backdrop-blur-md border-border/50 shadow-sm transition-all hover:bg-card/60">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Pending Tasks</CardTitle>
-                        <Activity className="h-4 w-4 text-primary" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{activities.filter((a: Activity) => a.status !== "done").length}</div>
-                        <p className="text-xs text-muted-foreground">Requires immediate attention</p>
-                    </CardContent>
-                </Card>
-            </div>
+  const widgets = [
+    {
+      label: "Pipeline aperta",
+      icon: CircleDollarSign,
+      value: stats ? eur(stats.openPipeline.value) : "—",
+      sub: stats ? `${stats.openPipeline.count} deal aperti` : "",
+      href: `${base}/crm/leads`,
+    },
+    {
+      label: `Vinti · ${periodLabel}`,
+      icon: Trophy,
+      value: stats ? eur(stats.won.value) : "—",
+      sub: stats ? `${stats.won.count} deal vinti` : "",
+      href: `${base}/crm/leads`,
+    },
+    {
+      label: "Lead attivi",
+      icon: Target,
+      value: stats ? String(stats.activeLeads.count) : "—",
+      sub: stats ? `${eur(stats.activeLeads.value)} in pipeline` : "",
+      href: `${base}/crm/leads`,
+    },
+    {
+      label: "Task in scadenza",
+      icon: Clock,
+      value: stats ? String(stats.dueTasks.count) : "—",
+      sub: "entro 7 giorni",
+      href: `${base}/tasks`,
+    },
+    {
+      label: `Nuovi contatti · ${periodLabel}`,
+      icon: UserPlus,
+      value: stats ? String(stats.newContacts.count) : "—",
+      sub: "nel periodo selezionato",
+      href: `${base}/crm/customers`,
+    },
+    {
+      label: "Valore magazzino",
+      icon: Package,
+      value: stats ? eur(stats.inventory.value) : "—",
+      sub: stats ? `${stats.inventory.count} prodotti` : "",
+      href: `${base}/warehouse`,
+    },
+  ];
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-                <Card className="md:col-span-2 lg:col-span-4 bg-card/40 backdrop-blur-md border-border/50 shadow-sm">
-                    <CardHeader>
-                        <CardTitle>Revenue Overview</CardTitle>
-                    </CardHeader>
-                    <CardContent className="pl-2">
-                        <div className="h-[300px]">
-                            {chartsReady && (
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <AreaChart data={revenueData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                                        <defs>
-                                            <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.8} />
-                                                <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
-                                            </linearGradient>
-                                        </defs>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} strokeOpacity={0.4} />
-                                        <XAxis dataKey="name" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
-                                        <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
-                                        <Tooltip
-                                            contentStyle={{ backgroundColor: 'var(--card)', borderRadius: '8px', border: '1px solid var(--border)', color: 'var(--foreground)' }}
-                                            itemStyle={{ color: 'var(--foreground)' }}
-                                        />
-                                        <Area type="monotone" dataKey="revenue" stroke="var(--primary)" fillOpacity={1} fill="url(#colorRevenue)" />
-                                    </AreaChart>
-                                </ResponsiveContainer>
-                            )}
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card className="md:col-span-2 lg:col-span-3 bg-card/40 backdrop-blur-md border-border/50 shadow-sm">
-                    <CardHeader>
-                        <CardTitle>Lead Distribution</CardTitle>
-                        <CardDescription>Current active leads per stage</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="h-[300px]">
-                            {chartsReady && (
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={leadsData}>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} strokeOpacity={0.4} />
-                                        <XAxis dataKey="name" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
-                                        <Tooltip
-                                            cursor={{ fill: 'var(--muted)', opacity: 0.5 }}
-                                            contentStyle={{ backgroundColor: 'var(--card)', borderRadius: '8px', border: '1px solid var(--border)', color: 'var(--foreground)' }}
-                                            itemStyle={{ color: 'var(--foreground)' }}
-                                        />
-                                        <Bar dataKey="count" fill="var(--primary)" radius={[4, 4, 0, 0]} />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            )}
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
+  return (
+    <div className="flex-1 space-y-6 pb-20 md:pb-6">
+      {/* ── Header + filters ───────────────────────────────────────────── */}
+      <div className="flex flex-col sm:flex-row shadow-sm bg-card/40 backdrop-blur-md border border-border/50 p-6 rounded-xl justify-between items-start sm:items-center gap-4">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+          <p className="text-muted-foreground mt-2">Panoramica commerciale. Clicca un dato per il dettaglio.</p>
         </div>
-    );
+        <div className="flex items-center gap-2 shrink-0">
+          <Select value={period} onValueChange={(v: Period) => setPeriod(v)}>
+            <SelectTrigger className="w-[170px] h-9"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="month">Questo mese</SelectItem>
+              <SelectItem value="quarter">Questo trimestre</SelectItem>
+              <SelectItem value="year">Quest&apos;anno</SelectItem>
+              <SelectItem value="all">Sempre</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={ownerId} onValueChange={setOwnerId}>
+            <SelectTrigger className="w-[160px] h-9"><SelectValue placeholder="Owner" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tutti gli owner</SelectItem>
+              {members.map((m) => (
+                <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* ── Widgets ────────────────────────────────────────────────────── */}
+      {isLoading ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-32 rounded-xl" />
+          ))}
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {widgets.map((w) => (
+            <Link key={w.label} href={w.href} className="group">
+              <Card className="bg-card/40 backdrop-blur-md border-border/50 shadow-sm transition-all hover:bg-card/70 hover:border-primary/40 h-full">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">{w.label}</CardTitle>
+                  <w.icon className="h-4 w-4 text-primary shrink-0" />
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-end justify-between">
+                    <div className="text-3xl font-bold tracking-tight tabular-nums">{w.value}</div>
+                    <ArrowUpRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">{w.sub}</p>
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
+        </div>
+      )}
+
+      <p className="text-xs text-muted-foreground/70 px-1">
+        Il filtro periodo si applica a “Vinti” e “Nuovi contatti”; il filtro owner a pipeline, vinti e contatti
+        (le entità senza owner non sono filtrate).
+      </p>
+    </div>
+  );
 }

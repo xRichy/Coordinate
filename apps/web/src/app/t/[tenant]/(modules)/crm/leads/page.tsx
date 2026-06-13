@@ -16,6 +16,7 @@ import { useTRPC } from "@/lib/trpc";
 import { LeadModal } from "./lead-modal";
 import { StagesModal } from "./stages-modal";
 import { LeadsTable } from "./leads-table";
+import { DealDetailModal } from "./deal-detail-modal";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "@coordinate/api";
 
@@ -38,6 +39,7 @@ export default function LeadsBoardPage() {
   const [draggedLead, setDraggedLead] = useState<Lead | null>(null);
   const [leadsView, setLeadsView] = useState<"kanban" | "table">("kanban");
   const [activeTab, setActiveTab] = useState<"leads" | "deals">("leads");
+  const [detailDeal, setDetailDeal] = useState<Deal | null>(null);
 
   const { data: leads = [], isLoading: leadsLoading } = useQuery(trpc.crm.lead.list.queryOptions());
   const { data: stages = [], isLoading: stagesLoading } = useQuery(trpc.crm.stage.list.queryOptions());
@@ -75,6 +77,7 @@ export default function LeadsBoardPage() {
       onSuccess: (deal) => {
         invalidateDeals();
         queryClient.invalidateQueries(trpc.crm.contact.list.queryOptions());
+        setDetailDeal((cur) => (cur && cur.id === deal.id ? { ...cur, ...deal } : cur));
         if (deal.status === "won") toast.success("Deal vinto! Il contatto è stato marcato come Cliente.");
         else if (deal.status === "lost") toast("Deal segnato come perso.");
         else toast("Deal riaperto.");
@@ -85,7 +88,7 @@ export default function LeadsBoardPage() {
 
   const deleteDeal = useMutation(
     trpc.crm.deal.delete.mutationOptions({
-      onSuccess: () => { invalidateDeals(); toast.success("Deal eliminato."); },
+      onSuccess: () => { invalidateDeals(); setDetailDeal(null); toast.success("Deal eliminato."); },
       onError: () => toast.error("Errore."),
     })
   );
@@ -308,7 +311,8 @@ export default function LeadsBoardPage() {
                 <TableBody>
                   {deals.map((deal) => (
                     <TableRow key={deal.id}
-                      className={deal.status !== "open" ? "opacity-60" : ""}>
+                      onClick={() => setDetailDeal(deal)}
+                      className={`cursor-pointer ${deal.status !== "open" ? "opacity-60" : ""}`}>
                       <TableCell className="font-medium">{deal.title}</TableCell>
                       <TableCell className="text-muted-foreground">
                         {deal.contact?.name ?? "—"}
@@ -330,7 +334,7 @@ export default function LeadsBoardPage() {
                           : "—"}
                       </TableCell>
                       <TableCell>
-                        <div className="flex gap-1 justify-end">
+                        <div className="flex gap-1 justify-end" onClick={(e) => e.stopPropagation()}>
                           {deal.status !== "won" && (
                             <Button variant="outline" size="sm" className="text-xs h-7"
                               onClick={() => updateDealStatus.mutate({ id: deal.id, status: "won" })}
@@ -379,6 +383,16 @@ export default function LeadsBoardPage() {
 
       <LeadModal isOpen={modalOpen} onClose={() => setModalOpen(false)} stages={sorted} />
       <StagesModal isOpen={stagesOpen} onClose={() => setStagesOpen(false)} />
+      <DealDetailModal
+        deal={detailDeal}
+        onClose={() => setDetailDeal(null)}
+        onUpdateStatus={(status) => detailDeal && updateDealStatus.mutate({ id: detailDeal.id, status })}
+        onDelete={() => {
+          if (detailDeal && confirm("Eliminare il deal?")) deleteDeal.mutate({ id: detailDeal.id });
+        }}
+        isUpdating={updateDealStatus.isPending}
+        isDeleting={deleteDeal.isPending}
+      />
     </div>
   );
 }

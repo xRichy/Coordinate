@@ -8,10 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
   Building2, User, Pencil, Trash2, Mail, Phone,
-  UserCircle, Tag, ChevronRight, Plus,
+  UserCircle, Tag, ChevronRight, Plus, Clock,
 } from "lucide-react";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "@coordinate/api";
+import { EntityTimeline } from "@/components/timeline/entity-timeline";
 
 type Contact = inferRouterOutputs<AppRouter>["crm"]["contact"]["list"][number];
 
@@ -232,6 +233,18 @@ export function ContactDetailModal({
               </div>
             </>
           )}
+
+          {/* ── Timeline ──────────────────────────────────────────────── */}
+          <Separator className="opacity-50" />
+          <div>
+            <div className="flex items-center gap-2 mb-3 text-muted-foreground">
+              <Clock className="h-3.5 w-3.5" />
+              <p className="text-[11px] font-medium uppercase tracking-wider">Timeline</p>
+            </div>
+            <div className="max-h-72 overflow-y-auto pr-1">
+              <EntityTimeline contactId={contact.id} />
+            </div>
+          </div>
         </div>
 
         {/* ── Footer ────────────────────────────────────────────────────── */}

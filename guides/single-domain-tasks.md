@@ -45,7 +45,7 @@ Già fatte, non rientrano nel lavoro attivo — riassunte qui per le dipendenze.
 Fase 1  Single-domain migration         [x] 8/8   attivi
 Fase 2  Completamento migrazione moduli  [x] 6/6   attivi
 Fase 3  Moduli MVP boutique              [x] 18/18 attivi  (+6 deferred)
-Fase 4  Admin tenant & provisioning      [ ] 0/7   attivi  (+10 deferred)
+Fase 4  Admin tenant & provisioning      [ ] 1/7   attivi  (+10 deferred)
 Fase 5  Polish                           [ ] 0/8   attivi  (+2 deferred)
 Fase 6  Testing & Hardening              [ ] 0/8   attivi  (+1 deferred)
 Fase 7  Launch white-glove               [ ] 0/4   attivi  (+4 deferred)
@@ -377,8 +377,8 @@ Fuori scope: onboarding white-glove, niente signup pubblico (`mvp-scope.md` §3)
 ### T4.9 — Pagina tenant admin: gestione team
 **Deps**: ✅ fondamenta (RBAC) · **Size**: M — lista membri con ruolo; invito per email con ruolo; modifica ruolo/rimozione; transfer ownership.
 
-### T4.10 — Pagina tenant admin: abilitazione moduli
-**Deps**: T2.12 · **Size**: M — lista moduli disponibili per il tenant; toggle on/off con conferma. (Core del modello boutique: decidi i moduli per cliente.)
+### T4.10 ✅ — Pagina tenant admin: abilitazione moduli
+**Deps**: T2.12 · **Size**: M — `Tenant.enabledModules` (default 6 core); router `tenant.modules.list/setEnabled` (gated `tenant:settings:write`); pagina `/t/<slug>/settings` con toggle per modulo + Salva (gating owner/admin via `useCan`); la sidebar filtra le voci per modulo abilitato (`router.refresh()` dopo il salvataggio). (Core del modello boutique.)
 
 ### T4.11 ⏭ DEFERRED — Billing overview
 Dipende da Stripe (deferred).

@@ -14,6 +14,7 @@ import { ChevronLeft, ChevronRight, CalendarDays, LayoutGrid, Columns3 } from "l
 import { cn } from "@/lib/utils";
 import { useTRPC } from "@/lib/trpc";
 import { EventDetailModal } from "./event-detail-modal";
+import { EventCreateModal } from "./event-create-modal";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "@coordinate/api";
 
@@ -31,10 +32,10 @@ const TYPE_CHIP: Record<string, string> = {
   note: "bg-slate-500/15 text-slate-300 border-slate-500/30",
 };
 
-function EventChip({ activity, onClick }: { activity: Activity; onClick: () => void }) {
+function EventChip({ activity, onSelect }: { activity: Activity; onSelect: () => void }) {
   return (
     <button
-      onClick={onClick}
+      onClick={(e) => { e.stopPropagation(); onSelect(); }}
       title={activity.title}
       className={cn(
         "w-full truncate rounded-md border px-1.5 py-0.5 text-left text-[11px] leading-tight transition-colors hover:brightness-125",
@@ -52,6 +53,7 @@ export default function CalendarPage() {
   const [view, setView] = useState<CalendarView>("month");
   const [cursor, setCursor] = useState<Date>(new Date());
   const [selected, setSelected] = useState<Activity | null>(null);
+  const [createDate, setCreateDate] = useState<Date | null>(null);
 
   const { data: activities = [], isLoading } = useQuery(
     trpc.activities.activity.list.queryOptions()
@@ -156,8 +158,10 @@ export default function CalendarPage() {
               return (
                 <div
                   key={day.toISOString()}
+                  onClick={() => setCreateDate(day)}
+                  title="Aggiungi attività"
                   className={cn(
-                    "min-h-[104px] border-b border-r border-border/40 p-1.5 flex flex-col gap-1",
+                    "min-h-[104px] border-b border-r border-border/40 p-1.5 flex flex-col gap-1 cursor-pointer hover:bg-muted/30 transition-colors",
                     !inMonth && "bg-muted/20 text-muted-foreground/50"
                   )}
                 >
@@ -172,7 +176,7 @@ export default function CalendarPage() {
                   </div>
                   <div className="flex flex-col gap-0.5">
                     {visible.map((a) => (
-                      <EventChip key={a.id} activity={a} onClick={() => setSelected(a)} />
+                      <EventChip key={a.id} activity={a} onSelect={() => setSelected(a)} />
                     ))}
                     {overflow > 0 && (
                       <span className="px-1 text-[10px] text-muted-foreground">+{overflow} altri</span>
@@ -190,8 +194,10 @@ export default function CalendarPage() {
             return (
               <div
                 key={day.toISOString()}
+                onClick={() => setCreateDate(day)}
+                title="Aggiungi attività"
                 className={cn(
-                  "bg-card/40 backdrop-blur-md border border-border/50 rounded-xl p-3 min-h-[220px] flex flex-col gap-2",
+                  "bg-card/40 backdrop-blur-md border border-border/50 rounded-xl p-3 min-h-[220px] flex flex-col gap-2 cursor-pointer hover:border-border transition-colors",
                   isToday(day) && "border-primary/50"
                 )}
               >
@@ -211,7 +217,7 @@ export default function CalendarPage() {
                     <span className="text-[11px] text-muted-foreground/50 mt-1">—</span>
                   ) : (
                     dayEvents.map((a) => (
-                      <EventChip key={a.id} activity={a} onClick={() => setSelected(a)} />
+                      <EventChip key={a.id} activity={a} onSelect={() => setSelected(a)} />
                     ))
                   )}
                 </div>
@@ -222,6 +228,7 @@ export default function CalendarPage() {
       )}
 
       <EventDetailModal activity={selected} onClose={() => setSelected(null)} />
+      <EventCreateModal date={createDate} onClose={() => setCreateDate(null)} />
     </div>
   );
 }

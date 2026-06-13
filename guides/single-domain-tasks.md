@@ -44,7 +44,7 @@ Già fatte, non rientrano nel lavoro attivo — riassunte qui per le dipendenze.
 ```
 Fase 1  Single-domain migration         [x] 8/8   attivi
 Fase 2  Completamento migrazione moduli  [x] 6/6   attivi
-Fase 3  Moduli MVP boutique              [ ] 11/18 attivi  (+6 deferred)
+Fase 3  Moduli MVP boutique              [ ] 12/18 attivi  (+6 deferred)
 Fase 4  Admin tenant & provisioning      [ ] 0/7   attivi  (+10 deferred)
 Fase 5  Polish                           [ ] 0/8   attivi  (+2 deferred)
 Fase 6  Testing & Hardening              [ ] 0/8   attivi  (+1 deferred)
@@ -300,8 +300,8 @@ Fase 7  Launch white-glove               [ ] 0/4   attivi  (+4 deferred)
 ### T3.11 ✅ — Modulo calendar (nuovo): vista mese + settimana
 **Deps**: T2.9 · **Size**: L · **Files**: `packages/modules/calendar/` + `apps/web/.../(modules)/calendar/` — modulo calendar (dep on activities); vista **mese** + **settimana** (custom, date-fns + shadcn, niente librerie esterne); eventi = activities con `dueDate` (chip colorate per tipo); click evento → modal dettaglio (stato/elimina). Rientrato in MVP il 2026-06-13.
 
-### T3.12 — calendar: creazione evento dal calendario
-**Deps**: T3.11 · **Size**: M — click su slot/giorno vuoto → modal nuova activity (Meeting/Call) pre-compilata con la data.
+### T3.12 ✅ — calendar: creazione evento dal calendario
+**Deps**: T3.11 · **Size**: M — click su slot/giorno vuoto → modal nuova activity pre-compilata con la data (default Riunione; scadenza alle 09:00 del giorno).
 
 ### T3.13 — Modulo dashboard MVP
 **Deps**: T2.8, T2.7, T2.9 · **Size**: L · **Files**: `packages/modules/dashboard/` — 6 widget fissi (mvp-scope §5 M5), filtri periodo+owner, numeri cliccabili → drill-down.

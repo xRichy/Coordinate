@@ -2,8 +2,8 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useTRPC } from "@/lib/trpc";
-import { can } from "@coordinate/core";
-import type { Permission } from "@coordinate/core";
+import { can } from "@coordinate/core/permissions";
+import type { Permission } from "@coordinate/core/permissions";
 
 /**
  * Returns whether the current user has the given permission in the current tenant.

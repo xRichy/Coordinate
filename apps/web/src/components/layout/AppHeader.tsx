@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bell, User, LogOut } from "lucide-react";
+import { User, LogOut } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { GlobalSearch } from "@/components/layout/global-search";
+import { NotificationsBell } from "@/components/layout/notifications-bell";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -43,11 +44,7 @@ export function AppHeader() {
             <div className="flex items-center gap-4">
                 <ThemeToggle />
 
-                <Button variant="ghost" size="icon" className="relative group hover:bg-accent hover:text-accent-foreground h-12 w-12 md:h-10 md:w-10">
-                    <Bell className="h-6 w-6 md:h-5 md:w-5" />
-                    <span className="absolute right-2.5 top-2.5 md:right-2 md:top-2 h-2.5 w-2.5 md:h-2 md:w-2 rounded-full bg-destructive" />
-                    <span className="sr-only">Toggle notifications</span>
-                </Button>
+                <NotificationsBell />
 
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>

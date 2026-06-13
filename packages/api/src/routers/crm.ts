@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { router, tenantProcedure } from "../trpc";
-import { ContactType, ContactStatus, LeadStatus, DealStatus, TimelineEventType } from "@coordinate/database";
+import { ContactType, ContactStatus, LeadStatus, DealStatus, TimelineEventType, NotificationType } from "@coordinate/database";
 import type { Prisma, TimelineEvent } from "@coordinate/database";
 import { prismaAdmin } from "@coordinate/database";
 import { eventBus, crmPipelineEvents } from "@coordinate/core/events";
@@ -378,12 +378,33 @@ const dealRouter = router({
           },
         });
       }
-      // When won, mark the linked Contact as "customer"
-      if (input.status === DealStatus.won && deal.contact) {
-        await ctx.db.contact.update({
-          where: { id: deal.contact.id },
-          data: { status: ContactStatus.customer },
+      // When won (transition into won), mark the linked Contact as "customer"
+      // and notify every tenant member (in-app, deduped per deal).
+      if (input.status === DealStatus.won && previous.status !== DealStatus.won) {
+        if (deal.contact) {
+          await ctx.db.contact.update({
+            where: { id: deal.contact.id },
+            data: { status: ContactStatus.customer },
+          });
+        }
+        const members = await prismaAdmin.membership.findMany({
+          where: { tenantId: ctx.tenantId },
+          select: { userId: true },
         });
+        if (members.length > 0) {
+          const value = deal.value ? ` (€ ${deal.value.toLocaleString("it-IT")})` : "";
+          await ctx.db.notification.createMany({
+            data: members.map((m) => ({
+              tenantId: ctx.tenantId,
+              recipientId: m.userId,
+              type: NotificationType.deal_won,
+              message: `Deal vinto: "${deal.title}"${value}`,
+              link: `/t/${ctx.tenantSlug}/crm/leads`,
+              dedupeKey: `deal-won:${deal.id}`,
+            })),
+            skipDuplicates: true,
+          });
+        }
       }
       return deal;
     }),

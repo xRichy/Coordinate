@@ -65,25 +65,25 @@ export function GlobalSearch() {
     .filter((g) => g.items.length > 0);
 
   return (
-    <div ref={containerRef} className="relative ml-auto flex-1 sm:flex-initial">
+    <div ref={containerRef} className="relative w-full sm:w-auto">
       <div className="relative">
-        <Search className="absolute left-3 top-3.5 md:left-2.5 md:top-3 h-5 w-5 md:h-4 md:w-4 text-muted-foreground" />
+        <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
         <Input
           type="search"
-          placeholder="Cerca contatti, deal, prodotti…"
+          placeholder="Cerca…"
           value={query}
           onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
           onFocus={() => setOpen(true)}
           onKeyDown={(e) => { if (e.key === "Escape") setOpen(false); }}
-          className="w-full h-12 md:h-10 rounded-lg bg-background pl-10 md:pl-8 sm:w-[300px] md:w-[240px] lg:w-[340px]"
+          className="w-full h-10 rounded-lg bg-background pl-8 sm:w-[260px] lg:w-[340px]"
         />
         {isFetching && debounced.length >= 2 && (
-          <Loader2 className="absolute right-3 top-3.5 md:top-3 h-4 w-4 animate-spin text-muted-foreground" />
+          <Loader2 className="absolute right-2.5 top-3 h-4 w-4 animate-spin text-muted-foreground" />
         )}
       </div>
 
       {showDropdown && (
-        <div className="absolute right-0 mt-2 w-full sm:w-[360px] rounded-xl border border-border/60 bg-popover shadow-lg overflow-hidden z-50">
+        <div className="absolute right-0 mt-2 w-[calc(100vw-1.5rem)] sm:w-[360px] rounded-xl border border-border/60 bg-popover shadow-lg overflow-hidden z-50">
           {grouped.length === 0 ? (
             <p className="px-4 py-6 text-sm text-center text-muted-foreground">
               {isFetching ? "Ricerca…" : `Nessun risultato per “${debounced}”.`}

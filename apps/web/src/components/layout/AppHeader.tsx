@@ -34,22 +34,22 @@ export function AppHeader() {
     }
 
     return (
-        <header className="sticky top-0 z-30 flex h-20 md:h-16 items-center gap-4 border-b border-border/40 bg-background/80 px-6 backdrop-blur-md">
-            <SidebarTrigger className="-ml-2 h-12 w-12 md:h-8 md:w-8 [&>svg]:size-6 md:[&>svg]:size-4" />
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-2 md:gap-3 border-b border-border/40 bg-background/80 px-3 md:px-6 backdrop-blur-md">
+            <SidebarTrigger className="-ml-1 h-9 w-9 md:h-8 md:w-8 shrink-0 [&>svg]:size-5 md:[&>svg]:size-4" />
 
-            <div className="flex flex-1 items-center gap-4 md:gap-8">
+            <div className="flex flex-1 items-center min-w-0">
                 <GlobalSearch />
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-0.5 md:gap-1.5 shrink-0">
                 <ThemeToggle />
 
                 <NotificationsBell />
 
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="secondary" size="icon" className="rounded-full overflow-hidden h-12 w-12 md:h-10 md:w-10">
-                            <User className="h-6 w-6 md:h-5 md:w-5" />
+                        <Button variant="secondary" size="icon" className="rounded-full overflow-hidden h-9 w-9 md:h-10 md:w-10">
+                            <User className="h-5 w-5" />
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-48">

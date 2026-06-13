@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { router, tenantProcedure } from "../trpc";
-import { ContactType, ContactStatus, LeadStatus } from "@coordinate/database";
+import { ContactType, ContactStatus, LeadStatus, DealStatus } from "@coordinate/database";
 import { prismaAdmin } from "@coordinate/database";
 import { eventBus, crmPipelineEvents } from "@coordinate/core/events";
 
@@ -236,6 +236,14 @@ const stageRouter = router({
     }),
 });
 
+// ── Deal helpers (defined before leadRouter since convertToDeal uses them) ────
+
+const DEAL_WITH_RELATIONS = {
+  include: {
+    contact: { select: { id: true, name: true } },
+  },
+} as const;
+
 // ── Lead CRUD ─────────────────────────────────────────────────────────────────
 
 const LEAD_WITH_STAGE = {
@@ -276,6 +284,23 @@ const leadRouter = router({
       return updated;
     }),
 
+  convertToDeal: tenantProcedure
+    .input(z.object({ id: z.string(), contactId: z.string().optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const lead = await ctx.db.lead.findFirstOrThrow({ where: { id: input.id } });
+      return ctx.db.deal.create({
+        data: {
+          tenantId: ctx.tenantId,
+          title: lead.title,
+          value: lead.value,
+          leadId: lead.id,
+          contactId: input.contactId,
+          status: DealStatus.open,
+        },
+        ...DEAL_WITH_RELATIONS,
+      });
+    }),
+
   // kept for backward-compat; updateStage is preferred
   updateStatus: tenantProcedure
     .input(z.object({ id: z.string(), status: z.nativeEnum(LeadStatus) }))
@@ -291,9 +316,49 @@ const leadRouter = router({
     }),
 });
 
+// ── Deal CRUD ─────────────────────────────────────────────────────────────────
+
+const dealRouter = router({
+  list: tenantProcedure.query(async ({ ctx }) => {
+    return ctx.db.deal.findMany({
+      orderBy: { createdAt: "desc" },
+      ...DEAL_WITH_RELATIONS,
+    });
+  }),
+
+  updateStatus: tenantProcedure
+    .input(z.object({ id: z.string(), status: z.nativeEnum(DealStatus) }))
+    .mutation(async ({ ctx, input }) => {
+      const deal = await ctx.db.deal.update({
+        where: { id: input.id },
+        data: {
+          status: input.status,
+          closedAt: input.status !== DealStatus.open ? new Date() : null,
+        },
+        ...DEAL_WITH_RELATIONS,
+      });
+      // When won, mark the linked Contact as "customer"
+      if (input.status === DealStatus.won && deal.contact) {
+        await ctx.db.contact.update({
+          where: { id: deal.contact.id },
+          data: { status: ContactStatus.customer },
+        });
+      }
+      return deal;
+    }),
+
+  delete: tenantProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db.deal.delete({ where: { id: input.id } });
+      return { id: input.id };
+    }),
+});
+
 export const crmRouter = router({
   contact: contactRouter,
   tag: tagRouter,
   stage: stageRouter,
   lead: leadRouter,
+  deal: dealRouter,
 });

@@ -45,7 +45,7 @@ Già fatte, non rientrano nel lavoro attivo — riassunte qui per le dipendenze.
 Fase 1  Single-domain migration         [x] 8/8   attivi
 Fase 2  Completamento migrazione moduli  [x] 6/6   attivi
 Fase 3  Moduli MVP boutique              [x] 18/18 attivi  (+6 deferred)
-Fase 4  Admin tenant & provisioning      [ ] 1/7   attivi  (+10 deferred)
+Fase 4  Admin tenant & provisioning      [ ] 2/7   attivi  (+10 deferred)
 Fase 5  Polish                           [ ] 0/8   attivi  (+2 deferred)
 Fase 6  Testing & Hardening              [ ] 0/8   attivi  (+1 deferred)
 Fase 7  Launch white-glove               [ ] 0/4   attivi  (+4 deferred)
@@ -398,9 +398,9 @@ Non essenziale per il 1° cliente boutique (uptime best-effort, `mvp-scope.md` �
 ### T4.16 — Chiusura Fase 4 + acceptance (provisioning + admin)
 **Deps**: T4.8, T4.9, T4.10, T4.12, T4.15, T4.17 · **Size**: S — acceptance: creazione tenant white-glove → config moduli/branding → utente owner accede a `/t/<slug>`. *(Niente acquisto piano: Stripe deferred.)* Marcare Fase 4 ✅.
 
-### T4.17 — Tenant provisioning white-glove (CLI o pagina admin riservata) — *nuovo*
-**Deps**: T4.10 · **Size**: M · **Files**: script CLI in `packages/database` o pagina admin protetta — crea record `Tenant`, primo utente `owner`, `enabledModules`, dati azienda; output credenziali da consegnare al cliente.
-**Done when**: da un comando/pagina si crea un tenant completo pronto all'uso (sostituisce il signup self-serve deferred; mvp-scope §3 + DoD §8).
+### T4.17 ✅ — Tenant provisioning white-glove (CLI o pagina admin riservata) — *nuovo*
+**Deps**: T4.10 · **Size**: M · **Files**: `packages/database/prisma/provision-tenant.ts` + script `db:provision`. CLI con flag (`--slug --name --email --owner [--password --plan --modules]`): crea `Tenant` (slug/nome/piano/`enabledModules`), `User` owner (`emailVerified`), `Account` credential (hash Better-Auth, password auto-generata se omessa), `Membership` owner, `TenantSetting` di default (timezone/locale/currency/dateFormat) e `PipelineStage` di default; stampa le credenziali da consegnare. Validazione input (slug/email/plan/moduli), abort su slug duplicato, riuso utente esistente per un secondo tenant.
+**Done when**: ✅ da un comando si crea un tenant completo pronto all'uso (sostituisce il signup self-serve deferred; mvp-scope §3 + DoD §8). Verificato end-to-end sul DB locale: tenant+owner+credential (password validata con `verifyPassword`) + membership owner + 4 settings + 6 stage.
 
 ---
 

@@ -22,7 +22,9 @@ export default async function TenantLayout({
 
   return (
     <SidebarProvider>
-      <MainLayout tenantSlug={slug}>{children}</MainLayout>
+      <MainLayout tenantSlug={slug} enabledModules={tenant.enabledModules}>
+        {children}
+      </MainLayout>
     </SidebarProvider>
   );
 }

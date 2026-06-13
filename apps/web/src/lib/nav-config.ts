@@ -15,6 +15,9 @@ const MODULE_MANIFESTS = [
   calendarManifest,
 ];
 
-export const NAV_ITEMS: NavigationItem[] = [
-  ...MODULE_MANIFESTS.flatMap((m) => m.navigation),
-].sort((a, b) => (a.order ?? 100) - (b.order ?? 100));
+/** A nav item enriched with the id of the module that contributes it. */
+export type NavItem = NavigationItem & { moduleId: string };
+
+export const NAV_ITEMS: NavItem[] = MODULE_MANIFESTS
+  .flatMap((m) => m.navigation.map((n) => ({ ...n, moduleId: m.id })))
+  .sort((a, b) => (a.order ?? 100) - (b.order ?? 100));

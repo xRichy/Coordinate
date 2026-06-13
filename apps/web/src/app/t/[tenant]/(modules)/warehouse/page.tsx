@@ -16,12 +16,13 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Plus, ArrowRightLeft, Edit2, ArrowDownToLine, ArrowUpFromLine, Package, AlertTriangle } from "lucide-react";
+import { Search, Plus, ArrowRightLeft, Edit2, ArrowDownToLine, ArrowUpFromLine, Package, AlertTriangle, Upload } from "lucide-react";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import { useTRPC } from "@/lib/trpc";
 import { ProductModal } from "./product-modal";
 import { StockMovementModal } from "./stock-movement-modal";
+import { ImportModal } from "./import-modal";
 
 type Product = inferRouterOutputs<AppRouter>["warehouse"]["product"]["list"][number];
 type StockMovement = inferRouterOutputs<AppRouter>["warehouse"]["stockMovement"]["list"][number];
@@ -40,6 +41,8 @@ export default function WarehousePage() {
   const [isStockModalOpen, setIsStockModalOpen] = useState(false);
   const [productForStock, setProductForStock] = useState<Product | null>(null);
 
+  const [isImportOpen, setIsImportOpen] = useState(false);
+
   const filteredProducts = products.filter(
     (p) =>
       p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -54,16 +57,22 @@ export default function WarehousePage() {
           <h2 className="text-3xl font-bold tracking-tight">Magazzino</h2>
           <p className="text-muted-foreground">Gestisci prodotti e movimenti di stock.</p>
         </div>
-        <Button
-          className="shrink-0 group"
-          onClick={() => {
-            setProductToEdit(null);
-            setIsProductModalOpen(true);
-          }}
-        >
-          <Plus className="mr-2 h-4 w-4 transition-transform group-hover:rotate-90" />
-          Nuovo prodotto
-        </Button>
+        <div className="flex gap-2 shrink-0">
+          <Button variant="outline" onClick={() => setIsImportOpen(true)}>
+            <Upload className="mr-2 h-4 w-4" />
+            Importa CSV
+          </Button>
+          <Button
+            className="group"
+            onClick={() => {
+              setProductToEdit(null);
+              setIsProductModalOpen(true);
+            }}
+          >
+            <Plus className="mr-2 h-4 w-4 transition-transform group-hover:rotate-90" />
+            Nuovo prodotto
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="inventory" className="space-y-6">
@@ -266,6 +275,7 @@ export default function WarehousePage() {
         onClose={() => setIsStockModalOpen(false)}
         product={productForStock}
       />
+      <ImportModal isOpen={isImportOpen} onClose={() => setIsImportOpen(false)} />
     </div>
   );
 }

@@ -44,7 +44,7 @@ Già fatte, non rientrano nel lavoro attivo — riassunte qui per le dipendenze.
 ```
 Fase 1  Single-domain migration         [x] 8/8   attivi
 Fase 2  Completamento migrazione moduli  [x] 6/6   attivi
-Fase 3  Moduli MVP boutique              [ ] 14/18 attivi  (+6 deferred)
+Fase 3  Moduli MVP boutique              [ ] 15/18 attivi  (+6 deferred)
 Fase 4  Admin tenant & provisioning      [ ] 0/7   attivi  (+10 deferred)
 Fase 5  Polish                           [ ] 0/8   attivi  (+2 deferred)
 Fase 6  Testing & Hardening              [ ] 0/8   attivi  (+1 deferred)
@@ -309,8 +309,8 @@ Fase 7  Launch white-glove               [ ] 0/4   attivi  (+4 deferred)
 ### T3.14 ✅ — warehouse: alert stock sotto soglia
 **Deps**: T2.10 · **Size**: S — soglia per-prodotto `lowStockThreshold` (default 5, editabile nel modal); badge "sotto soglia"/"esaurito" sulle righe inventario; banner dashboard con count (`dashboard.stats.lowStock`).
 
-### T3.15 — warehouse: import CSV prodotti
-**Deps**: T2.10 · **Size**: M — analogo a T3.3 per `Product`.
+### T3.15 ✅ — warehouse: import CSV prodotti
+**Deps**: T2.10 · **Size**: M — upload CSV + mapping colonne + preview 5 righe + import batch (`warehouse.product.importBatch`, `skipDuplicates` per SKU già presente). Mirror di T3.3.
 
 ### T3.16 ⏭ DEFERRED — Modulo quotes (preventivi)
 Fuori scope MVP boutique: catalogo, su richiesta cliente (`mvp-scope.md` §4). Spec in archivio (era T3.16).

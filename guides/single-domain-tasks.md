@@ -43,14 +43,14 @@ Già fatte, non rientrano nel lavoro attivo — riassunte qui per le dipendenze.
 
 ```
 Fase 1  Single-domain migration         [x] 8/8   attivi
-Fase 2  Completamento migrazione moduli  [ ] 0/6   attivi
-Fase 3  Moduli MVP boutique              [ ] 0/16  attivi  (+8 deferred)
+Fase 2  Completamento migrazione moduli  [x] 6/6   attivi
+Fase 3  Moduli MVP boutique              [x] 18/18 attivi  (+6 deferred)
 Fase 4  Admin tenant & provisioning      [ ] 0/7   attivi  (+10 deferred)
 Fase 5  Polish                           [ ] 0/8   attivi  (+2 deferred)
 Fase 6  Testing & Hardening              [ ] 0/8   attivi  (+1 deferred)
 Fase 7  Launch white-glove               [ ] 0/4   attivi  (+4 deferred)
                                          ----------------------------------
-                                         57 attivi · 25 deferred · 82 totali
+                                         59 attivi · 23 deferred · 82 totali
 ```
 
 > Ordine d'esecuzione consigliato: prima **Fase 1** (migrazione), così tutto il lavoro di prodotto successivo nasce già sotto `/t/[tenant]`. Poi Fase 2 → 7.
@@ -189,7 +189,7 @@ Fase 7  Launch white-glove               [ ] 0/4   attivi  (+4 deferred)
 
 ---
 
-### T2.7 — Migrare logica Customers nel modulo crm-contacts
+### T2.7 ✅ — Migrare logica Customers nel modulo crm-contacts
 
 **Deps**: ✅ T2.6 (modello Contact)
 **Size**: L
@@ -202,7 +202,7 @@ Fase 7  Launch white-glove               [ ] 0/4   attivi  (+4 deferred)
 
 ---
 
-### T2.8 — Migrare Leads nel modulo crm-pipeline (nuovo)
+### T2.8 ✅ — Migrare Leads nel modulo crm-pipeline (nuovo)
 
 **Deps**: ✅ T2.5, ✅ T2.6
 **Size**: L
@@ -214,7 +214,7 @@ Fase 7  Launch white-glove               [ ] 0/4   attivi  (+4 deferred)
 
 ---
 
-### T2.9 — Migrare Tasks nel modulo activities
+### T2.9 ✅ — Migrare Tasks nel modulo activities
 
 **Deps**: ✅ T2.5
 **Size**: M
@@ -226,7 +226,7 @@ Fase 7  Launch white-glove               [ ] 0/4   attivi  (+4 deferred)
 
 ---
 
-### T2.10 — Migrare Warehouse nel modulo warehouse
+### T2.10 ✅ — Migrare Warehouse nel modulo warehouse
 
 **Deps**: ✅ T2.5
 **Size**: L
@@ -238,7 +238,7 @@ Fase 7  Launch white-glove               [ ] 0/4   attivi  (+4 deferred)
 
 ---
 
-### T2.11 — Event bus interno
+### T2.11 ✅ — Event bus interno
 
 **Deps**: ✅ T2.2
 **Size**: M
@@ -250,7 +250,7 @@ Fase 7  Launch white-glove               [ ] 0/4   attivi  (+4 deferred)
 
 ---
 
-### T2.12 — Chiusura Fase 2 + navigazione dinamica
+### T2.12 ✅ — Chiusura Fase 2 + navigazione dinamica
 
 **Deps**: T2.7–T2.11
 **Size**: S
@@ -261,56 +261,56 @@ Fase 7  Launch white-glove               [ ] 0/4   attivi  (+4 deferred)
 
 # Fase 3 — Moduli MVP boutique
 
-**Obiettivo**: portare i 5 moduli core MVP (`crm-contacts`, `crm-pipeline`, `activities`, `warehouse`, `dashboard`) a livello vendibile. Moduli a catalogo (calendar, quotes, it-anagrafica-check) e custom fields → DEFERRED (si costruiscono quando un cliente li paga).
+**Obiettivo**: portare i 5 moduli core MVP (`crm-contacts`, `crm-pipeline`, `activities`, `warehouse`, `dashboard`) a livello vendibile, **più il modulo `calendar`** (rientrato in MVP su decisione del 2026-06-13). Moduli a catalogo (quotes, it-anagrafica-check) e custom fields → DEFERRED (si costruiscono quando un cliente li paga).
 
 **Branch di fase**: `feat/mvp-modules`
 
 ---
 
-### T3.1 — crm-contacts: relazione Persona ↔ Azienda
+### T3.1 ✅ — crm-contacts: relazione Persona ↔ Azienda
 **Deps**: T2.7 · **Size**: M — modello con relazione padre-figlio; UI dettaglio mostra persone dell'azienda.
 
-### T3.2 — crm-contacts: tag e owner
+### T3.2 ✅ — crm-contacts: tag e owner
 **Deps**: T3.1 · **Size**: M — modello `Tag` (tenant-scoped) m2m con Contact; chip-input + filtro; owner = utente del tenant.
 
-### T3.3 — crm-contacts: import CSV con mapping manuale
+### T3.3 ✅ — crm-contacts: import CSV con mapping manuale
 **Deps**: T3.2 · **Size**: L — upload CSV, mapping colonne→campi, preview 5 righe, import batch con progress.
 
-### T3.4 — crm-contacts: export CSV
+### T3.4 ✅ — crm-contacts: export CSV
 **Deps**: T3.2 · **Size**: S — export CSV filtrato.
 
-### T3.5 — crm-contacts: soft delete con ripristino 30gg
+### T3.5 ✅ — crm-contacts: soft delete con ripristino 30gg
 **Deps**: T3.2 · **Size**: M — `deletedAt`, filtro default escluso, "Cestino" admin, job Inngest hard-delete dopo 30gg. (Allineato a GDPR mvp-scope §6.)
 
-### T3.6 — crm-pipeline: stadi configurabili dal tenant
+### T3.6 ✅ — crm-pipeline: stadi configurabili dal tenant
 **Deps**: T2.8 · **Size**: M — `PipelineStage` ordinato; UI settings riordina/rinomina; 6 stadi default al setup tenant.
 
-### T3.7 — crm-pipeline: conversione Lead → Deal e Deal Won → Customer
+### T3.7 ✅ — crm-pipeline: conversione Lead → Deal e Deal Won → Customer
 **Deps**: T3.6 · **Size**: M — pulsante "Convert to Deal"; Deal in "Won" marca Contact come customer.
 
-### T3.8 — crm-pipeline: vista tabella alternativa al Kanban
+### T3.8 ✅ — crm-pipeline: vista tabella alternativa al Kanban
 **Deps**: T2.8 · **Size**: M — toggle Kanban/Table; tabella sortable, filtrabile, paginata.
 
-### T3.9 — activities: timeline cross-modulo su contatto/deal
+### T3.9 ✅ — activities: timeline cross-modulo su contatto/deal
 **Deps**: T2.9, T2.8 · **Size**: L — componente Timeline (dettaglio contatto e deal): activities + cambi stadio in ordine cronologico.
 
-### T3.10 — activities: promemoria (notifiche in-app)
-**Deps**: T2.9 · **Size**: M — job Inngest orario scansiona `dueDate`; crea **notifica in-app** per task in scadenza. *(La variante email resta `⏭` finché Resend non è attivo.)*
+### T3.10 ✅ — activities: promemoria (notifiche in-app)
+**Deps**: T2.9 · **Size**: M — job Inngest orario scansiona `dueDate`; crea **notifica in-app** per task in scadenza. *(La variante email resta `⏭` finché Resend non è attivo.)* Introduce il modello `Notification` (recipient/type/message/link/readAt, dedup) consumato poi dalla UI campanella in T3.23.
 
-### T3.11 ⏭ DEFERRED — Modulo calendar
-Fuori scope MVP boutique: modulo a catalogo, si costruisce quando un cliente lo paga (`mvp-scope.md` §4, `modules-catalog.md`). Spec in archivio.
+### T3.11 ✅ — Modulo calendar (nuovo): vista mese + settimana
+**Deps**: T2.9 · **Size**: L · **Files**: `packages/modules/calendar/` + `apps/web/.../(modules)/calendar/` — modulo calendar (dep on activities); vista **mese** + **settimana** (custom, date-fns + shadcn, niente librerie esterne); eventi = activities con `dueDate` (chip colorate per tipo); click evento → modal dettaglio (stato/elimina). Rientrato in MVP il 2026-06-13.
 
-### T3.12 ⏭ DEFERRED — calendar: creazione evento dal calendario
-Dipende da T3.11 (deferred).
+### T3.12 ✅ — calendar: creazione evento dal calendario
+**Deps**: T3.11 · **Size**: M — click su slot/giorno vuoto → modal nuova activity pre-compilata con la data (default Riunione; scadenza alle 09:00 del giorno).
 
-### T3.13 — Modulo dashboard MVP
-**Deps**: T2.8, T2.7, T2.9 · **Size**: L · **Files**: `packages/modules/dashboard/` — 6 widget fissi (mvp-scope §5 M5), filtri periodo+owner, numeri cliccabili → drill-down.
+### T3.13 ✅ — Modulo dashboard MVP
+**Deps**: T2.8, T2.7, T2.9 · **Size**: L · **Files**: `packages/modules/dashboard/` + `packages/api/.../dashboard.ts` + `apps/web/.../dashboard/` — 6 widget fissi (pipeline aperta, vinti nel periodo, lead attivi, task in scadenza, nuovi contatti nel periodo, valore magazzino), filtri periodo+owner (`dashboard.stats`), numeri cliccabili → drill-down al modulo. Voce nav spostata da `CORE_NAV` al manifest del modulo.
 
-### T3.14 — warehouse: alert stock sotto soglia
-**Deps**: T2.10 · **Size**: S — badge su prodotti; banner dashboard con count sotto soglia.
+### T3.14 ✅ — warehouse: alert stock sotto soglia
+**Deps**: T2.10 · **Size**: S — soglia per-prodotto `lowStockThreshold` (default 5, editabile nel modal); badge "sotto soglia"/"esaurito" sulle righe inventario; banner dashboard con count (`dashboard.stats.lowStock`).
 
-### T3.15 — warehouse: import CSV prodotti
-**Deps**: T2.10 · **Size**: M — analogo a T3.3 per `Product`.
+### T3.15 ✅ — warehouse: import CSV prodotti
+**Deps**: T2.10 · **Size**: M — upload CSV + mapping colonne + preview 5 righe + import batch (`warehouse.product.importBatch`, `skipDuplicates` per SKU già presente). Mirror di T3.3.
 
 ### T3.16 ⏭ DEFERRED — Modulo quotes (preventivi)
 Fuori scope MVP boutique: catalogo, su richiesta cliente (`mvp-scope.md` §4). Spec in archivio (era T3.16).
@@ -330,14 +330,14 @@ Dipende da T3.19 (deferred).
 ### T3.21 ⏭ DEFERRED — Custom fields dinamici (5 tipi)
 Fuori scope MVP boutique: niente campi configurabili runtime; se serve un campo, si aggiunge nel codice del modulo (`mvp-scope.md` §5). Si rivaluta se 2+ clienti lo chiedono.
 
-### T3.22 — Search globale (Postgres tsvector)
-**Deps**: T2.7, T2.8, T2.10 · **Size**: L — colonna `searchable tsvector` via trigger su Contact/Deal/Product, indice GIN, `search.global({ query })`, header search bar. (mvp-scope §3 search IN.)
+### T3.22 ✅ — Search globale (Postgres tsvector)
+**Deps**: T2.7, T2.8, T2.10 · **Size**: L — colonna `searchable tsvector` (config `simple`) via trigger BEFORE INSERT/UPDATE + indice GIN su Contact/Deal/Product; `search.global({ query })` (`websearch_to_tsquery`, RLS-scoped); header search bar funzionale con dropdown raggruppato e drill-down al modulo.
 
-### T3.23 — Notifiche in-app (campanella + dropdown)
-**Deps**: T2.12 · **Size**: M — modello `Notification` (recipient, type, message, link, readAt); campanella header con badge unread; mark as read; eventi: activity reminder, deal won. *(Solo in-app; niente email.)*
+### T3.23 ✅ — Notifiche in-app (campanella + dropdown)
+**Deps**: T2.12 · **Size**: M — modello `Notification` (già da T3.10); router `notifications` (list/unreadCount/markAsRead/markAllAsRead, recipient+RLS scoped); campanella header con badge unread (poll 60s) e dropdown; evento **deal won** → notifica fan-out ai membri (dedup); activity reminder già da T3.10. *(Solo in-app; niente email.)*
 
-### T3.24 — Chiusura Fase 3 + acceptance review
-**Deps**: tutti i T3.* attivi · **Size**: S — pagine MVP su DB reale; smoke: signup(white-glove)→contatto→lead→deal Won. *(Niente preventivo/PDF: quotes deferred.)* Marcare Fase 3 ✅.
+### T3.24 ✅ — Chiusura Fase 3 + acceptance review
+**Deps**: tutti i T3.* attivi · **Size**: S — verifica codebase verde (typecheck database/core/api/web, test RLS 12/12 + core 22/22); smoke golden path su DB reale (contatto→lead→cambio stadio→conversione→deal Won) che esercita crm-contacts + crm-pipeline + timeline + notifiche + search: contatto→customer, 3 eventi timeline, notifica deal-won fan-out, contatto indicizzato. **Fase 3 ✅** (18/18 attivi, +6 deferred). *(Quotes/PDF restano deferred.)*
 
 ---
 

@@ -19,18 +19,27 @@ import {
   Settings,
   Target,
   Package,
+  Calendar,
+  type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { NAV_ITEMS } from "@/lib/nav-config";
 
-const NAV_ITEMS = [
-  { name: "Dashboard", path: "dashboard", icon: LayoutDashboard },
-  { name: "Customers", path: "crm/customers", icon: Users },
-  { name: "Leads Board", path: "crm/leads", icon: Kanban },
-  { name: "Tasks", path: "tasks", icon: CheckSquare },
-  { name: "Warehouse", path: "warehouse", icon: Package },
-];
+const ICON_MAP: Record<string, LucideIcon> = {
+  LayoutDashboard,
+  Users,
+  Kanban,
+  CheckSquare,
+  Package,
+  Calendar,
+};
+
+function NavIcon({ name, className }: { name: string; className?: string }) {
+  const Icon = ICON_MAP[name] ?? LayoutDashboard;
+  return <Icon className={className} />;
+}
 
 export function AppSidebar({ tenantSlug }: { tenantSlug: string }) {
   const pathname = usePathname();
@@ -57,14 +66,14 @@ export function AppSidebar({ tenantSlug }: { tenantSlug: string }) {
             Menu
           </div>
           {NAV_ITEMS.map((item) => {
-            const href = `${base}/${item.path}`;
+            const href = `${base}${item.path}`;
             const isActive = pathname.startsWith(href);
             return (
-              <SidebarMenuItem key={item.name}>
+              <SidebarMenuItem key={item.path}>
                 <SidebarMenuButton
                   asChild
                   isActive={isActive}
-                  tooltip={item.name}
+                  tooltip={item.label}
                   size="lg"
                   className="py-5 md:py-2 h-auto"
                 >
@@ -73,19 +82,15 @@ export function AppSidebar({ tenantSlug }: { tenantSlug: string }) {
                     className="flex items-center gap-4 w-full"
                     onClick={() => isMobile && setOpenMobile(false)}
                   >
-                    <item.icon
+                    <NavIcon
+                      name={item.icon}
                       className={cn(
                         "h-6 w-6 md:h-5 md:w-5",
                         isActive ? "text-primary" : "text-muted-foreground"
                       )}
                     />
-                    <span
-                      className={cn(
-                        "text-lg md:text-base",
-                        isActive ? "font-semibold" : ""
-                      )}
-                    >
-                      {item.name}
+                    <span className={cn("text-lg md:text-base", isActive ? "font-semibold" : "")}>
+                      {item.label}
                     </span>
                   </Link>
                 </SidebarMenuButton>
@@ -105,7 +110,7 @@ export function AppSidebar({ tenantSlug }: { tenantSlug: string }) {
                 onClick={() => isMobile && setOpenMobile(false)}
               >
                 <Settings className="h-6 w-6 md:h-5 md:w-5 text-muted-foreground" />
-                <span className="text-lg md:text-base">Settings</span>
+                <span className="text-lg md:text-base">Impostazioni</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

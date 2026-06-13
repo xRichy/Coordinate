@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bell, Search, User, LogOut } from "lucide-react";
+import { User, LogOut } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { GlobalSearch } from "@/components/layout/global-search";
+import { NotificationsBell } from "@/components/layout/notifications-bell";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -16,13 +17,10 @@ import {
 import { ThemeToggle } from "@/components/theme-toggle";
 import { authClient, signOut } from "@/lib/auth-client";
 import { getLoginUrl } from "@/lib/tenant-url";
-import { useCan } from "@/hooks/useCan";
 
 export function AppHeader() {
     const [userName, setUserName] = useState<string | null>(null);
     const [isSigningOut, setIsSigningOut] = useState(false);
-    const canReadSettings = useCan("tenant:settings:read");
-
     useEffect(() => {
         authClient.getSession().then(({ data }) => {
             setUserName(data?.user?.name ?? null);
@@ -40,26 +38,13 @@ export function AppHeader() {
             <SidebarTrigger className="-ml-2 h-12 w-12 md:h-8 md:w-8 [&>svg]:size-6 md:[&>svg]:size-4" />
 
             <div className="flex flex-1 items-center gap-4 md:gap-8">
-                <form className="ml-auto flex-1 sm:flex-initial">
-                    <div className="relative">
-                        <Search className="absolute left-3 top-3.5 md:left-2.5 md:top-3 h-5 w-5 md:h-4 md:w-4 text-muted-foreground" />
-                        <Input
-                            type="search"
-                            placeholder="Search..."
-                            className="w-full h-12 md:h-10 rounded-lg bg-background pl-10 md:pl-8 sm:w-[300px] md:w-[200px] lg:w-[300px]"
-                        />
-                    </div>
-                </form>
+                <GlobalSearch />
             </div>
 
             <div className="flex items-center gap-4">
                 <ThemeToggle />
 
-                <Button variant="ghost" size="icon" className="relative group hover:bg-accent hover:text-accent-foreground h-12 w-12 md:h-10 md:w-10">
-                    <Bell className="h-6 w-6 md:h-5 md:w-5" />
-                    <span className="absolute right-2.5 top-2.5 md:right-2 md:top-2 h-2.5 w-2.5 md:h-2 md:w-2 rounded-full bg-destructive" />
-                    <span className="sr-only">Toggle notifications</span>
-                </Button>
+                <NotificationsBell />
 
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -72,7 +57,7 @@ export function AppHeader() {
                             <p className="text-sm font-medium">{userName ?? "Account"}</p>
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        {canReadSettings && <DropdownMenuItem>Impostazioni</DropdownMenuItem>}
+                        <DropdownMenuItem>Impostazioni</DropdownMenuItem>
                         <DropdownMenuItem>Supporto</DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem

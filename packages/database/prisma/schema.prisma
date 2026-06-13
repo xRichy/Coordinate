@@ -39,6 +39,13 @@ enum ContactType {
 enum ContactStatus {
   active
   inactive
+  customer
+}
+
+enum DealStatus {
+  open
+  won
+  lost
 }
 
 // ─── Core multi-tenant models ─────────────────────────────────────────────────
@@ -52,10 +59,19 @@ model Tenant {
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
 
-  memberships Membership[]
-  settings    TenantSetting[]
-  auditLogs   AuditLog[]
-  contacts    Contact[]
+  memberships    Membership[]
+  settings       TenantSetting[]
+  auditLogs      AuditLog[]
+  contacts       Contact[]
+  pipelineStages PipelineStage[]
+  leads          Lead[]
+  deals          Deal[]
+  activities     Activity[]
+  products       Product[]
+  stockMovements StockMovement[]
+  tags           Tag[]
+  timelineEvents TimelineEvent[]
+  notifications  Notification[]
 }
 
 model User {
@@ -70,13 +86,15 @@ model User {
   // Two-factor extension (added by twoFactor plugin)
   twoFactorEnabled Boolean?
 
-  sessions    Session[]
-  accounts    Account[]
-  memberships Membership[]
-  auditLogs   AuditLog[]
-  baMembers   Member[]
-  invitations Invitation[]
-  twoFactors  TwoFactor[]
+  sessions      Session[]
+  accounts      Account[]
+  memberships   Membership[]
+  auditLogs     AuditLog[]
+  baMembers     Member[]
+  invitations   Invitation[]
+  twoFactors    TwoFactor[]
+  ownedContacts Contact[]      @relation("ContactOwner")
+  notifications Notification[]
 }
 
 model Session {
@@ -215,6 +233,61 @@ model TwoFactor {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+// ── warehouse ────────────────────────────────────────────────────────────────
+
+enum StockMovementType {
+  in
+  out
+}
+
+// ── activities ────────────────────────────────────────────────────────────────
+
+enum ActivityType {
+  task
+  call
+  meeting
+  note
+}
+
+enum ActivityPriority {
+  low
+  medium
+  high
+}
+
+enum ActivityStatus {
+  todo
+  in_progress
+  done
+}
+
+// ── crm-pipeline ──────────────────────────────────────────────────────────────
+
+enum LeadStatus {
+  new
+  contacted
+  qualified
+  proposal
+  won
+  lost
+}
+
+// ── timeline (cross-module) ───────────────────────────────────────────────────
+
+enum TimelineEventType {
+  lead_stage_changed
+  lead_converted
+  deal_created
+  deal_status_changed
+}
+
+// ── notifications ─────────────────────────────────────────────────────────────
+
+enum NotificationType {
+  activity_reminder
+  deal_won
+}
+
 // ── crm-contacts: Contact ─────────────────────────────────────────────────────
 
 model Contact {
@@ -226,12 +299,227 @@ model Contact {
   phone     String?
   company   String?
   status    ContactStatus @default(active)
+  parentId  String?
+  ownerId   String?
+  deletedAt DateTime?
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
+  /// Full-text search vector, maintained by a DB trigger (see migration). Not selectable via Prisma.
+  searchable Unsupported("tsvector")?
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  parent         Contact?        @relation("ContactPersons", fields: [parentId], references: [id])
+  persons        Contact[]       @relation("ContactPersons")
+  owner          User?           @relation("ContactOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  tags           ContactTag[]
+  deals          Deal[]          @relation("DealContact")
+  activities     Activity[]      @relation("ContactActivities")
+  timelineEvents TimelineEvent[] @relation("ContactTimeline")
 
   @@index([tenantId])
   @@index([tenantId, status])
+  @@index([tenantId, deletedAt])
+  @@index([parentId])
+  @@index([ownerId])
   @@map("contacts")
+}
+
+// ── crm-contacts: Tag + ContactTag ───────────────────────────────────────────
+
+model Tag {
+  id       String @id @default(cuid())
+  tenantId String
+  name     String
+
+  tenant   Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contacts ContactTag[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("tags")
+}
+
+model ContactTag {
+  contactId String
+  tagId     String
+
+  contact Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([contactId, tagId])
+  @@map("contact_tags")
+}
+
+// ── crm-pipeline: PipelineStage, Lead, Deal ───────────────────────────────────
+
+model PipelineStage {
+  id        String   @id @default(cuid())
+  tenantId  String
+  name      String
+  order     Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  leads  Lead[]
+
+  @@index([tenantId])
+  @@index([tenantId, order])
+  @@map("pipeline_stages")
+}
+
+model Lead {
+  id          String     @id @default(cuid())
+  tenantId    String
+  title       String
+  value       Float      @default(0)
+  status      LeadStatus @default(new)
+  contactName String?
+  stageId     String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  tenant Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  stage  PipelineStage? @relation(fields: [stageId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@map("leads")
+}
+
+model Deal {
+  id        String     @id @default(cuid())
+  tenantId  String
+  title     String
+  value     Float      @default(0)
+  status    DealStatus @default(open)
+  leadId    String?
+  contactId String?
+  closedAt  DateTime?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  /// Full-text search vector, maintained by a DB trigger (see migration).
+  searchable Unsupported("tsvector")?
+
+  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contact        Contact?        @relation("DealContact", fields: [contactId], references: [id], onDelete: SetNull)
+  activities     Activity[]      @relation("DealActivities")
+  timelineEvents TimelineEvent[] @relation("DealTimeline")
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@map("deals")
+}
+
+// ── warehouse: Product, StockMovement ────────────────────────────────────────
+
+model Product {
+  id                String   @id @default(cuid())
+  tenantId          String
+  sku               String
+  name              String
+  category          String
+  price             Float
+  stockQuantity     Int      @default(0)
+  lowStockThreshold Int      @default(5)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  /// Full-text search vector, maintained by a DB trigger (see migration).
+  searchable Unsupported("tsvector")?
+
+  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  stockMovements StockMovement[]
+
+  @@unique([tenantId, sku])
+  @@index([tenantId])
+  @@map("products")
+}
+
+model StockMovement {
+  id        String            @id @default(cuid())
+  tenantId  String
+  productId String
+  type      StockMovementType
+  quantity  Int
+  note      String?
+  createdAt DateTime          @default(now())
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([productId])
+  @@map("stock_movements")
+}
+
+// ── activities: Activity ──────────────────────────────────────────────────────
+
+model Activity {
+  id        String           @id @default(cuid())
+  tenantId  String
+  type      ActivityType     @default(task)
+  title     String
+  priority  ActivityPriority @default(medium)
+  status    ActivityStatus   @default(todo)
+  dueDate   DateTime?
+  notes     String?
+  contactId String?
+  dealId    String?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contact Contact? @relation("ContactActivities", fields: [contactId], references: [id], onDelete: SetNull)
+  deal    Deal?    @relation("DealActivities", fields: [dealId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, contactId])
+  @@index([tenantId, dealId])
+  @@map("activities")
+}
+
+// ── timeline: TimelineEvent ───────────────────────────────────────────────────
+
+model TimelineEvent {
+  id        String            @id @default(cuid())
+  tenantId  String
+  type      TimelineEventType
+  title     String
+  fromValue String?
+  toValue   String?
+  contactId String?
+  dealId    String?
+  leadId    String?
+  createdAt DateTime          @default(now())
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contact Contact? @relation("ContactTimeline", fields: [contactId], references: [id], onDelete: Cascade)
+  deal    Deal?    @relation("DealTimeline", fields: [dealId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, contactId])
+  @@index([tenantId, dealId])
+  @@index([tenantId, leadId])
+  @@map("timeline_events")
+}
+
+// ── notifications: Notification ───────────────────────────────────────────────
+
+model Notification {
+  id          String           @id @default(cuid())
+  tenantId    String
+  recipientId String
+  type        NotificationType
+  message     String
+  link        String?
+  dedupeKey   String?
+  readAt      DateTime?
+  createdAt   DateTime         @default(now())
+
+  tenant    Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  recipient User   @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, recipientId, dedupeKey])
+  @@index([tenantId, recipientId, readAt])
+  @@map("notifications")
 }

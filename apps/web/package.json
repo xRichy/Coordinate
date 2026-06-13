@@ -47,7 +47,8 @@
     "@coordinate/modules-crm-pipeline": "workspace:*",
     "@coordinate/modules-activities": "workspace:*",
     "@coordinate/modules-warehouse": "workspace:*",
-    "@coordinate/modules-calendar": "workspace:*"
+    "@coordinate/modules-calendar": "workspace:*",
+    "@coordinate/modules-dashboard": "workspace:*"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

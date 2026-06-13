@@ -35,6 +35,9 @@ importers:
       '@coordinate/modules-crm-pipeline':
         specifier: workspace:*
         version: link:../../packages/modules/crm-pipeline
+      '@coordinate/modules-dashboard':
+        specifier: workspace:*
+        version: link:../../packages/modules/dashboard
       '@coordinate/modules-example':
         specifier: workspace:*
         version: link:../../packages/modules/example
@@ -291,6 +294,22 @@ importers:
         version: 5.9.3
 
   packages/modules/crm-pipeline:
+    dependencies:
+      '@coordinate/core':
+        specifier: workspace:*
+        version: link:../../core
+      react:
+        specifier: ^19.0.0
+        version: 19.2.3
+    devDependencies:
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.14
+      typescript:
+        specifier: ^5
+        version: 5.9.3
+
+  packages/modules/dashboard:
     dependencies:
       '@coordinate/core':
         specifier: workspace:*

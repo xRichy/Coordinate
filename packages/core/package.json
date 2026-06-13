@@ -10,7 +10,8 @@
     "./tenant": "./src/tenant/index.ts",
     "./jobs": "./src/jobs/index.ts",
     "./analytics": "./src/analytics/index.ts",
-    "./module-registry": "./src/module-registry/index.ts"
+    "./module-registry": "./src/module-registry/index.ts",
+    "./permissions": "./src/permissions/index.ts"
   },
   "scripts": {
     "test": "vitest run",

@@ -107,7 +107,8 @@ Un solo deploy serve tutti i tenant; ogni tenant vede solo i moduli a lui assegn
 
 Questi moduli sono nel catalogo (vedi `modules-catalog.md`) ma vengono costruiti **solo quando un cliente li richiede e li paga come modulo custom o standard upgrade**:
 
-- `calendar` (vista mese/settimana delle activity)
+> Nota: `calendar` (vista mese/settimana delle activity) è **rientrato nell'MVP** il 2026-06-13 (Fase 3, T3.11–T3.12), quindi non è più in questa lista.
+
 - `quotes` (preventivi PDF)
 - `invoicing` / `it-fatturazione-sdi` (fatturazione + SDI)
 - `helpdesk` (ticket system)
@@ -307,7 +308,7 @@ Riduzione rispetto al piano precedente (17-23 settimane): **5-7 settimane rispar
 
 Quando arriva il 2° cliente o il 1° chiede nuovi moduli, si valutano (in ordine indicativo):
 
-1. **`calendar`** se il cliente vive di appuntamenti
+1. ~~**`calendar`**~~ → **già in MVP** dal 2026-06-13 (vedi Fase 3, T3.11–T3.12)
 2. **`quotes`** se il cliente fa preventivi
 3. **`invoicing` + `it-fatturazione-sdi`** se serve fatturazione elettronica
 4. **`it-anagrafica-check`** per autocompletamento P.IVA

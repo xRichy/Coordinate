@@ -44,13 +44,13 @@ Già fatte, non rientrano nel lavoro attivo — riassunte qui per le dipendenze.
 ```
 Fase 1  Single-domain migration         [x] 8/8   attivi
 Fase 2  Completamento migrazione moduli  [x] 6/6   attivi
-Fase 3  Moduli MVP boutique              [ ] 10/16 attivi  (+8 deferred)
+Fase 3  Moduli MVP boutique              [ ] 11/18 attivi  (+6 deferred)
 Fase 4  Admin tenant & provisioning      [ ] 0/7   attivi  (+10 deferred)
 Fase 5  Polish                           [ ] 0/8   attivi  (+2 deferred)
 Fase 6  Testing & Hardening              [ ] 0/8   attivi  (+1 deferred)
 Fase 7  Launch white-glove               [ ] 0/4   attivi  (+4 deferred)
                                          ----------------------------------
-                                         57 attivi · 25 deferred · 82 totali
+                                         59 attivi · 23 deferred · 82 totali
 ```
 
 > Ordine d'esecuzione consigliato: prima **Fase 1** (migrazione), così tutto il lavoro di prodotto successivo nasce già sotto `/t/[tenant]`. Poi Fase 2 → 7.
@@ -261,7 +261,7 @@ Fase 7  Launch white-glove               [ ] 0/4   attivi  (+4 deferred)
 
 # Fase 3 — Moduli MVP boutique
 
-**Obiettivo**: portare i 5 moduli core MVP (`crm-contacts`, `crm-pipeline`, `activities`, `warehouse`, `dashboard`) a livello vendibile. Moduli a catalogo (calendar, quotes, it-anagrafica-check) e custom fields → DEFERRED (si costruiscono quando un cliente li paga).
+**Obiettivo**: portare i 5 moduli core MVP (`crm-contacts`, `crm-pipeline`, `activities`, `warehouse`, `dashboard`) a livello vendibile, **più il modulo `calendar`** (rientrato in MVP su decisione del 2026-06-13). Moduli a catalogo (quotes, it-anagrafica-check) e custom fields → DEFERRED (si costruiscono quando un cliente li paga).
 
 **Branch di fase**: `feat/mvp-modules`
 
@@ -297,11 +297,11 @@ Fase 7  Launch white-glove               [ ] 0/4   attivi  (+4 deferred)
 ### T3.10 ✅ — activities: promemoria (notifiche in-app)
 **Deps**: T2.9 · **Size**: M — job Inngest orario scansiona `dueDate`; crea **notifica in-app** per task in scadenza. *(La variante email resta `⏭` finché Resend non è attivo.)* Introduce il modello `Notification` (recipient/type/message/link/readAt, dedup) consumato poi dalla UI campanella in T3.23.
 
-### T3.11 ⏭ DEFERRED — Modulo calendar
-Fuori scope MVP boutique: modulo a catalogo, si costruisce quando un cliente lo paga (`mvp-scope.md` §4, `modules-catalog.md`). Spec in archivio.
+### T3.11 ✅ — Modulo calendar (nuovo): vista mese + settimana
+**Deps**: T2.9 · **Size**: L · **Files**: `packages/modules/calendar/` + `apps/web/.../(modules)/calendar/` — modulo calendar (dep on activities); vista **mese** + **settimana** (custom, date-fns + shadcn, niente librerie esterne); eventi = activities con `dueDate` (chip colorate per tipo); click evento → modal dettaglio (stato/elimina). Rientrato in MVP il 2026-06-13.
 
-### T3.12 ⏭ DEFERRED — calendar: creazione evento dal calendario
-Dipende da T3.11 (deferred).
+### T3.12 — calendar: creazione evento dal calendario
+**Deps**: T3.11 · **Size**: M — click su slot/giorno vuoto → modal nuova activity (Meeting/Call) pre-compilata con la data.
 
 ### T3.13 — Modulo dashboard MVP
 **Deps**: T2.8, T2.7, T2.9 · **Size**: L · **Files**: `packages/modules/dashboard/` — 6 widget fissi (mvp-scope §5 M5), filtri periodo+owner, numeri cliccabili → drill-down.

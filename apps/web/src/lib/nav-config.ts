@@ -2,6 +2,7 @@ import { manifest as crmContactsManifest } from "@coordinate/modules-crm-contact
 import { manifest as crmPipelineManifest } from "@coordinate/modules-crm-pipeline";
 import { manifest as activitiesManifest } from "@coordinate/modules-activities";
 import { manifest as warehouseManifest } from "@coordinate/modules-warehouse";
+import { manifest as calendarManifest } from "@coordinate/modules-calendar";
 import type { NavigationItem } from "@coordinate/core/module-registry";
 
 const CORE_NAV: NavigationItem[] = [
@@ -13,6 +14,7 @@ const MODULE_MANIFESTS = [
   crmPipelineManifest,
   activitiesManifest,
   warehouseManifest,
+  calendarManifest,
 ];
 
 export const NAV_ITEMS: NavigationItem[] = [

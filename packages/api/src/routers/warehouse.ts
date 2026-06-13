@@ -19,6 +19,7 @@ const productRouter = router({
         category: z.string().min(2),
         price: z.number().positive(),
         stockQuantity: z.number().int().nonnegative(),
+        lowStockThreshold: z.number().int().nonnegative().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -37,6 +38,7 @@ const productRouter = router({
           category: z.string().min(2).optional(),
           price: z.number().positive().optional(),
           stockQuantity: z.number().int().nonnegative().optional(),
+          lowStockThreshold: z.number().int().nonnegative().optional(),
         }),
       })
     )

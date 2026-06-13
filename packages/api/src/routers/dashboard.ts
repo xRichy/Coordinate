@@ -68,10 +68,11 @@ export const dashboardRouter = router({
             ...contactOwnerWhere,
           },
         }),
-        ctx.db.product.findMany({ select: { price: true, stockQuantity: true } }),
+        ctx.db.product.findMany({ select: { price: true, stockQuantity: true, lowStockThreshold: true } }),
       ]);
 
       const inventoryValue = products.reduce((acc, p) => acc + p.price * p.stockQuantity, 0);
+      const lowStockCount = products.filter((p) => p.stockQuantity <= p.lowStockThreshold).length;
 
       return {
         openPipeline: { value: openAgg._sum.value ?? 0, count: openAgg._count },
@@ -80,6 +81,7 @@ export const dashboardRouter = router({
         dueTasks: { count: dueTasks },
         newContacts: { count: newContacts },
         inventory: { value: inventoryValue, count: products.length },
+        lowStock: { count: lowStockCount },
       };
     }),
 });

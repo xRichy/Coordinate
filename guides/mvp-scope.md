@@ -53,12 +53,13 @@ Dettagli sui range di prezzo: vedi `pricing.md`.
 **OUT**: ruoli custom per tenant (deferred), permessi attributo-based.
 
 ### `tenant-admin` — settings del tenant
-**IN**: pagina settings con dati azienda, logo upload, colore primario, fuso orario, gestione team (invita/rimuovi), abilitazione/disabilitazione moduli.
-**OUT**: branding avanzato (font, email template), white-label.
+**IN**: pagina settings con abilitazione/disabilitazione moduli (✅ fatto), fuso orario/lingua, e **modulo Team**: l'owner (1° account dell'azienda) crea altri account legati al suo tenant e assegna ruoli (gestione consentita a **owner + admin**, no invito email → password temporanea consegnata a mano).
+**Modello a posti (seat)**: il canone include di default **2 account** (`Tenant.maxSeats = 2`, owner + 1). Per averne di più il cliente paga *fuori dall'app*; l'operatore aumenta gli slot dalla **super-admin** (vedi sotto). Vedi `pricing.md` §2.
+**OUT (per ora)**: dati azienda + branding (logo/colore) — i dati azienda fissi servono solo ai preventivi e si gestiscono lì; il branding passa a Fase 5 (theming). Branding avanzato (font, email template), white-label: mai nell'MVP.
 
-### `tenant-onboarding` (white-glove, no UI pubblica)
-**IN**: comando CLI o pagina admin riservata per creare un nuovo tenant: crei record `Tenant`, primo utente `owner`, lista moduli abilitati, dati azienda. Mandi credenziali al cliente via email/canale concordato. Il cliente accede da `coordinate.app/login` e lavora nella sua sezione `coordinate.app/t/<slug>`.
-**OUT**: signup self-serve, pricing page pubblica, trial automatico, onboarding wizard.
+### `tenant-onboarding` + `platform-admin` (white-glove, no UI pubblica)
+**IN**: (1) **CLI di provisioning** ✅ (`db:provision`, T4.17) che crea `Tenant` + `owner` + credenziali + moduli + settings/stage di default; (2) **sezione super-admin** `/admin` (T4.18), accessibile solo all'operatore via allowlist email (`SUPER_ADMIN_EMAILS`): elenco aziende, crea tenant da UI, e soprattutto **aumenta gli slot account** (`maxSeats`) di un'azienda dopo aver ricevuto il pagamento (gestito fuori app), oltre a sospendere/riattivare e abilitare moduli. Il cliente accede da `coordinate.app/login` e lavora in `coordinate.app/t/<slug>`.
+**OUT**: signup self-serve, pricing page pubblica, trial automatico, onboarding wizard, **gestione pagamenti dentro l'app** (resta manuale).
 
 ### `notifications` (in-app, base)
 **IN**: notifiche in-app (campanella in header) per eventi rilevanti dei moduli.
@@ -69,8 +70,8 @@ Dettagli sui range di prezzo: vedi `pricing.md`.
 **OUT**: diff campo-per-campo, filtri avanzati, export.
 
 ### `file-storage`
-**IN**: upload file su S3-compatible (Cloudflare R2), allegati per i moduli che ne hanno bisogno, max 25MB per file.
-**OUT**: versioning, OCR, anteprime documenti.
+**IN**: upload file su **Vercel Blob** (non più Cloudflare R2 — più semplice, nativo Vercel, quota gratuita sufficiente a 2 clienti), allegati per i moduli che ne hanno bisogno (foto prodotti, disegni tecnici PDF), max 25MB per file. Costruito in T4.24, quando servono davvero gli allegati.
+**OUT**: versioning, OCR, anteprime documenti. *(R2 si rivaluta solo se i costi di egress contassero — irrilevante a questa scala.)*
 
 ### `search` (semplificato)
 **IN**: ricerca globale full-text via Postgres `tsvector` sulle entità chiave dei moduli attivi (contatti, deal, prodotti, preventivi). Header search bar.
@@ -103,18 +104,29 @@ Un solo deploy serve tutti i tenant; ogni tenant vede solo i moduli a lui assegn
 | `warehouse` | Prodotti, stock mono-deposito, movimenti in/out, alert sotto soglia | M |
 | `dashboard` | Widget fissi (pipeline aperta, deal won mese, task scadenza), drill-down cliccabile | S |
 
-### Moduli supportati ma non costruiti nell'MVP
+### Moduli verticali entrati in MVP per i primi due clienti (2026-06-13)
 
-Questi moduli sono nel catalogo (vedi `modules-catalog.md`) ma vengono costruiti **solo quando un cliente li richiede e li paga come modulo custom o standard upgrade**:
+Identificati i due primi clienti reali — (A) **metalmeccanico** che produce componenti su commessa per altre aziende; (B) attività che **compra e rivende** oggetti online — sono entrate nell'MVP le feature che chiudono la vendita (Fase 4.5):
 
-> Nota: `calendar` (vista mese/settimana delle activity) è **rientrato nell'MVP** il 2026-06-13 (Fase 3, T3.11–T3.12), quindi non è più in questa lista.
+| ID | Cosa fa | Per chi | Task |
+|---|---|---|---|
+| `quotes` | Preventivi a righe (materiale/lavorazione, qtà, prezzo, sconto, IVA), totali live, stati, PDF | A (e B) | T4.20–T4.21 |
+| `warehouse` (est.) | Prezzo di acquisto/costo → **margine**; ordini di vendita con canale; scarico stock automatico; report profitti | B | T4.22 |
+| `work-orders` | Commesse/ordini di lavoro: stato (da fare→in lavorazione→completata→consegnata), scadenze, kanban | A | T4.23 |
+| `file-storage` (Vercel Blob) | Allegati: foto prodotti + disegni tecnici PDF | A + B | T4.24 |
 
-- `quotes` (preventivi PDF)
+### Moduli supportati ma ancora non costruiti nell'MVP
+
+Restano nel catalogo (vedi `modules-catalog.md`), costruiti **solo quando un cliente li richiede e li paga**:
+
+> Nota: `calendar` è rientrato in MVP il 2026-06-13 (Fase 3, T3.11–T3.12); `quotes`/ordini/commesse sono rientrati il 2026-06-13 (b) coi due primi clienti (Fase 4.5).
+
 - `invoicing` / `it-fatturazione-sdi` (fatturazione + SDI)
+- `it-anagrafica-check` (verifica P.IVA/CF)
 - `helpdesk` (ticket system)
-- Verticali (`vertical-edilizia`, `vertical-real-estate`, ecc.)
+- Verticali completi (`vertical-edilizia`, `vertical-real-estate`, ecc.)
 
-La scelta è esplicita: costruire questi moduli "a freddo" senza un cliente che li paghi è ottimizzazione prematura.
+La scelta resta: costruire moduli "a freddo" senza un cliente che li paghi è ottimizzazione prematura.
 
 ### Moduli custom (Tier 4, ma trattati come moduli normali)
 
@@ -210,7 +222,7 @@ Backend:    Next.js Server Actions + tRPC
 
 Hosting:    Vercel (web)
             Neon (Postgres)
-            Cloudflare R2 (file storage)
+            Vercel Blob (file storage — sostituisce Cloudflare R2)
             Sentry (errors)
             PostHog (analytics interna, opzionale)
 
@@ -250,7 +262,7 @@ Il MVP è "fatto" e pronto al primo cliente quando **tutte** queste condizioni s
 - [ ] Terms of Service / contratto cliente pronti
 - [ ] Cookie banner GDPR (anche minimale, solo per analytics se attivati)
 - [ ] DPA bozza firmabile col cliente
-- [ ] Dati salvati in EU (Neon EU, R2 EU)
+- [ ] Dati salvati in EU (Neon EU, Vercel Blob EU)
 
 ### Operativo
 - [ ] Comando admin per creare un tenant (CLI o pagina admin riservata)
@@ -309,11 +321,12 @@ Riduzione rispetto al piano precedente (17-23 settimane): **5-7 settimane rispar
 Quando arriva il 2° cliente o il 1° chiede nuovi moduli, si valutano (in ordine indicativo):
 
 1. ~~**`calendar`**~~ → **già in MVP** dal 2026-06-13 (vedi Fase 3, T3.11–T3.12)
-2. **`quotes`** se il cliente fa preventivi
-3. **`invoicing` + `it-fatturazione-sdi`** se serve fatturazione elettronica
+2. ~~**`quotes`**~~ → **già in MVP** dal 2026-06-13 (b) coi primi clienti (Fase 4.5, T4.20–T4.21)
+3. **`invoicing` + `it-fatturazione-sdi`** se serve fatturazione elettronica (i preventivi ci sono già)
 4. **`it-anagrafica-check`** per autocompletamento P.IVA
-5. **Custom fields semplificati** se più clienti chiedono "vorrei aggiungere un campo X" (a quel punto vale l'investimento)
-6. **i18n** se arriva un cliente non-italiano
-7. **Stripe + onboarding self-serve** se cambia il modello commerciale (improbabile a 5 clienti)
+5. **`orders` completo / `production` (BOM)** se le commesse semplici di T4.23 non bastano
+6. **Custom fields semplificati** se più clienti chiedono "vorrei aggiungere un campo X" (a quel punto vale l'investimento)
+7. **i18n** se arriva un cliente non-italiano
+8. **Stripe + onboarding self-serve** se cambia il modello commerciale (improbabile a 5 clienti)
 
 Nessuna di queste cose è blocker per il go-live del 1° cliente.

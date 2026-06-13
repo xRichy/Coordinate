@@ -23,11 +23,19 @@ Tre principi:
 Cosa include **sempre**:
 - Foundation completa (auth, RBAC, multi-tenant, tenant-admin, file storage, audit log, ricerca, theming)
 - **I 5 moduli core MVP**: `crm-contacts`, `crm-pipeline`, `activities`, `warehouse`, `dashboard`
-- Hosting (Vercel + Neon + R2 EU)
+- **2 account** inclusi (owner + 1 collega). Account aggiuntivi = add-on a pagamento (vedi sotto)
+- Hosting (Vercel + Neon + Vercel Blob EU)
 - Backup giornalieri + retention 30gg
 - Manutenzione correttiva (bug fix, security patches, dependency upgrades)
 - Aggiornamenti minor della piattaforma e dei moduli inclusi
 - Supporto email (risposta < 24h lavorative)
+
+#### Add-on account (posti / seat)
+
+Il canone include **2 account**. Per aggiungerne servono slot extra a pagamento:
+- Il cliente richiede N account in più → si concorda il prezzo (pacchetti o tariffa per posto/anno) → **fattura manuale**.
+- A pagamento ricevuto, **tu** alzi `maxSeats` dalla sezione super-admin (`/admin`). L'app **non gestisce il pagamento**: tecnicamente blocca solo la creazione oltre il limite.
+- Range indicativo (da negoziare): **€120 – €300 / account aggiuntivo / anno**, eventualmente a scaglioni decrescenti. Coerente col principio "non lineare": non è pricing per-utente puro, è un add-on sopra una base che ne include 2.
 
 Range indicativo (da negoziare):
 - **Canone annuale base**: €6.000 – €15.000 / anno (cliente con 3-15 utenti)
@@ -137,7 +145,8 @@ Tipica scomposizione di un modulo `[M]` medio (40-80 giorni-uomo): 70% sviluppo 
 
 - ✅ Foundation (auth, multi-tenant, RBAC, RLS, audit log, file storage, ricerca, branding)
 - ✅ I 5 moduli core MVP
-- ✅ Hosting (Vercel + Neon + R2 in EU)
+- ✅ 2 account inclusi (owner + 1)
+- ✅ Hosting (Vercel + Neon + Vercel Blob in EU)
 - ✅ Backup giornaliero + retention 30gg
 - ✅ Bug fix / security patches / dependency upgrades
 - ✅ Aggiornamenti minor della piattaforma
@@ -146,6 +155,7 @@ Tipica scomposizione di un modulo `[M]` medio (40-80 giorni-uomo): 70% sviluppo 
 
 ### Extra a pagamento
 
+- 💰 **Account aggiuntivi** oltre i 2 inclusi (slot sbloccati a mano dopo il pagamento)
 - 💰 Moduli aggiuntivi dal catalogo (oltre i 5 core)
 - 💰 Moduli custom (setup fee + impatto canone)
 - 💰 Migrazione dati (sopra il minimo CSV semplice)
@@ -217,7 +227,7 @@ Tipica scomposizione di un modulo `[M]` medio (40-80 giorni-uomo): 70% sviluppo 
 - ❌ **Listino pubblico sul sito** — il prezzo è negoziato
 - ❌ **Trial gratuiti** — il cliente si impegna con contratto, eventualmente con periodo di "comfort" rimborsabile nei primi 30gg
 - ❌ **Sconti aggressivi finali** — distruggono il posizionamento
-- ❌ **Pricing per utente puro** — il prezzo è "pacchetto annuale", non lineare; chi ha 5 utenti non paga 5×, chi ne ha 50 non paga 50×
+- ❌ **Pricing per utente puro** — il prezzo è "pacchetto annuale", non lineare; chi ha 5 utenti non paga 5×, chi ne ha 50 non paga 50×. Gli **account aggiuntivi** (oltre i 2 inclusi) sono un *add-on* sopra la base, non un prezzo lineare per posto
 
 ### Cose che faremo
 

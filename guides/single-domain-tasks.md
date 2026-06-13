@@ -44,7 +44,7 @@ Già fatte, non rientrano nel lavoro attivo — riassunte qui per le dipendenze.
 ```
 Fase 1  Single-domain migration         [x] 8/8   attivi
 Fase 2  Completamento migrazione moduli  [x] 6/6   attivi
-Fase 3  Moduli MVP boutique              [ ] 16/18 attivi  (+6 deferred)
+Fase 3  Moduli MVP boutique              [ ] 17/18 attivi  (+6 deferred)
 Fase 4  Admin tenant & provisioning      [ ] 0/7   attivi  (+10 deferred)
 Fase 5  Polish                           [ ] 0/8   attivi  (+2 deferred)
 Fase 6  Testing & Hardening              [ ] 0/8   attivi  (+1 deferred)
@@ -333,8 +333,8 @@ Fuori scope MVP boutique: niente campi configurabili runtime; se serve un campo,
 ### T3.22 ✅ — Search globale (Postgres tsvector)
 **Deps**: T2.7, T2.8, T2.10 · **Size**: L — colonna `searchable tsvector` (config `simple`) via trigger BEFORE INSERT/UPDATE + indice GIN su Contact/Deal/Product; `search.global({ query })` (`websearch_to_tsquery`, RLS-scoped); header search bar funzionale con dropdown raggruppato e drill-down al modulo.
 
-### T3.23 — Notifiche in-app (campanella + dropdown)
-**Deps**: T2.12 · **Size**: M — modello `Notification` (recipient, type, message, link, readAt); campanella header con badge unread; mark as read; eventi: activity reminder, deal won. *(Solo in-app; niente email.)*
+### T3.23 ✅ — Notifiche in-app (campanella + dropdown)
+**Deps**: T2.12 · **Size**: M — modello `Notification` (già da T3.10); router `notifications` (list/unreadCount/markAsRead/markAllAsRead, recipient+RLS scoped); campanella header con badge unread (poll 60s) e dropdown; evento **deal won** → notifica fan-out ai membri (dedup); activity reminder già da T3.10. *(Solo in-app; niente email.)*
 
 ### T3.24 — Chiusura Fase 3 + acceptance review
 **Deps**: tutti i T3.* attivi · **Size**: S — pagine MVP su DB reale; smoke: signup(white-glove)→contatto→lead→deal Won. *(Niente preventivo/PDF: quotes deferred.)* Marcare Fase 3 ✅.

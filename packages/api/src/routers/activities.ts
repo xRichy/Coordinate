@@ -18,6 +18,8 @@ const activityRouter = router({
         status: z.nativeEnum(ActivityStatus).optional(),
         dueDate: z.string().datetime().optional(),
         notes: z.string().optional(),
+        contactId: z.string().optional(),
+        dealId: z.string().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {

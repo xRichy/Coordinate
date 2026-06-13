@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { router, tenantProcedure } from "../trpc";
-import { ContactType, ContactStatus, LeadStatus, DealStatus } from "@coordinate/database";
+import { ContactType, ContactStatus, LeadStatus, DealStatus, TimelineEventType } from "@coordinate/database";
+import type { Prisma, TimelineEvent } from "@coordinate/database";
 import { prismaAdmin } from "@coordinate/database";
 import { eventBus, crmPipelineEvents } from "@coordinate/core/events";
 
@@ -275,11 +276,25 @@ const leadRouter = router({
         data: { stageId: input.stageId },
         ...LEAD_WITH_STAGE,
       });
+      const previousStatus = lead.stage?.name ?? "—";
+      const newStatus = updated.stage?.name ?? "—";
+      if (previousStatus !== newStatus) {
+        await ctx.db.timelineEvent.create({
+          data: {
+            tenantId: ctx.tenantId,
+            type: TimelineEventType.lead_stage_changed,
+            title: updated.title,
+            fromValue: previousStatus,
+            toValue: newStatus,
+            leadId: updated.id,
+          },
+        });
+      }
       void eventBus.emit(crmPipelineEvents.leadStatusChanged, ctx.tenantId, {
         leadId: updated.id,
         title: updated.title,
-        previousStatus: lead.stage?.name ?? "—",
-        newStatus: updated.stage?.name ?? "—",
+        previousStatus,
+        newStatus,
       });
       return updated;
     }),
@@ -288,7 +303,7 @@ const leadRouter = router({
     .input(z.object({ id: z.string(), contactId: z.string().optional() }))
     .mutation(async ({ ctx, input }) => {
       const lead = await ctx.db.lead.findFirstOrThrow({ where: { id: input.id } });
-      return ctx.db.deal.create({
+      const deal = await ctx.db.deal.create({
         data: {
           tenantId: ctx.tenantId,
           title: lead.title,
@@ -299,6 +314,18 @@ const leadRouter = router({
         },
         ...DEAL_WITH_RELATIONS,
       });
+      await ctx.db.timelineEvent.create({
+        data: {
+          tenantId: ctx.tenantId,
+          type: TimelineEventType.deal_created,
+          title: deal.title,
+          toValue: DealStatus.open,
+          dealId: deal.id,
+          leadId: lead.id,
+          contactId: input.contactId ?? null,
+        },
+      });
+      return deal;
     }),
 
   // kept for backward-compat; updateStage is preferred
@@ -329,6 +356,7 @@ const dealRouter = router({
   updateStatus: tenantProcedure
     .input(z.object({ id: z.string(), status: z.nativeEnum(DealStatus) }))
     .mutation(async ({ ctx, input }) => {
+      const previous = await ctx.db.deal.findFirstOrThrow({ where: { id: input.id } });
       const deal = await ctx.db.deal.update({
         where: { id: input.id },
         data: {
@@ -337,6 +365,19 @@ const dealRouter = router({
         },
         ...DEAL_WITH_RELATIONS,
       });
+      if (previous.status !== deal.status) {
+        await ctx.db.timelineEvent.create({
+          data: {
+            tenantId: ctx.tenantId,
+            type: TimelineEventType.deal_status_changed,
+            title: deal.title,
+            fromValue: previous.status,
+            toValue: deal.status,
+            dealId: deal.id,
+            contactId: deal.contactId,
+          },
+        });
+      }
       // When won, mark the linked Contact as "customer"
       if (input.status === DealStatus.won && deal.contact) {
         await ctx.db.contact.update({
@@ -355,10 +396,96 @@ const dealRouter = router({
     }),
 });
 
+// ── Timeline (cross-module: activities + stage/status changes) ─────────────────
+
+type TimelineActivity = Prisma.ActivityGetPayload<true>;
+
+function mergeTimeline(activities: TimelineActivity[], events: TimelineEvent[]) {
+  const items = [
+    ...activities.map((a) => ({
+      id: a.id,
+      kind: "activity" as const,
+      at: a.createdAt,
+      activityType: a.type,
+      title: a.title,
+      status: a.status,
+      priority: a.priority,
+      notes: a.notes,
+      dueDate: a.dueDate,
+    })),
+    ...events.map((e) => ({
+      id: e.id,
+      kind: "event" as const,
+      at: e.createdAt,
+      eventType: e.type,
+      title: e.title,
+      fromValue: e.fromValue,
+      toValue: e.toValue,
+    })),
+  ];
+  items.sort((a, b) => b.at.getTime() - a.at.getTime());
+  return items;
+}
+
+const timelineRouter = router({
+  byContact: tenantProcedure
+    .input(z.object({ contactId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const deals = await ctx.db.deal.findMany({
+        where: { contactId: input.contactId },
+        select: { id: true, leadId: true },
+      });
+      const dealIds = deals.map((d) => d.id);
+      const leadIds = deals.map((d) => d.leadId).filter((id): id is string => Boolean(id));
+      const [activities, events] = await Promise.all([
+        ctx.db.activity.findMany({
+          where: {
+            OR: [
+              { contactId: input.contactId },
+              ...(dealIds.length ? [{ dealId: { in: dealIds } }] : []),
+            ],
+          },
+        }),
+        ctx.db.timelineEvent.findMany({
+          where: {
+            OR: [
+              { contactId: input.contactId },
+              ...(dealIds.length ? [{ dealId: { in: dealIds } }] : []),
+              ...(leadIds.length ? [{ leadId: { in: leadIds } }] : []),
+            ],
+          },
+        }),
+      ]);
+      return mergeTimeline(activities, events);
+    }),
+
+  byDeal: tenantProcedure
+    .input(z.object({ dealId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const deal = await ctx.db.deal.findFirstOrThrow({
+        where: { id: input.dealId },
+        select: { id: true, leadId: true },
+      });
+      const [activities, events] = await Promise.all([
+        ctx.db.activity.findMany({ where: { dealId: deal.id } }),
+        ctx.db.timelineEvent.findMany({
+          where: {
+            OR: [
+              { dealId: deal.id },
+              ...(deal.leadId ? [{ leadId: deal.leadId }] : []),
+            ],
+          },
+        }),
+      ]);
+      return mergeTimeline(activities, events);
+    }),
+});
+
 export const crmRouter = router({
   contact: contactRouter,
   tag: tagRouter,
   stage: stageRouter,
   lead: leadRouter,
   deal: dealRouter,
+  timeline: timelineRouter,
 });

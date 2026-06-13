@@ -71,6 +71,7 @@ model Tenant {
   products       Product[]
   stockMovements StockMovement[]
   tags           Tag[]
+  timelineEvents TimelineEvent[]
 }
 
 model User {
@@ -270,6 +271,15 @@ enum LeadStatus {
   lost
 }
 
+// ── timeline (cross-module) ───────────────────────────────────────────────────
+
+enum TimelineEventType {
+  lead_stage_changed
+  lead_converted
+  deal_created
+  deal_status_changed
+}
+
 // ── crm-contacts: Contact ─────────────────────────────────────────────────────
 
 model Contact {
@@ -287,12 +297,14 @@ model Contact {
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 
-  tenant  Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  parent  Contact?     @relation("ContactPersons", fields: [parentId], references: [id])
-  persons Contact[]    @relation("ContactPersons")
-  owner   User?        @relation("ContactOwner", fields: [ownerId], references: [id], onDelete: SetNull)
-  tags    ContactTag[]
-  deals   Deal[]       @relation("DealContact")
+  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  parent         Contact?        @relation("ContactPersons", fields: [parentId], references: [id])
+  persons        Contact[]       @relation("ContactPersons")
+  owner          User?           @relation("ContactOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  tags           ContactTag[]
+  deals          Deal[]          @relation("DealContact")
+  activities     Activity[]      @relation("ContactActivities")
+  timelineEvents TimelineEvent[] @relation("ContactTimeline")
 
   @@index([tenantId])
   @@index([tenantId, status])
@@ -377,8 +389,10 @@ model Deal {
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 
-  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  contact Contact? @relation("DealContact", fields: [contactId], references: [id], onDelete: SetNull)
+  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contact        Contact?        @relation("DealContact", fields: [contactId], references: [id], onDelete: SetNull)
+  activities     Activity[]      @relation("DealActivities")
+  timelineEvents TimelineEvent[] @relation("DealTimeline")
 
   @@index([tenantId])
   @@index([tenantId, status])
@@ -434,12 +448,42 @@ model Activity {
   status    ActivityStatus   @default(todo)
   dueDate   DateTime?
   notes     String?
+  contactId String?
+  dealId    String?
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contact Contact? @relation("ContactActivities", fields: [contactId], references: [id], onDelete: SetNull)
+  deal    Deal?    @relation("DealActivities", fields: [dealId], references: [id], onDelete: SetNull)
 
   @@index([tenantId])
   @@index([tenantId, status])
+  @@index([tenantId, contactId])
+  @@index([tenantId, dealId])
   @@map("activities")
+}
+
+// ── timeline: TimelineEvent ───────────────────────────────────────────────────
+
+model TimelineEvent {
+  id        String            @id @default(cuid())
+  tenantId  String
+  type      TimelineEventType
+  title     String
+  fromValue String?
+  toValue   String?
+  contactId String?
+  dealId    String?
+  leadId    String?
+  createdAt DateTime          @default(now())
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contact Contact? @relation("ContactTimeline", fields: [contactId], references: [id], onDelete: Cascade)
+  deal    Deal?    @relation("DealTimeline", fields: [dealId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, contactId])
+  @@index([tenantId, dealId])
+  @@index([tenantId, leadId])
+  @@map("timeline_events")
 }

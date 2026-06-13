@@ -55,6 +55,30 @@ const productRouter = router({
       await ctx.db.product.delete({ where: { id: input.id } });
       return { id: input.id };
     }),
+
+  importBatch: tenantProcedure
+    .input(
+      z
+        .array(
+          z.object({
+            sku: z.string().min(2),
+            name: z.string().min(2),
+            category: z.string().min(2),
+            price: z.number().positive(),
+            stockQuantity: z.number().int().nonnegative().optional(),
+            lowStockThreshold: z.number().int().nonnegative().optional(),
+          })
+        )
+        .min(1)
+        .max(500)
+    )
+    .mutation(async ({ ctx, input }) => {
+      const result = await ctx.db.product.createMany({
+        data: input.map((p) => ({ tenantId: ctx.tenantId, ...p })),
+        skipDuplicates: true, // skip rows whose (tenantId, sku) already exists
+      });
+      return { count: result.count };
+    }),
 });
 
 // ── StockMovement ─────────────────────────────────────────────────────────────

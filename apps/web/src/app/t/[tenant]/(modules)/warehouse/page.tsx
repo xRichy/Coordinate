@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Plus, ArrowRightLeft, Edit2, ArrowDownToLine, ArrowUpFromLine, Package } from "lucide-react";
+import { Search, Plus, ArrowRightLeft, Edit2, ArrowDownToLine, ArrowUpFromLine, Package, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import { useTRPC } from "@/lib/trpc";
@@ -135,17 +135,26 @@ export default function WarehousePage() {
                         € {product.price.toLocaleString("it-IT", { minimumFractionDigits: 2 })}
                       </TableCell>
                       <TableCell>
-                        <Badge
-                          variant={
-                            product.stockQuantity > 10
-                              ? "secondary"
-                              : product.stockQuantity > 0
-                                ? "default"
-                                : "destructive"
-                          }
-                        >
-                          {product.stockQuantity} pz
-                        </Badge>
+                        {(() => {
+                          const isLow = product.stockQuantity <= product.lowStockThreshold;
+                          const isOut = product.stockQuantity === 0;
+                          return (
+                            <div className="flex items-center gap-2">
+                              <Badge variant={isOut || isLow ? "destructive" : "secondary"}>
+                                {product.stockQuantity} pz
+                              </Badge>
+                              {isLow && (
+                                <span
+                                  className="inline-flex items-center gap-1 text-xs font-medium text-amber-500"
+                                  title={`Soglia: ${product.lowStockThreshold} pz`}
+                                >
+                                  <AlertTriangle className="h-3.5 w-3.5" />
+                                  {isOut ? "Esaurito" : "Sotto soglia"}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">

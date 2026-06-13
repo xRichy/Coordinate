@@ -10,7 +10,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  CircleDollarSign, Trophy, Target, Clock, UserPlus, Package, ArrowUpRight,
+  CircleDollarSign, Trophy, Target, Clock, UserPlus, Package, ArrowUpRight, AlertTriangle,
 } from "lucide-react";
 import { useTRPC } from "@/lib/trpc";
 
@@ -117,6 +117,21 @@ export default function DashboardPage() {
           </Select>
         </div>
       </div>
+
+      {/* ── Low-stock alert banner ─────────────────────────────────────── */}
+      {stats && stats.lowStock.count > 0 && (
+        <Link
+          href={`${base}/warehouse`}
+          className="flex items-center gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-600 dark:text-amber-400 hover:bg-amber-500/15 transition-colors"
+        >
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span>
+            <span className="font-semibold">{stats.lowStock.count}</span>{" "}
+            {stats.lowStock.count === 1 ? "prodotto è" : "prodotti sono"} sotto la soglia di scorta minima.
+          </span>
+          <ArrowUpRight className="h-4 w-4 ml-auto shrink-0" />
+        </Link>
+      )}
 
       {/* ── Widgets ────────────────────────────────────────────────────── */}
       {isLoading ? (

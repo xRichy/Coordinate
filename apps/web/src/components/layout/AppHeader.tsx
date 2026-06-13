@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bell, Search, User, LogOut } from "lucide-react";
+import { Bell, User, LogOut } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { GlobalSearch } from "@/components/layout/global-search";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -37,16 +37,7 @@ export function AppHeader() {
             <SidebarTrigger className="-ml-2 h-12 w-12 md:h-8 md:w-8 [&>svg]:size-6 md:[&>svg]:size-4" />
 
             <div className="flex flex-1 items-center gap-4 md:gap-8">
-                <form className="ml-auto flex-1 sm:flex-initial">
-                    <div className="relative">
-                        <Search className="absolute left-3 top-3.5 md:left-2.5 md:top-3 h-5 w-5 md:h-4 md:w-4 text-muted-foreground" />
-                        <Input
-                            type="search"
-                            placeholder="Search..."
-                            className="w-full h-12 md:h-10 rounded-lg bg-background pl-10 md:pl-8 sm:w-[300px] md:w-[200px] lg:w-[300px]"
-                        />
-                    </div>
-                </form>
+                <GlobalSearch />
             </div>
 
             <div className="flex items-center gap-4">

@@ -4,6 +4,7 @@ import { crmRouter } from "./routers/crm";
 import { activitiesRouter } from "./routers/activities";
 import { warehouseRouter } from "./routers/warehouse";
 import { dashboardRouter } from "./routers/dashboard";
+import { searchRouter } from "./routers/search";
 
 export const appRouter = router({
   healthcheck: publicProcedure.query(() => ({ status: "ok" as const })),
@@ -12,6 +13,7 @@ export const appRouter = router({
   activities: activitiesRouter,
   warehouse: warehouseRouter,
   dashboard: dashboardRouter,
+  search: searchRouter,
 });
 
 export type AppRouter = typeof appRouter;

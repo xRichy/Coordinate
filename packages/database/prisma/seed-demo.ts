@@ -20,7 +20,7 @@ import {
   ActivityPriority,
   ActivityStatus,
   StockMovementType,
-} from "../src/generated/prisma";
+} from "@prisma/client";
 
 const prisma = new PrismaClient();
 

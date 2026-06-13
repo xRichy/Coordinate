@@ -3,7 +3,7 @@
  * Uso: tsx prisma/reset-password.ts <email> <nuova-password>
  */
 
-import { PrismaClient } from "../src/generated/prisma";
+import { PrismaClient } from "@prisma/client";
 import { hashPassword } from "@better-auth/utils/password";
 
 const prisma = new PrismaClient();

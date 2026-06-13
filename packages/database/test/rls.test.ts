@@ -14,7 +14,7 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { PrismaClient, TenantPlan, TenantStatus, MemberRole } from "../src/generated/prisma";
+import { PrismaClient, TenantPlan, TenantStatus, MemberRole } from "@prisma/client";
 
 const superClient = new PrismaClient({
   datasourceUrl: process.env.DIRECT_URL,

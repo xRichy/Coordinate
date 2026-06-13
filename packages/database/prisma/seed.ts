@@ -1,5 +1,5 @@
-import { PrismaClient, TenantPlan, TenantStatus, MemberRole } from "../src/generated/prisma";
-import type { Prisma } from "../src/generated/prisma";
+import { PrismaClient, TenantPlan, TenantStatus, MemberRole } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 
 const prisma = new PrismaClient();
 

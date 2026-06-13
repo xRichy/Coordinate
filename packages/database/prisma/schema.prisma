@@ -72,6 +72,7 @@ model Tenant {
   stockMovements StockMovement[]
   tags           Tag[]
   timelineEvents TimelineEvent[]
+  notifications  Notification[]
 }
 
 model User {
@@ -93,7 +94,8 @@ model User {
   baMembers     Member[]
   invitations   Invitation[]
   twoFactors    TwoFactor[]
-  ownedContacts Contact[]   @relation("ContactOwner")
+  ownedContacts Contact[]      @relation("ContactOwner")
+  notifications Notification[]
 }
 
 model Session {
@@ -278,6 +280,13 @@ enum TimelineEventType {
   lead_converted
   deal_created
   deal_status_changed
+}
+
+// ── notifications ─────────────────────────────────────────────────────────────
+
+enum NotificationType {
+  activity_reminder
+  deal_won
 }
 
 // ── crm-contacts: Contact ─────────────────────────────────────────────────────
@@ -486,4 +495,25 @@ model TimelineEvent {
   @@index([tenantId, dealId])
   @@index([tenantId, leadId])
   @@map("timeline_events")
+}
+
+// ── notifications: Notification ───────────────────────────────────────────────
+
+model Notification {
+  id          String           @id @default(cuid())
+  tenantId    String
+  recipientId String
+  type        NotificationType
+  message     String
+  link        String?
+  dedupeKey   String?
+  readAt      DateTime?
+  createdAt   DateTime         @default(now())
+
+  tenant    Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  recipient User   @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, recipientId, dedupeKey])
+  @@index([tenantId, recipientId, readAt])
+  @@map("notifications")
 }

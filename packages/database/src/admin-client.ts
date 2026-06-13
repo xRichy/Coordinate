@@ -1,4 +1,4 @@
-import { PrismaClient } from "./generated/prisma";
+import { PrismaClient } from "@prisma/client";
 
 // Connects as the superuser role (DIRECT_URL = coordinate user), which bypasses
 // Row-Level Security. Use ONLY for cross-tenant admin queries (e.g. listing all

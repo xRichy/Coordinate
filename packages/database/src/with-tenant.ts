@@ -1,5 +1,5 @@
 import { prisma } from "./client";
-import type { Prisma } from "./generated/prisma";
+import type { Prisma } from "@prisma/client";
 
 /**
  * Run a Prisma callback within a tenant-scoped transaction.

@@ -26,6 +26,9 @@ importers:
       '@coordinate/modules-activities':
         specifier: workspace:*
         version: link:../../packages/modules/activities
+      '@coordinate/modules-calendar':
+        specifier: workspace:*
+        version: link:../../packages/modules/calendar
       '@coordinate/modules-crm-contacts':
         specifier: workspace:*
         version: link:../../packages/modules/crm-contacts
@@ -240,6 +243,22 @@ importers:
         version: 4.1.6(@opentelemetry/api@1.9.1)(@types/node@20.19.41)(msw@2.14.6(@types/node@20.19.41)(typescript@5.9.3))(vite@8.0.13(@types/node@20.19.41)(esbuild@0.28.0)(jiti@2.7.0)(terser@5.47.1)(tsx@4.22.1)(yaml@2.9.0))
 
   packages/modules/activities:
+    dependencies:
+      '@coordinate/core':
+        specifier: workspace:*
+        version: link:../../core
+      react:
+        specifier: ^19.0.0
+        version: 19.2.3
+    devDependencies:
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.14
+      typescript:
+        specifier: ^5
+        version: 5.9.3
+
+  packages/modules/calendar:
     dependencies:
       '@coordinate/core':
         specifier: workspace:*

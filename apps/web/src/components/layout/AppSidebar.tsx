@@ -19,6 +19,7 @@ import {
   Settings,
   Target,
   Package,
+  Calendar,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -32,6 +33,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Kanban,
   CheckSquare,
   Package,
+  Calendar,
 };
 
 function NavIcon({ name, className }: { name: string; className?: string }) {

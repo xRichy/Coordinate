@@ -109,10 +109,10 @@ export default function TeamPage() {
 
       <Card className="bg-card/40 backdrop-blur-md border-border/50 shadow-sm">
         <CardHeader>
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-primary" />
-              <div>
+          <div className="flex items-center justify-between gap-4 min-w-0">
+            <div className="flex items-center gap-2 min-w-0">
+              <Users className="h-5 w-5 text-primary shrink-0" />
+              <div className="min-w-0">
                 <CardTitle>Account</CardTitle>
                 <CardDescription>
                   {data ? `${data.seatsUsed} / ${data.maxSeats} posti utilizzati` : "Membri del tenant"}

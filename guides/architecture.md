@@ -136,7 +136,7 @@ Ma **l'impalcatura per il Tier 4 va messa subito** (monorepo, manifest, registry
 | **Workflow engine** | **Inngest** o **Trigger.dev** | Background jobs + workflow durable, no Redis da gestire |
 | **i18n** | **next-intl** | Standard per Next.js App Router |
 | **Email** | **Resend** + **React Email** | DX migliore in circolazione |
-| **File storage** | **S3-compatible** (Cloudflare R2 / Backblaze) | Costi bassi, multi-tenant via prefisso path |
+| **File storage** | **Vercel Blob** (MVP) — S3-compatible R2/Backblaze come opzione futura | Nativo Vercel, zero servizi extra, quota gratuita ampia a questa scala. R2 solo se i costi di egress contassero |
 | **Observability** | **Sentry** + **PostHog** | Errori + analytics prodotto |
 | **Testing** | **Vitest** + **Playwright** | Unit + e2e |
 
@@ -452,7 +452,7 @@ Lo stato attuale: Next.js singolo app, Zustand con mock data, nessun backend. Pe
 | ~~D6~~ | ~~Hosting~~ | ~~Vercel / Railway / Fly.io / self-host~~ | ✅ **Chiusa: Vercel + Neon** per v1 |
 | D7 | Billing | Stripe / Paddle / Lemon Squeezy | **Stripe** (più potente, gestisce tasse EU) |
 | D8 | Strategia custom fields | JSONB / EAV / tabelle dinamiche | **JSONB** (no discussioni) |
-| D9 | Modello prezzi | Per seat / Per modulo / Tier flat | ✅ **Chiusa: Tier + add-on** + 3 modelli commerciali (SaaS/Lifetime/On-premise) — vedi `pricing.md` |
+| D9 | Modello prezzi | Per seat / Per modulo / Tier flat | ✅ **Chiusa: canone annuale + add-on** (moduli + **account oltre i 2 inclusi**, `maxSeats` sbloccati a mano post-pagamento). Fatturazione manuale, niente Stripe nell'MVP — vedi `pricing.md` |
 | ~~D10~~ | ~~Lingua del codice e dei commenti~~ | ~~Italiano / Inglese~~ | ✅ **Chiusa: inglese** |
 
 ---

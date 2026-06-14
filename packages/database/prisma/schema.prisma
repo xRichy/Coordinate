@@ -51,13 +51,15 @@ enum DealStatus {
 // ─── Core multi-tenant models ─────────────────────────────────────────────────
 
 model Tenant {
-  id        String       @id @default(cuid())
-  slug      String       @unique
-  name      String
-  plan      TenantPlan   @default(starter)
-  status    TenantStatus @default(active)
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+  id             String       @id @default(cuid())
+  slug           String       @unique
+  name           String
+  plan           TenantPlan   @default(starter)
+  status         TenantStatus @default(active)
+  enabledModules String[]     @default(["dashboard", "crm-contacts", "crm-pipeline", "activities", "warehouse", "calendar"])
+  maxSeats       Int          @default(2) // account inclusi (owner + 1); slot extra sbloccati dalla super-admin dopo pagamento
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
   memberships    Membership[]
   settings       TenantSetting[]
@@ -72,6 +74,10 @@ model Tenant {
   tags           Tag[]
   timelineEvents TimelineEvent[]
   notifications  Notification[]
+  quotes         Quote[]
+  quoteLines     QuoteLine[]
+  sales          Sale[]
+  workOrders     WorkOrder[]
 }
 
 model User {
@@ -315,6 +321,8 @@ model Contact {
   deals          Deal[]          @relation("DealContact")
   activities     Activity[]      @relation("ContactActivities")
   timelineEvents TimelineEvent[] @relation("ContactTimeline")
+  quotes         Quote[]         @relation("QuoteContact")
+  workOrders     WorkOrder[]     @relation("WorkOrderContact")
 
   @@index([tenantId])
   @@index([tenantId, status])
@@ -420,6 +428,8 @@ model Product {
   name              String
   category          String
   price             Float
+  costPrice         Float    @default(0) // costo/prezzo di acquisto → margine = price - costPrice
+  imageUrl          String? // foto prodotto (Vercel Blob)
   stockQuantity     Int      @default(0)
   lowStockThreshold Int      @default(5)
   createdAt         DateTime @default(now())
@@ -429,6 +439,7 @@ model Product {
 
   tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   stockMovements StockMovement[]
+  sales          Sale[]
 
   @@unique([tenantId, sku])
   @@index([tenantId])
@@ -522,4 +533,129 @@ model Notification {
   @@unique([tenantId, recipientId, dedupeKey])
   @@index([tenantId, recipientId, readAt])
   @@map("notifications")
+}
+
+// ── quotes: Quote, QuoteLine ──────────────────────────────────────────────────
+
+enum QuoteStatus {
+  draft
+  sent
+  accepted
+  rejected
+  expired
+}
+
+model Quote {
+  id          String      @id @default(cuid())
+  tenantId    String
+  number      Int // progressivo per tenant
+  contactId   String?
+  contactName String // snapshot del cliente (resta anche se il contatto cambia/è rimosso)
+  status      QuoteStatus @default(draft)
+  issueDate   DateTime    @default(now())
+  validUntil  DateTime?
+  notes       String?
+  // Totali calcolati lato server e salvati (per lista/PDF senza ricalcolo)
+  subtotal    Float       @default(0) // imponibile (dopo sconti riga)
+  taxTotal    Float       @default(0)
+  total       Float       @default(0)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contact    Contact?    @relation("QuoteContact", fields: [contactId], references: [id], onDelete: SetNull)
+  lines      QuoteLine[]
+  workOrders WorkOrder[] @relation("QuoteWorkOrders")
+
+  @@unique([tenantId, number])
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@map("quotes")
+}
+
+// ── sales: ordini di vendita + margini ────────────────────────────────────────
+
+enum SalesChannel {
+  ebay
+  amazon
+  vinted
+  subito
+  store
+  other
+}
+
+model Sale {
+  id        String       @id @default(cuid())
+  tenantId  String
+  productId String
+  quantity  Int
+  unitPrice Float // prezzo di vendita unitario
+  unitCost  Float        @default(0) // snapshot del costo al momento della vendita
+  channel   SalesChannel @default(other)
+  buyer     String?
+  soldAt    DateTime     @default(now())
+  createdAt DateTime     @default(now())
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, soldAt])
+  @@index([productId])
+  @@map("sales")
+}
+
+// ── work-orders: commesse / ordini di lavoro ──────────────────────────────────
+
+enum WorkOrderStatus {
+  todo
+  in_progress
+  done
+  delivered
+}
+
+model WorkOrder {
+  id          String          @id @default(cuid())
+  tenantId    String
+  number      Int // progressivo per tenant
+  title       String
+  contactId   String?
+  contactName String // snapshot cliente
+  quantity    Int?
+  dueDate     DateTime?
+  status      WorkOrderStatus @default(todo)
+  notes       String?
+  attachmentUrl  String? // disegno tecnico / allegato (Vercel Blob)
+  attachmentName String?
+  quoteId     String? // collegamento opzionale al preventivo di origine
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contact Contact? @relation("WorkOrderContact", fields: [contactId], references: [id], onDelete: SetNull)
+  quote   Quote?   @relation("QuoteWorkOrders", fields: [quoteId], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, number])
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@map("work_orders")
+}
+
+model QuoteLine {
+  id          String @id @default(cuid())
+  tenantId    String
+  quoteId     String
+  description String
+  quantity    Float  @default(1)
+  unitPrice   Float  @default(0)
+  discountPct Float  @default(0) // % sconto riga
+  taxRate     Float  @default(22) // aliquota IVA %
+  position    Int    @default(0)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  quote  Quote  @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([quoteId])
+  @@map("quote_lines")
 }

@@ -31,13 +31,14 @@ Componenti che ogni cliente ha. Vivono in `packages/core/`.
 | Modulo | Cosa fa | Note |
 |---|---|---|
 | **auth** | Login, sessioni, MFA, password reset, OAuth | Better-Auth |
-| **users** | Anagrafica utenti tenant, inviti (admin-led), deattivazione | |
+| **users / team** | L'owner crea account legati al tenant, ruoli, deattivazione; **limite posti** `maxSeats` (default 2) | No invito email; slot extra a pagamento |
 | **rbac** | 4 ruoli predefiniti + permessi granulari per modulo | Niente CASL nell'MVP |
-| **tenant-admin** | Settings tenant: dati azienda, branding, abilitazione moduli | |
+| **tenant-admin** | Settings tenant: abilitazione moduli (✅), team. Dati azienda/branding rinviati | |
+| **platform-admin** | Sezione `/admin` solo operatore (allowlist email): crea tenant, aumenta slot account, sospende, moduli | T4.18 |
 | **module-registry** | Sistema di manifest + loader | ✅ Già costruito |
 | **notifications** (in-app) | Campanella in header, eventi rilevanti dei moduli | Niente email transazionali nell'MVP |
 | **audit-log** (base) | Tracciamento azioni base (login, modifiche critiche) | |
-| **file-storage** | Upload S3-compatible (R2) | |
+| **file-storage** | Upload su **Vercel Blob** (non più R2) | Allegati foto/PDF, T4.24 |
 | **search** | Ricerca globale full-text via Postgres `tsvector` | Indicizza modelli registrati dai moduli |
 
 ---
@@ -81,9 +82,9 @@ Moduli per cui esiste già un design mentale, ma che si costruiscono solo quando
 
 ### Ciclo documentale
 
-**`quotes` `[M]`** — Preventivi con righe articolo, sconti, IVA configurabile, generazione PDF brandato (logo + colore tenant). Stati: bozza/inviato/accettato/rifiutato/scaduto.
+**`quotes` `[M]`** — 🟢 **In MVP (Fase 4.5, T4.20–T4.21)** per il cliente metalmeccanico. Preventivi con righe articolo, sconti, IVA configurabile, generazione PDF brandato (logo + colore tenant). Stati: bozza/inviato/accettato/rifiutato/scaduto.
 
-**`orders` `[M]`** — Conversione preventivo → ordine cliente. Stato (confermato/in lavorazione/evaso). Allocazione stock se `warehouse` attivo.
+**`orders` `[M]`** — Conversione preventivo → ordine cliente. Stato (confermato/in lavorazione/evaso). Allocazione stock se `warehouse` attivo. *Nota: per il rivenditore (cliente B) un `SalesOrder` semplificato + margini è in MVP (T4.22); per il metalmeccanico le commesse sono `work-orders` (T4.23). Il modulo `orders` completo resta a catalogo.*
 
 **`invoicing` `[L]`** — Fatture, note di credito, acconti. Numerazione configurabile. Scadenziario, solleciti. **Non include SDI** — quello è `it-fatturazione-sdi`.
 
@@ -111,7 +112,7 @@ Moduli per cui esiste già un design mentale, ma che si costruiscono solo quando
 
 **`logistics` `[M]`** — → `warehouse`. DDT, tracciamento spedizioni, integrazione corrieri.
 
-**`production` `[L]`** — → `warehouse`, `suppliers`. Distinta base (BOM), ordini di produzione, fasi di lavorazione. Solo per manifattura reale.
+**`production` `[L]`** — → `warehouse`, `suppliers`. Distinta base (BOM), ordini di produzione, fasi di lavorazione. Solo per manifattura reale. *Nota: una versione **semplificata** (commesse/`work-orders`: stato + scadenze + kanban, senza BOM) è in MVP (Fase 4.5, T4.23) per il cliente metalmeccanico; il `production` completo con BOM resta a catalogo.*
 
 ### Customer Service
 
@@ -336,17 +337,17 @@ Con il modello boutique, **non c'è una "roadmap di sviluppo lineare"** del cata
 
 ### Quello che è già pianificato di sicuro (MVP)
 
-I 5 moduli core: `crm-contacts`, `crm-pipeline`, `activities`, `warehouse`, `dashboard`.
+- I 5 moduli core: `crm-contacts`, `crm-pipeline`, `activities`, `warehouse`, `dashboard` (✅ Fase 3) + `calendar` (✅).
+- **Verticali primi clienti (Fase 4.5)**: `quotes` + PDF (T4.20–21), `warehouse` esteso con margini/ordini di vendita (T4.22), `work-orders`/commesse (T4.23), `file-storage` Vercel Blob + allegati (T4.24).
 
 ### Ad alta probabilità nei prossimi clienti
 
 In ordine indicativo (basato su quanto è "ovvio" per una PMI italiana):
 
-1. `calendar` — quasi tutti vivono di appuntamenti
-2. `quotes` — quasi tutti fanno preventivi
-3. `it-anagrafica-check` — quick win italiano
-4. `invoicing` + `it-fatturazione-sdi` — appena un cliente vuole fatturare
-5. `helpdesk` — appena un cliente fa anche customer service
+1. `it-anagrafica-check` — quick win italiano (autocompletamento P.IVA)
+2. `invoicing` + `it-fatturazione-sdi` — appena un cliente vuole fatturare (i preventivi ci sono già)
+3. `orders` / `production` completi — se le commesse/ordini semplici dell'MVP non bastano
+4. `helpdesk` — appena un cliente fa anche customer service
 
 ### Da NON costruire (almeno non subito)
 

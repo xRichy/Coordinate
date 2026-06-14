@@ -42,16 +42,19 @@ Già fatte, non rientrano nel lavoro attivo — riassunte qui per le dipendenze.
 ## Stato globale
 
 ```
-Fase 1  Single-domain migration         [x] 8/8   attivi
-Fase 2  Completamento migrazione moduli  [x] 6/6   attivi
-Fase 3  Moduli MVP boutique              [x] 18/18 attivi  (+6 deferred)
-Fase 4  Admin tenant & provisioning      [ ] 0/7   attivi  (+10 deferred)
-Fase 5  Polish                           [ ] 0/8   attivi  (+2 deferred)
-Fase 6  Testing & Hardening              [ ] 0/8   attivi  (+1 deferred)
-Fase 7  Launch white-glove               [ ] 0/4   attivi  (+4 deferred)
-                                         ----------------------------------
-                                         59 attivi · 23 deferred · 82 totali
+Fase 1   Single-domain migration          [x] 8/8   attivi
+Fase 2   Completamento migrazione moduli  [x] 6/6   attivi
+Fase 3   Moduli MVP boutique              [x] 18/18 attivi  (+6 deferred)
+Fase 4   Admin tenant, team & provisioning[x] 6/6   attivi  (+12 deferred)
+Fase 4.5 Moduli verticali primi clienti  [x] 5/5   attivi
+Fase 5   Polish                           [ ] 0/8   attivi  (+2 deferred)
+Fase 6   Testing & Hardening              [ ] 0/8   attivi  (+1 deferred)
+Fase 7   Launch white-glove               [ ] 0/4   attivi  (+4 deferred)
+                                          ----------------------------------
+                                          63 attivi · 25 deferred · 88 totali
 ```
+
+> **Aggiornamento 2026-06-13 (b)** — identificati i **due primi clienti reali**: (A) azienda metalmeccanica che produce componenti su commessa per altre aziende; (B) attività che compra e rivende oggetti online. La roadmap è stata riallineata su di loro: **Fase 4** ridotta al blocco che monetizza (team multi-utente con **slot a pagamento** + sezione **super-admin** di piattaforma), e nuova **Fase 4.5** coi moduli verticali che chiudono la vendita (preventivi, ordini/margini, commesse, allegati). Tagliati dall'MVP: branding (T4.8) e Cloudflare R2 (T4.12, sostituito da **Vercel Blob** dentro T4.24). Vedi `mvp-scope.md` §3/§4 e `pricing.md` §2.
 
 > Ordine d'esecuzione consigliato: prima **Fase 1** (migrazione), così tutto il lavoro di prodotto successivo nasce già sotto `/t/[tenant]`. Poi Fase 2 → 7.
 
@@ -312,14 +315,14 @@ Fase 7  Launch white-glove               [ ] 0/4   attivi  (+4 deferred)
 ### T3.15 ✅ — warehouse: import CSV prodotti
 **Deps**: T2.10 · **Size**: M — upload CSV + mapping colonne + preview 5 righe + import batch (`warehouse.product.importBatch`, `skipDuplicates` per SKU già presente). Mirror di T3.3.
 
-### T3.16 ⏭ DEFERRED — Modulo quotes (preventivi)
-Fuori scope MVP boutique: catalogo, su richiesta cliente (`mvp-scope.md` §4). Spec in archivio (era T3.16).
+### T3.16 → ♻️ RIATTIVATO in T4.20 — Modulo quotes (preventivi)
+Non più deferred: il cliente metalmeccanico (su commessa) lo richiede → costruito in **Fase 4.5, T4.20**. Spec di dettaglio lì + archivio.
 
-### T3.17 ⏭ DEFERRED — quotes: generazione PDF brandato
-Dipende da T3.16 (deferred).
+### T3.17 → ♻️ RIATTIVATO in T4.21 — quotes: generazione PDF brandato
+Riattivato in **Fase 4.5, T4.21** (dipende da T4.20).
 
 ### T3.18 ⏭ DEFERRED — quotes: invio email + tracking stato
-Dipende da T3.16 (deferred) + Resend (deferred).
+Dipende da Resend (deferred). Il PDF si scarica/consegna a mano finché Resend non è attivo. Si riattiva con Resend.
 
 ### T3.19 ⏭ DEFERRED — Modulo it-anagrafica-check (P.IVA/CF)
 Fuori scope MVP boutique: catalogo "quick win italiano", su richiesta (`mvp-scope.md` §11). Spec in archivio.
@@ -341,9 +344,9 @@ Fuori scope MVP boutique: niente campi configurabili runtime; se serve un campo,
 
 ---
 
-# Fase 4 — Admin tenant & provisioning white-glove
+# Fase 4 — Admin tenant, team & provisioning white-glove
 
-**Obiettivo**: rendere il prodotto gestibile in modello boutique: tu crei i tenant, configuri moduli e branding. **Niente Stripe/self-serve/trial** (fatturazione manuale via contratto).
+**Obiettivo**: rendere il prodotto gestibile in modello boutique e **monetizzabile sugli account**. Tre pilastri: (1) l'owner del tenant gestisce il proprio **team** creando altri account legati alla sua azienda; (2) **limite posti** (`maxSeats`, default 2 = owner + 1) — per averne di più il cliente paga *fuori dall'app* e tu sblocchi gli slot; (3) la tua **sezione super-admin** di piattaforma da cui crei tenant e aggiungi slot. **Niente Stripe/self-serve/trial** (fatturazione manuale via contratto). Tagliati branding (T4.8) e R2 (T4.12) — non necessari per vendere.
 
 **Branch di fase**: `feat/tenant-admin`
 
@@ -370,21 +373,26 @@ Fuori scope: il cliente firma un contratto, niente trial (`mvp-scope.md` §5).
 ### T4.7 ⏭ DEFERRED — Onboarding wizard self-serve
 Fuori scope: onboarding white-glove, niente signup pubblico (`mvp-scope.md` §3). Sostituito da **T4.17**.
 
-### T4.8 — Pagina tenant admin: dati azienda e branding
-**Deps**: ✅ fondamenta (tenant-admin) · **Size**: M — settings: nome, P.IVA, CF, indirizzo, fuso orario, lingua; upload logo (R2, vedi T4.12); color picker colore primario; preview live.
-*(Scollegato da T3.21 custom fields, deferred: i dati azienda sono campi fissi.)*
+### T4.8 ⏭ DEFERRED — Pagina tenant admin: dati azienda e branding
+Fuori scope per la vendita ai primi due clienti (decisione 2026-06-13). I dati azienda fissi (P.IVA, CF, indirizzo) servono solo per i preventivi → si aggiungono lì (Fase 4.5, T4.20). Il branding (logo/colore) dipende dallo storage e dal theming (Fase 5, T5.3); l'upload logo passerà a **Vercel Blob** (T4.24), non R2. Si riattiva quando serve.
 
-### T4.9 — Pagina tenant admin: gestione team
-**Deps**: ✅ fondamenta (RBAC) · **Size**: M — lista membri con ruolo; invito per email con ruolo; modifica ruolo/rimozione; transfer ownership.
+### T4.9 ✅ — Modulo Team: gestione account del tenant + limite posti (seat)
+**Deps**: ✅ fondamenta (RBAC), T4.10 · **Size**: L · **Files**: `Tenant.maxSeats` (schema+migration, default 2) · `packages/core/src/auth/password.ts` (+export `./auth/password`) · `packages/api/.../team.ts` · `apps/web/.../settings/team/page.tsx`
+- Schema: `Tenant.maxSeats Int @default(2)` (= owner + 1 collega).
+- Router `team` (gated **owner+admin**, permesso es. `tenant:members:write`): `list` (membri con ruolo/email + `seatsUsed`/`maxSeats`), `createMember` (crea `User` + `Account` credential con **password temporanea** da consegnare + `Membership` col ruolo scelto; **blocca se `seatsUsed >= maxSeats`**), `updateRole`, `removeMember` (guardie: non rimuovere sé stessi né l'ultimo owner; la rimozione libera un posto).
+- Niente invito email (Resend deferred): l'owner crea l'account e consegna la password.
+- UI `/t/<slug>/settings/team`: lista membri, "Crea account" (disabilitato con messaggio di upsell a `maxSeats/maxSeats`), cambio ruolo, rimozione.
 
-### T4.10 — Pagina tenant admin: abilitazione moduli
-**Deps**: T2.12 · **Size**: M — lista moduli disponibili per il tenant; toggle on/off con conferma. (Core del modello boutique: decidi i moduli per cliente.)
+**Done when**: ✅ l'owner crea un 2° account e accede; al 3° tentativo è bloccato con messaggio "contattaci per aggiungere posti"; owner+admin gestiscono, member/viewer no. Verificato: smoke a livello dati (creazione in `withTenant`/RLS, password validata con `verifyPassword`, blocco al 3°, rimozione libera il posto, 0 residui) + typecheck/test verdi (RLS 12/12, core 22/22). *(Bonus: fix tipizzazione in `requirePermission` — non ri-spande `ctx`, preserva il narrowing della session.)*
+
+### T4.10 ✅ — Pagina tenant admin: abilitazione moduli
+**Deps**: T2.12 · **Size**: M — `Tenant.enabledModules` (default 6 core); router `tenant.modules.list/setEnabled` (gated `tenant:settings:write`); pagina `/t/<slug>/settings` con toggle per modulo + Salva (gating owner/admin via `useCan`); la sidebar filtra le voci per modulo abilitato (`router.refresh()` dopo il salvataggio). (Core del modello boutique.)
 
 ### T4.11 ⏭ DEFERRED — Billing overview
 Dipende da Stripe (deferred).
 
-### T4.12 — Cloudflare R2 setup per file storage
-**Deps**: ✅ fondamenta · **Size**: M — bucket R2 + API keys; helper upload signed URL in `packages/core/file-storage`; sposta lì l'upload logo. (mvp-scope §3 file-storage IN.)
+### T4.12 ⏭ DEFERRED — Cloudflare R2 setup per file storage
+Sostituito da **Vercel Blob** (più semplice, nativo Vercel, nessun account/servizio extra; quota gratuita sufficiente per 2 clienti). Lo storage file ora vive in **T4.24** (Fase 4.5), attivato solo quando servono gli allegati. R2 si rivaluta solo se i costi di egress dovessero contare (irrilevante a 2 clienti).
 
 ### T4.13 ⏭ DEFERRED — Knowledge base seed + componente
 Fuori scope MVP boutique (`mvp-scope.md` §9). Si rivaluta a crescita clienti.
@@ -392,15 +400,82 @@ Fuori scope MVP boutique (`mvp-scope.md` §9). Si rivaluta a crescita clienti.
 ### T4.14 ⏭ DEFERRED — Status page (statuspage.io)
 Non essenziale per il 1° cliente boutique (uptime best-effort, `mvp-scope.md` §6). Rinviato.
 
-### T4.15 — GDPR: export dati tenant + privacy/terms pages
-**Deps**: ✅ fondamenta, T4.8 · **Size**: L — endpoint admin "Export my data" → ZIP CSV; pagine `/privacy`, `/terms`, `/dpa` (markdown); cookie banner analytics. (mvp-scope §6/§8.)
+### T4.15 ✅ — GDPR: export dati tenant + privacy/terms pages
+**Deps**: ✅ fondamenta · **Size**: M · **Files**: `packages/api/src/routers/gdpr.ts` (+ dep `jszip`) · `apps/web/src/app/(legal)/{privacy,terms,dpa}/page.tsx` + layout · `apps/web/src/components/cookie-banner.tsx` · settings page (bottone export) · middleware (bypass `/dpa`)
+- `gdpr.exportData` (gated owner/admin): raccoglie i dati del tenant (contatti, lead, deal, attività, prodotti, movimenti, vendite, preventivi+righe, commesse, settings) RLS-scoped → **ZIP di CSV** (base64) scaricato dal client; esclude la colonna `searchable`.
+- Pagine **`/privacy`, `/terms`, `/dpa`** (bozza IT minimale, con disclaimer "da revisionare con un legale"), linkate dalle impostazioni.
+- **Cookie banner** (solo se analytics attivo, `useSyncExternalStore` per leggere il consenso senza setState-in-effect).
 
-### T4.16 — Chiusura Fase 4 + acceptance (provisioning + admin)
-**Deps**: T4.8, T4.9, T4.10, T4.12, T4.15, T4.17 · **Size**: S — acceptance: creazione tenant white-glove → config moduli/branding → utente owner accede a `/t/<slug>`. *(Niente acquisto piano: Stripe deferred.)* Marcare Fase 4 ✅.
+**Done when**: ✅ l'owner esporta i dati in ZIP; le pagine legali sono pubbliche (200) e linkate; cookie banner presente. Verificato: smoke export su tenant reale (zip valido, conteggi seed, `searchable` escluso); pagine `/privacy /terms /dpa` → 200; typecheck + lint + RLS 12/12 + core 22/22. *(Contenuti legali = bozza, da far revisionare; affinamento finale in T7.1.)*
 
-### T4.17 — Tenant provisioning white-glove (CLI o pagina admin riservata) — *nuovo*
-**Deps**: T4.10 · **Size**: M · **Files**: script CLI in `packages/database` o pagina admin protetta — crea record `Tenant`, primo utente `owner`, `enabledModules`, dati azienda; output credenziali da consegnare al cliente.
-**Done when**: da un comando/pagina si crea un tenant completo pronto all'uso (sostituisce il signup self-serve deferred; mvp-scope §3 + DoD §8).
+### T4.16 ✅ — Chiusura Fase 4 + acceptance (provisioning + admin + team)
+**Deps**: T4.9, T4.10, T4.15, T4.17, T4.18 · **Size**: S — acceptance: dalla **super-admin** crei un tenant → l'owner accede a `/t/<slug>`, configura i moduli, **crea un 2° account** dal modulo Team, è bloccato al 3° → tu **aggiungi uno slot** dalla super-admin → l'owner crea il 3°. *(Niente acquisto piano: Stripe deferred.)*
+**Done when**: ✅ smoke acceptance consolidato verde end-to-end (super-admin guard, provisioning tenant+owner+credenziale, config moduli, 2° account ok @2/2, 3° **bloccato** @2/2, super-admin alza maxSeats→3, 3° creato @3/3, 0 residui). **Fase 4 ✅ (6/6 attivi)**.
+
+> ✅ **Fase 4 completa**: team multi-utente + **posti a pagamento** sbloccabili dall'operatore, **super-admin** `/admin` (crea tenant, gestisce slot/moduli/stato), provisioning CLI, abilitazione moduli, GDPR (export + privacy/terms/dpa + cookie banner). Tagliati branding (T4.8) e R2 (T4.12 → Vercel Blob in T4.24).
+
+### T4.17 ✅ — Tenant provisioning white-glove (CLI o pagina admin riservata) — *nuovo*
+**Deps**: T4.10 · **Size**: M · **Files**: `packages/database/prisma/provision-tenant.ts` + script `db:provision`. CLI con flag (`--slug --name --email --owner [--password --plan --modules]`): crea `Tenant` (slug/nome/piano/`enabledModules`), `User` owner (`emailVerified`), `Account` credential (hash Better-Auth, password auto-generata se omessa), `Membership` owner, `TenantSetting` di default (timezone/locale/currency/dateFormat) e `PipelineStage` di default; stampa le credenziali da consegnare. Validazione input (slug/email/plan/moduli), abort su slug duplicato, riuso utente esistente per un secondo tenant.
+**Done when**: ✅ da un comando si crea un tenant completo pronto all'uso (sostituisce il signup self-serve deferred; mvp-scope §3 + DoD §8). Verificato end-to-end sul DB locale: tenant+owner+credential (password validata con `verifyPassword`) + membership owner + 4 settings + 6 stage.
+
+### T4.18 ✅ — Sezione super-admin di piattaforma (`/admin`) — *nuovo*
+**Deps**: T4.17, T4.9 · **Size**: L · **Files**: `apps/web/src/app/admin/{layout,page}.tsx` (fuori da `/t/[tenant]`) · `packages/api/.../admin.ts` · `packages/api/src/trpc.ts` (`superAdminProcedure`) · `packages/core/src/auth/index.ts` (`isSuperAdmin`) · `packages/core/src/provisioning/` (logica condivisa con T4.17)
+- Auth: allowlist email in env **`SUPER_ADMIN_EMAILS`** → `superAdminProcedure` (usa `prismaAdmin`, cross-tenant, bypassa RLS). Niente flag sul DB (non escalabile dall'app).
+- Pagina `/admin` (solo per te, l'operatore): **elenco aziende** (nome, slug, piano, stato, **posti usati/`maxSeats`**, moduli); **crea tenant** (versione web del provisioning T4.17, riusa la logica); **modifica azienda**: imposta `maxSeats` (= "aggiungi slot dopo il pagamento ricevuto fuori app"), attiva/sospendi (`status`), abilita/disabilita moduli, cambia piano.
+- L'app **non gestisce pagamenti**: tu ricevi il bonifico, poi alzi `maxSeats` a mano da qui.
+
+**Done when**: ✅ da `/admin` (loggato con email in `SUPER_ADMIN_EMAILS`) crei un tenant e ne aumenti gli slot; un utente non-allowlist riceve 404/forbidden su `/admin`. Verificato: doppia guardia (layout server redirige a `/login` se non loggato — confermato 307 — e `notFound()` se non allowlist; `superAdminProcedure` lato API); smoke dati di `provisionTenant`/`update`/`isSuperAdmin` (password validata, settings/stage, alza maxSeats, slug duplicato rifiutato, 0 residui); typecheck + RLS 12/12 + core 22/22 verdi.
+
+---
+
+# Fase 4.5 — Moduli verticali primi clienti
+
+**Obiettivo**: le feature di dominio che **chiudono la vendita** ai due primi clienti. (A) metalmeccanico su commessa → preventivi + commesse; (B) compra-rivende online → margini + ordini di vendita. Allegati (foto prodotti / disegni tecnici) trasversali via Vercel Blob. Riattiva/estende i moduli `quotes`/`orders`/`production` del catalogo (`modules-catalog.md`).
+
+**Branch di fase**: `feat/vertical-modules`
+
+> Esecuzione: **dopo** la Fase 4 (team+admin), prima della Fase 5. Le 4 feature sono state confermate tutte dall'utente il 2026-06-13; l'ordine sotto è una proposta (preventivi e margini sono i due pezzi che spostano l'ago).
+
+---
+
+### T4.20 ✅ — Modulo quotes (preventivi/offerte) + dati azienda emittente
+**Deps**: T2.7 (contatti) · **Size**: L · **Files**: `packages/modules/quotes/` + `packages/api/src/routers/quotes.ts` + schema `Quote`/`QuoteLine` (+ migration RLS) + `apps/web/.../(modules)/quotes/{page,[id]/page}.tsx`
+- Modelli `Quote` (numero progressivo per tenant, contatto+snapshot nome, data, validità, stato, totali salvati) + `QuoteLine` (descrizione, quantità, prezzo, sconto%, IVA%, posizione). RLS su entrambe.
+- Router `quotes` (tenantProcedure): list/get/create/update (sostituzione righe + ricalcolo)/updateStatus/delete; `companyInfo.get/set` (dati emittente come `TenantSetting`, set gated owner/admin) — qui rientra il pezzo "dati azienda" tagliato da T4.8.
+- Stati: bozza → inviato → accettato → rifiutato → scaduto.
+- UI: lista preventivi (numero/cliente/data/stato/totale) + editor righe con totali live (imponibile, IVA, totale) e selettore contatto/cliente libero. Aggiunto al `MODULE_CATALOG` (abilitabile per tenant); nav `Preventivi` (sezione operations).
+
+**Done when**: ✅ il metalmeccanico crea un preventivo a righe per un cliente, con totali e IVA corretti, e lo porta in stato "inviato/accettato". Verificato: smoke dati (totali 1000/220/1220, numerazione progressiva, update righe+ricalcolo, stati, companyInfo, delete con cascade righe, 0 residui); typecheck full + RLS 12/12 + core 22/22 verdi. *(PDF = T4.21.)*
+
+### T4.21 ✅ — quotes: export PDF brandato
+**Deps**: T4.20 · **Size**: M · **Files**: `apps/web/src/lib/quote-pdf.tsx` + bottone "Scarica PDF" nell'editor. PDF del preventivo brandato (dati azienda emittente + righe + totali + IVA + cliente + date + note) generato con **`@react-pdf/renderer`** lato browser, scaricato come `preventivo-<n>.pdf`. Il modulo PDF è caricato **on-demand** (dynamic import al click) per non pesare sul bundle iniziale.
+**Done when**: ✅ da un preventivo salvato si scarica un PDF leggibile e brandato. Verificato: render Node→buffer valido (`%PDF-`, 3205 byte) + typecheck/lint verdi. *(Logo = quando ci sarà lo storage T4.24; invio email resta `⏭` finché Resend non è attivo — vedi T3.18.)*
+
+### T4.22 ✅ — Margini + Ordini di vendita (warehouse) — *cliente B*
+**Deps**: T2.10 (warehouse) · **Size**: L · **Files**: schema `Product.costPrice` + model `Sale` + enum `SalesChannel` (+ migration RLS) · `packages/api/.../warehouse.ts` (sub-router `sales`) · `apps/web/.../warehouse/{page,sale-modal,product-modal}.tsx`
+- Prodotto: prezzo di **acquisto** (`costPrice`) accanto al prezzo di vendita → **margine** per articolo.
+- `warehouse.sales.record`: prodotto, quantità, **canale** (eBay/Amazon/Vinted/Subito/Negozio/Altro), prezzo, acquirente opz. → snapshot del costo, **movimento `out` + scarico stock** automatico, atomico. `sales.delete` storna (movimento `in` + ripristino stock).
+- `sales.report`: ricavi/profitto/pezzi totali + margine per canale + top prodotti per profitto.
+- UI: tab **Vendite** nel magazzino (summary margini + lista + "Registra vendita"); costo nel modale prodotto.
+
+**Done when**: ✅ il rivenditore registra una vendita, lo stock cala da solo e vede il profitto (vendita − costo) per prodotto e nel periodo. Verificato: smoke dati (vendita 3pz → stock 10→7, snapshot costo invariato dopo cambio prodotto, profitto 60, movimento out, storno → stock 10), typecheck full + RLS 12/12 + core 22/22.
+
+### T4.23 ✅ — Commesse / Ordini di lavoro (produzione) — *cliente A*
+**Deps**: T2.7, T4.20 · **Size**: L · **Files**: `packages/modules/work-orders/` + schema `WorkOrder`/`WorkOrderStatus` (+ migration RLS) + `packages/api/.../work-orders.ts` + `apps/web/.../(modules)/work-orders/page.tsx`
+- `WorkOrder`: numero progressivo, titolo/lavorazione, cliente (+snapshot), quantità opz., **scadenza** opz., stato (da fare → in lavorazione → completata → consegnata), note, `quoteId` opz. RLS.
+- Router `workOrders` (list/create/update/updateStatus/delete). Aggiunto al `MODULE_CATALOG`; nav `Commesse` (operations).
+- UI: **kanban per stato** (4 colonne) con cambio stato inline, evidenza commesse **in ritardo** (scadenza passata e non completata/consegnata), modale create/edit. **"Crea commessa"** dal preventivo accettato (pre-compila cliente + `quoteId`).
+
+**Done when**: ✅ il metalmeccanico apre una commessa da un preventivo accettato e la fa avanzare negli stati fino a "consegnata". Verificato: smoke dati (numerazione progressiva, avanzamento stati fino a delivered, link `quoteId` da preventivo accettato, update/delete, 0 residui); typecheck dei package toccati + RLS 12/12 + core 22/22. *(Nota: il `pnpm typecheck` full segnala `@coordinate/ui`/`config` per file di altri progetti fuori repo — ambientale, non legato a questa modifica.)*
+
+### T4.24 ✅ — File storage (Vercel Blob) + allegati — *trasversale*
+**Deps**: ✅ fondamenta · **Size**: M · **Files**: `apps/web/src/app/api/upload/route.ts` + `apps/web/src/components/upload-button.tsx` + campi allegato sui moduli (`Product.imageUrl`, `WorkOrder.attachmentUrl/Name`, migration) · dep `@vercel/blob`
+- Upload **client-upload** su **Vercel Blob** (store **public**, env `BLOB_READ_WRITE_TOKEN`): il browser carica diretto al Blob (niente limite 4.5MB delle function), la route `/api/upload` (`handleUpload`) controlla la **sessione** e limita tipi (img/PDF) + 25MB; l'URL pubblico è salvato sul modello.
+- Allegati: **foto prodotto** (warehouse, cliente B — miniatura in inventario + modale) e **disegno tecnico/allegato** su commessa (cliente A — link nel modale). *(Lo store dev'essere public: gli URL salvati nel DB devono essere pubblici e durevoli.)*
+
+**Done when**: ✅ si carica una foto su un prodotto / un allegato su una commessa, l'URL persiste e il file resta accessibile dopo un redeploy. Verificato: smoke Vercel Blob reale (put → fetch 200 → del → 404, host `*.public.blob.vercel-storage.com`); typecheck + lint + RLS 12/12 + core 22/22.
+
+> ✅ **Fase 4.5 completa (5/5)**: preventivi+PDF, margini/ordini di vendita, commesse, allegati. I due primi clienti hanno il loro verticale.
 
 ---
 

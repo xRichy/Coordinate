@@ -41,11 +41,18 @@ function NavIcon({ name, className }: { name: string; className?: string }) {
   return <Icon className={className} />;
 }
 
-export function AppSidebar({ tenantSlug }: { tenantSlug: string }) {
+export function AppSidebar({
+  tenantSlug,
+  enabledModules,
+}: {
+  tenantSlug: string;
+  enabledModules: string[];
+}) {
   const pathname = usePathname();
   const { setOpenMobile, isMobile } = useSidebar();
 
   const base = `/t/${tenantSlug}`;
+  const navItems = NAV_ITEMS.filter((item) => enabledModules.includes(item.moduleId));
 
   return (
     <Sidebar variant="inset">
@@ -65,7 +72,7 @@ export function AppSidebar({ tenantSlug }: { tenantSlug: string }) {
           <div className="px-2 pb-2 text-sm font-semibold text-muted-foreground uppercase tracking-wider">
             Menu
           </div>
-          {NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             const href = `${base}${item.path}`;
             const isActive = pathname.startsWith(href);
             return (

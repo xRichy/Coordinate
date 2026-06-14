@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Download } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,6 +55,34 @@ export default function QuoteEditorPage() {
   const getOptions = trpc.quotes.get.queryOptions({ id });
   const { data: quote } = useQuery({ ...getOptions, enabled: !isNew });
   const { data: contacts = [] } = useQuery(trpc.crm.contact.list.queryOptions());
+  const { data: company } = useQuery(trpc.quotes.companyInfo.get.queryOptions());
+
+  const [downloading, setDownloading] = useState(false);
+  async function downloadPdf() {
+    if (!quote) return;
+    setDownloading(true);
+    try {
+      const { downloadQuotePdf } = await import("@/lib/quote-pdf");
+      await downloadQuotePdf(
+        {
+          number: quote.number,
+          contactName: quote.contactName,
+          issueDate: quote.issueDate,
+          validUntil: quote.validUntil,
+          notes: quote.notes,
+          subtotal: quote.subtotal,
+          taxTotal: quote.taxTotal,
+          total: quote.total,
+          lines: quote.lines,
+        },
+        company ?? { name: "", vat: "", taxCode: "", address: "" }
+      );
+    } catch {
+      toast.error("Errore nella generazione del PDF.");
+    } finally {
+      setDownloading(false);
+    }
+  }
 
   const [form, setForm] = useState<FormState | null>(
     isNew ? { contactId: null, contactName: "", validUntil: "", notes: "", lines: [emptyLine()] } : null
@@ -139,6 +167,10 @@ export default function QuoteEditorPage() {
           </h2>
           {!isNew && quote && (
             <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" className="gap-1.5" disabled={downloading} onClick={downloadPdf}>
+                <Download className="h-4 w-4" />
+                {downloading ? "PDF…" : "Scarica PDF"}
+              </Button>
               <Badge variant="secondary">{STATUS_LABEL[quote.status]}</Badge>
               <Select value={quote.status} onValueChange={(v) => updateStatus.mutate({ id, status: v as QuoteStatus })}>
                 <SelectTrigger className="h-8 w-[150px]"><SelectValue /></SelectTrigger>

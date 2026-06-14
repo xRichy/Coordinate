@@ -46,7 +46,7 @@ Fase 1   Single-domain migration          [x] 8/8   attivi
 Fase 2   Completamento migrazione moduli  [x] 6/6   attivi
 Fase 3   Moduli MVP boutique              [x] 18/18 attivi  (+6 deferred)
 Fase 4   Admin tenant, team & provisioning[ ] 4/6   attivi  (+12 deferred)
-Fase 4.5 Moduli verticali primi clienti  [ ] 1/5   attivi
+Fase 4.5 Moduli verticali primi clienti  [ ] 2/5   attivi
 Fase 5   Polish                           [ ] 0/8   attivi  (+2 deferred)
 Fase 6   Testing & Hardening              [ ] 0/8   attivi  (+1 deferred)
 Fase 7   Launch white-glove               [ ] 0/4   attivi  (+4 deferred)
@@ -439,8 +439,9 @@ Non essenziale per il 1° cliente boutique (uptime best-effort, `mvp-scope.md` �
 
 **Done when**: ✅ il metalmeccanico crea un preventivo a righe per un cliente, con totali e IVA corretti, e lo porta in stato "inviato/accettato". Verificato: smoke dati (totali 1000/220/1220, numerazione progressiva, update righe+ricalcolo, stati, companyInfo, delete con cascade righe, 0 residui); typecheck full + RLS 12/12 + core 22/22 verdi. *(PDF = T4.21.)*
 
-### T4.21 — quotes: export PDF brandato
-**Deps**: T4.20 · **Size**: M — generazione PDF del preventivo (dati azienda + logo se presente + righe + totali + IVA), scaricabile. *(L'invio email resta `⏭` finché Resend non è attivo — vedi T3.18.)*
+### T4.21 ✅ — quotes: export PDF brandato
+**Deps**: T4.20 · **Size**: M · **Files**: `apps/web/src/lib/quote-pdf.tsx` + bottone "Scarica PDF" nell'editor. PDF del preventivo brandato (dati azienda emittente + righe + totali + IVA + cliente + date + note) generato con **`@react-pdf/renderer`** lato browser, scaricato come `preventivo-<n>.pdf`. Il modulo PDF è caricato **on-demand** (dynamic import al click) per non pesare sul bundle iniziale.
+**Done when**: ✅ da un preventivo salvato si scarica un PDF leggibile e brandato. Verificato: render Node→buffer valido (`%PDF-`, 3205 byte) + typecheck/lint verdi. *(Logo = quando ci sarà lo storage T4.24; invio email resta `⏭` finché Resend non è attivo — vedi T3.18.)*
 
 ### T4.22 — Margini + Ordini di vendita (warehouse) — *cliente B*
 **Deps**: T2.10 (warehouse) · **Size**: L · **Files**: estende `warehouse` + schema `SalesOrder` (o `Sale`)

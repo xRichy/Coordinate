@@ -63,7 +63,7 @@ export default function AdminPage() {
           {tenants.map((t) => (
             <Card key={t.id} className="bg-card/40 backdrop-blur-md border-border/50 shadow-sm">
               <CardHeader className="pb-3">
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start justify-between gap-3 min-w-0">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
                       <Building2 className="h-5 w-5 text-muted-foreground" />
@@ -82,7 +82,7 @@ export default function AdminPage() {
                   </div>
                   <div className="flex shrink-0 gap-1.5">
                     <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setEditing(t)}>
-                      <Pencil className="h-3.5 w-3.5" /> Modifica
+                      <Pencil className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Modifica</span>
                     </Button>
                     <Button
                       variant="ghost" size="icon"

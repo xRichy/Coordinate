@@ -52,3 +52,18 @@ export const auth = betterAuth({
 });
 
 export type Auth = typeof auth;
+
+/**
+ * Platform super-admin check (the operator who provisions tenants and manages
+ * seats). Allowlist-based via env `SUPER_ADMIN_EMAILS` (comma-separated) — no DB
+ * flag, so it can't be escalated through the app. Used by the `/admin` section
+ * (page-level guard) and `superAdminProcedure` (API guard).
+ */
+export function isSuperAdmin(email: string | null | undefined): boolean {
+  if (!email) return false;
+  const allow = (process.env.SUPER_ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  return allow.includes(email.toLowerCase());
+}

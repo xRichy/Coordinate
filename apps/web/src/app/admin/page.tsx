@@ -41,12 +41,12 @@ export default function AdminPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Aziende</h1>
-          <p className="text-muted-foreground mt-1">Crea tenant, gestisci posti e moduli.</p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Aziende</h1>
+          <p className="text-muted-foreground mt-1 text-sm">Crea tenant, gestisci posti e moduli.</p>
         </div>
-        <Button className="gap-1.5 shrink-0" onClick={() => setCreateOpen(true)}>
+        <Button className="gap-1.5 shrink-0 w-full sm:w-auto" onClick={() => setCreateOpen(true)}>
           <Plus className="h-4 w-4" /> Nuovo tenant
         </Button>
       </div>
@@ -68,9 +68,9 @@ export default function AdminPage() {
                       <Building2 className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <div className="min-w-0">
-                      <CardTitle className="truncate flex items-center gap-2">
-                        {t.name}
-                        <Badge variant={t.status === "active" ? "default" : "secondary"}>
+                      <CardTitle className="flex items-center gap-2 min-w-0">
+                        <span className="truncate">{t.name}</span>
+                        <Badge variant={t.status === "active" ? "default" : "secondary"} className="shrink-0">
                           {STATUS_LABEL[t.status]}
                         </Badge>
                       </CardTitle>
@@ -132,12 +132,13 @@ function CreateTenantDialog({
   const [ownerName, setOwnerName] = useState("");
   const [plan, setPlan] = useState<(typeof PLANS)[number]>("starter");
   const [maxSeats, setMaxSeats] = useState(2);
+  const [password, setPassword] = useState("");
   const [created, setCreated] = useState<{ slug: string; ownerEmail: string; password: string | null } | null>(null);
   const [copied, setCopied] = useState(false);
 
   function reset() {
     setSlug(""); setName(""); setOwnerEmail(""); setOwnerName("");
-    setPlan("starter"); setMaxSeats(2); setCreated(null); setCopied(false);
+    setPlan("starter"); setMaxSeats(2); setPassword(""); setCreated(null); setCopied(false);
   }
 
   const create = useMutation(
@@ -191,14 +192,14 @@ function CreateTenantDialog({
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              create.mutate({ slug, name, ownerEmail, ownerName, plan, maxSeats });
+              create.mutate({ slug, name, ownerEmail, ownerName, plan, maxSeats, password: password.trim() || undefined });
             }}
           >
             <DialogHeader>
               <DialogTitle>Nuovo tenant</DialogTitle>
               <DialogDescription>Crea un&apos;azienda con il suo account owner. Moduli di default attivi (modificabili dopo).</DialogDescription>
             </DialogHeader>
-            <div className="grid grid-cols-2 gap-4 py-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
               <div className="space-y-1.5">
                 <Label htmlFor="t-slug">Slug</Label>
                 <Input id="t-slug" value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="acme" required />
@@ -229,6 +230,14 @@ function CreateTenantDialog({
                 <Input
                   id="t-seats" type="number" min={1} value={maxSeats}
                   onChange={(e) => setMaxSeats(Math.max(1, Number(e.target.value) || 1))}
+                />
+              </div>
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="t-pass">Password <span className="text-muted-foreground font-normal">(vuoto = generata)</span></Label>
+                <Input
+                  id="t-pass" type="text" autoComplete="off" value={password}
+                  placeholder="Lascia vuoto per generarla automaticamente"
+                  onChange={(e) => setPassword(e.target.value)}
                 />
               </div>
             </div>

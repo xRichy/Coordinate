@@ -14,12 +14,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (!isSuperAdmin(session.user.email)) notFound();
 
   return (
-    <div className="min-h-dvh bg-background">
+    <div className="min-h-dvh bg-background overflow-x-hidden">
       <header className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b border-border/40 bg-background/80 px-4 md:px-8 backdrop-blur-md">
-        <ShieldCheck className="h-5 w-5 text-primary" />
-        <span className="font-semibold">Coordinate</span>
-        <span className="text-muted-foreground">· Super-admin</span>
-        <span className="ml-auto text-sm text-muted-foreground truncate">{session.user.email}</span>
+        <ShieldCheck className="h-5 w-5 text-primary shrink-0" />
+        <span className="font-semibold shrink-0">Coordinate</span>
+        <span className="text-muted-foreground shrink-0 hidden sm:inline">· Super-admin</span>
+        <span className="ml-auto min-w-0 truncate text-sm text-muted-foreground">{session.user.email}</span>
       </header>
       <main className="mx-auto max-w-5xl p-4 md:p-8">{children}</main>
     </div>

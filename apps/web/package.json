@@ -21,6 +21,7 @@
     "@coordinate/modules-example": "workspace:*",
     "@coordinate/modules-quotes": "workspace:*",
     "@coordinate/modules-warehouse": "workspace:*",
+    "@coordinate/modules-work-orders": "workspace:*",
     "@hookform/resolvers": "^5.2.2",
     "@prisma/client": "^7.4.1",
     "@react-pdf/renderer": "^4.5.1",

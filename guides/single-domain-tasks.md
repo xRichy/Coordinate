@@ -46,7 +46,7 @@ Fase 1   Single-domain migration          [x] 8/8   attivi
 Fase 2   Completamento migrazione moduli  [x] 6/6   attivi
 Fase 3   Moduli MVP boutique              [x] 18/18 attivi  (+6 deferred)
 Fase 4   Admin tenant, team & provisioning[ ] 4/6   attivi  (+12 deferred)
-Fase 4.5 Moduli verticali primi clienti  [ ] 3/5   attivi
+Fase 4.5 Moduli verticali primi clienti  [ ] 4/5   attivi
 Fase 5   Polish                           [ ] 0/8   attivi  (+2 deferred)
 Fase 6   Testing & Hardening              [ ] 0/8   attivi  (+1 deferred)
 Fase 7   Launch white-glove               [ ] 0/4   attivi  (+4 deferred)
@@ -452,12 +452,13 @@ Non essenziale per il 1° cliente boutique (uptime best-effort, `mvp-scope.md` �
 
 **Done when**: ✅ il rivenditore registra una vendita, lo stock cala da solo e vede il profitto (vendita − costo) per prodotto e nel periodo. Verificato: smoke dati (vendita 3pz → stock 10→7, snapshot costo invariato dopo cambio prodotto, profitto 60, movimento out, storno → stock 10), typecheck full + RLS 12/12 + core 22/22.
 
-### T4.23 — Commesse / Ordini di lavoro (produzione) — *cliente A*
-**Deps**: T2.7, (opz.) T4.20 · **Size**: L · **Files**: `packages/modules/work-orders/` (o `production` semplificato) + schema `WorkOrder`
-- `WorkOrder`: cliente, descrizione/parti, quantità, **scadenza**, stato (da fare → in lavorazione → completata → consegnata), note. Collegabile a un preventivo accettato (T4.20).
-- Vista **kanban per stato** + lista con scadenze; evidenzia commesse in ritardo.
+### T4.23 ✅ — Commesse / Ordini di lavoro (produzione) — *cliente A*
+**Deps**: T2.7, T4.20 · **Size**: L · **Files**: `packages/modules/work-orders/` + schema `WorkOrder`/`WorkOrderStatus` (+ migration RLS) + `packages/api/.../work-orders.ts` + `apps/web/.../(modules)/work-orders/page.tsx`
+- `WorkOrder`: numero progressivo, titolo/lavorazione, cliente (+snapshot), quantità opz., **scadenza** opz., stato (da fare → in lavorazione → completata → consegnata), note, `quoteId` opz. RLS.
+- Router `workOrders` (list/create/update/updateStatus/delete). Aggiunto al `MODULE_CATALOG`; nav `Commesse` (operations).
+- UI: **kanban per stato** (4 colonne) con cambio stato inline, evidenza commesse **in ritardo** (scadenza passata e non completata/consegnata), modale create/edit. **"Crea commessa"** dal preventivo accettato (pre-compila cliente + `quoteId`).
 
-**Done when**: il metalmeccanico apre una commessa da un preventivo accettato e la fa avanzare negli stati fino a "consegnata".
+**Done when**: ✅ il metalmeccanico apre una commessa da un preventivo accettato e la fa avanzare negli stati fino a "consegnata". Verificato: smoke dati (numerazione progressiva, avanzamento stati fino a delivered, link `quoteId` da preventivo accettato, update/delete, 0 residui); typecheck dei package toccati + RLS 12/12 + core 22/22. *(Nota: il `pnpm typecheck` full segnala `@coordinate/ui`/`config` per file di altri progetti fuori repo — ambientale, non legato a questa modifica.)*
 
 ### T4.24 — File storage (Vercel Blob) + allegati — *trasversale*
 **Deps**: ✅ fondamenta · **Size**: M · **Files**: `packages/core/file-storage` (Vercel Blob) + campi allegato sui moduli

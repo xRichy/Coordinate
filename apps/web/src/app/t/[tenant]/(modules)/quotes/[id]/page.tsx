@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Plus, Trash2, Download } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Download, Hammer } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -126,6 +126,13 @@ export default function QuoteEditorPage() {
     })
   );
 
+  const createWorkOrder = useMutation(
+    trpc.workOrders.create.mutationOptions({
+      onSuccess: () => { toast.success("Commessa creata dal preventivo."); router.push(`${base}/work-orders`); },
+      onError: (e) => toast.error(e.message),
+    })
+  );
+
   if (!form) {
     return <div className="p-6 text-sm text-muted-foreground">Caricamento…</div>;
   }
@@ -167,6 +174,21 @@ export default function QuoteEditorPage() {
           </h2>
           {!isNew && quote && (
             <div className="flex items-center gap-2">
+              {quote.status === "accepted" && (
+                <Button
+                  variant="outline" size="sm" className="gap-1.5"
+                  disabled={createWorkOrder.isPending}
+                  onClick={() => createWorkOrder.mutate({
+                    title: `Da preventivo #${quote.number}`,
+                    contactId: quote.contactId,
+                    contactName: quote.contactName,
+                    quoteId: quote.id,
+                  })}
+                >
+                  <Hammer className="h-4 w-4" />
+                  Crea commessa
+                </Button>
+              )}
               <Button variant="outline" size="sm" className="gap-1.5" disabled={downloading} onClick={downloadPdf}>
                 <Download className="h-4 w-4" />
                 {downloading ? "PDF…" : "Scarica PDF"}

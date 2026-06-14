@@ -10,6 +10,7 @@ import { tenantRouter } from "./routers/tenant";
 import { teamRouter } from "./routers/team";
 import { adminRouter } from "./routers/admin";
 import { quotesRouter } from "./routers/quotes";
+import { workOrdersRouter } from "./routers/work-orders";
 
 export const appRouter = router({
   healthcheck: publicProcedure.query(() => ({ status: "ok" as const })),
@@ -24,6 +25,7 @@ export const appRouter = router({
   team: teamRouter,
   admin: adminRouter,
   quotes: quotesRouter,
+  workOrders: workOrdersRouter,
 });
 
 export type AppRouter = typeof appRouter;

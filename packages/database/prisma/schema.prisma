@@ -77,6 +77,7 @@ model Tenant {
   quotes         Quote[]
   quoteLines     QuoteLine[]
   sales          Sale[]
+  workOrders     WorkOrder[]
 }
 
 model User {
@@ -321,6 +322,7 @@ model Contact {
   activities     Activity[]      @relation("ContactActivities")
   timelineEvents TimelineEvent[] @relation("ContactTimeline")
   quotes         Quote[]         @relation("QuoteContact")
+  workOrders     WorkOrder[]     @relation("WorkOrderContact")
 
   @@index([tenantId])
   @@index([tenantId, status])
@@ -559,9 +561,10 @@ model Quote {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
-  tenant  Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  contact Contact?    @relation("QuoteContact", fields: [contactId], references: [id], onDelete: SetNull)
-  lines   QuoteLine[]
+  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contact    Contact?    @relation("QuoteContact", fields: [contactId], references: [id], onDelete: SetNull)
+  lines      QuoteLine[]
+  workOrders WorkOrder[] @relation("QuoteWorkOrders")
 
   @@unique([tenantId, number])
   @@index([tenantId])
@@ -599,6 +602,40 @@ model Sale {
   @@index([tenantId, soldAt])
   @@index([productId])
   @@map("sales")
+}
+
+// ── work-orders: commesse / ordini di lavoro ──────────────────────────────────
+
+enum WorkOrderStatus {
+  todo
+  in_progress
+  done
+  delivered
+}
+
+model WorkOrder {
+  id          String          @id @default(cuid())
+  tenantId    String
+  number      Int // progressivo per tenant
+  title       String
+  contactId   String?
+  contactName String // snapshot cliente
+  quantity    Int?
+  dueDate     DateTime?
+  status      WorkOrderStatus @default(todo)
+  notes       String?
+  quoteId     String? // collegamento opzionale al preventivo di origine
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contact Contact? @relation("WorkOrderContact", fields: [contactId], references: [id], onDelete: SetNull)
+  quote   Quote?   @relation("QuoteWorkOrders", fields: [quoteId], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, number])
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@map("work_orders")
 }
 
 model QuoteLine {

@@ -5,6 +5,7 @@ import { manifest as activitiesManifest } from "@coordinate/modules-activities";
 import { manifest as warehouseManifest } from "@coordinate/modules-warehouse";
 import { manifest as calendarManifest } from "@coordinate/modules-calendar";
 import { manifest as quotesManifest } from "@coordinate/modules-quotes";
+import { manifest as workOrdersManifest } from "@coordinate/modules-work-orders";
 import type { NavigationItem } from "@coordinate/core/module-registry";
 
 const MODULE_MANIFESTS = [
@@ -15,6 +16,7 @@ const MODULE_MANIFESTS = [
   warehouseManifest,
   calendarManifest,
   quotesManifest,
+  workOrdersManifest,
 ];
 
 /** A nav item enriched with the id of the module that contributes it. */

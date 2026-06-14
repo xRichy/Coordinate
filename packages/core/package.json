@@ -7,6 +7,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./auth": "./src/auth/index.ts",
+    "./auth/password": "./src/auth/password.ts",
     "./tenant": "./src/tenant/index.ts",
     "./jobs": "./src/jobs/index.ts",
     "./analytics": "./src/analytics/index.ts",
@@ -21,6 +22,7 @@
     "clean": "rm -rf node_modules .turbo"
   },
   "dependencies": {
+    "@better-auth/utils": "^0.4.0",
     "@coordinate/database": "workspace:*",
     "better-auth": "^1.0.0",
     "inngest": "^4.4.0",

@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Save, Blocks, Lock } from "lucide-react";
+import { Save, Blocks, Lock, Users, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useTRPC } from "@/lib/trpc";
@@ -41,6 +42,7 @@ function Toggle({
 export default function SettingsPage() {
   const trpc = useTRPC();
   const router = useRouter();
+  const { tenant } = useParams<{ tenant: string }>();
   const canEdit = useCan("tenant:settings:write");
 
   const modulesOptions = trpc.tenant.modules.list.queryOptions();
@@ -81,6 +83,23 @@ export default function SettingsPage() {
           <p className="text-muted-foreground mt-2">Configura i moduli attivi per questo tenant.</p>
         </div>
       </div>
+
+      <Link href={`/t/${tenant}/settings/team`} className="block">
+        <Card className="bg-card/40 backdrop-blur-md border-border/50 shadow-sm hover:bg-card/60 transition-colors">
+          <CardHeader>
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-primary" />
+                <div>
+                  <CardTitle>Team</CardTitle>
+                  <CardDescription>Gestisci gli account della tua azienda e i loro ruoli.</CardDescription>
+                </div>
+              </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0" />
+            </div>
+          </CardHeader>
+        </Card>
+      </Link>
 
       <Card className="bg-card/40 backdrop-blur-md border-border/50 shadow-sm">
         <CardHeader>

@@ -47,6 +47,9 @@ export function requirePermission(permission: Permission) {
       });
     }
 
-    return next({ ctx: { ...ctx, userRole: membership.role as MemberRole } });
+    // Don't spread `ctx`: tRPC merges the returned ctx into the upstream one.
+    // Spreading this middleware's own (base-typed) ctx would widen `session`
+    // back to nullable and drop the narrowing from protectedProcedure.
+    return next({ ctx: { userRole: membership.role as MemberRole } });
   });
 }

@@ -188,6 +188,9 @@ importers:
 
   packages/core:
     dependencies:
+      '@better-auth/utils':
+        specifier: ^0.4.0
+        version: 0.4.0
       '@coordinate/database':
         specifier: workspace:*
         version: link:../database

@@ -88,15 +88,15 @@ export async function provisionTenant(input: ProvisionTenantInput): Promise<Prov
   }
 
   // Tenant-scoped rows inside withTenant so RLS (app.tenant_id) is satisfied.
+  // Batched into createMany (1 round-trip each) to minimise latency on a remote
+  // DB — sequential per-row inserts here were slow / could time out on Neon.
   await withTenant(tenant.id, async (db) => {
     await db.membership.create({
       data: { userId: owner.id, tenantId: tenant.id, role: MemberRole.owner },
     });
-    for (const s of DEFAULT_SETTINGS) {
-      await db.tenantSetting.create({
-        data: { tenantId: tenant.id, key: s.key, value: s.value },
-      });
-    }
+    await db.tenantSetting.createMany({
+      data: DEFAULT_SETTINGS.map((s) => ({ tenantId: tenant.id, key: s.key, value: s.value })),
+    });
     await db.pipelineStage.createMany({
       data: DEFAULT_STAGES.map((name, i) => ({ tenantId: tenant.id, name, order: i + 1 })),
     });

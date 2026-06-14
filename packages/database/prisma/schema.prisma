@@ -76,6 +76,7 @@ model Tenant {
   notifications  Notification[]
   quotes         Quote[]
   quoteLines     QuoteLine[]
+  sales          Sale[]
 }
 
 model User {
@@ -425,6 +426,7 @@ model Product {
   name              String
   category          String
   price             Float
+  costPrice         Float    @default(0) // costo/prezzo di acquisto → margine = price - costPrice
   stockQuantity     Int      @default(0)
   lowStockThreshold Int      @default(5)
   createdAt         DateTime @default(now())
@@ -434,6 +436,7 @@ model Product {
 
   tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   stockMovements StockMovement[]
+  sales          Sale[]
 
   @@unique([tenantId, sku])
   @@index([tenantId])
@@ -564,6 +567,38 @@ model Quote {
   @@index([tenantId])
   @@index([tenantId, status])
   @@map("quotes")
+}
+
+// ── sales: ordini di vendita + margini ────────────────────────────────────────
+
+enum SalesChannel {
+  ebay
+  amazon
+  vinted
+  subito
+  store
+  other
+}
+
+model Sale {
+  id        String       @id @default(cuid())
+  tenantId  String
+  productId String
+  quantity  Int
+  unitPrice Float // prezzo di vendita unitario
+  unitCost  Float        @default(0) // snapshot del costo al momento della vendita
+  channel   SalesChannel @default(other)
+  buyer     String?
+  soldAt    DateTime     @default(now())
+  createdAt DateTime     @default(now())
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, soldAt])
+  @@index([productId])
+  @@map("sales")
 }
 
 model QuoteLine {

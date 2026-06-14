@@ -19,6 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, Plus, ArrowRightLeft, Edit2, ArrowDownToLine, ArrowUpFromLine, Package, AlertTriangle, Upload, ShoppingCart, TrendingUp, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
+import Image from "next/image";
 import { toast } from "sonner";
 import { useTRPC } from "@/lib/trpc";
 import { ProductModal } from "./product-modal";
@@ -160,7 +161,18 @@ export default function WarehousePage() {
                       <TableCell className="font-medium font-mono text-sm">
                         {product.sku}
                       </TableCell>
-                      <TableCell>{product.name}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {product.imageUrl ? (
+                            <Image src={product.imageUrl} alt="" width={32} height={32} unoptimized className="h-8 w-8 rounded object-cover border border-border/50 shrink-0" />
+                          ) : (
+                            <div className="h-8 w-8 rounded bg-muted flex items-center justify-center shrink-0">
+                              <Package className="h-4 w-4 text-muted-foreground/50" />
+                            </div>
+                          )}
+                          {product.name}
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <Badge variant="outline">{product.category}</Badge>
                       </TableCell>

@@ -20,6 +20,7 @@ const productRouter = router({
         category: z.string().min(2),
         price: z.number().positive(),
         costPrice: z.number().nonnegative().optional(),
+        imageUrl: z.string().url().nullish(),
         stockQuantity: z.number().int().nonnegative(),
         lowStockThreshold: z.number().int().nonnegative().optional(),
       })
@@ -40,6 +41,7 @@ const productRouter = router({
           category: z.string().min(2).optional(),
           price: z.number().positive().optional(),
           costPrice: z.number().nonnegative().optional(),
+          imageUrl: z.string().url().nullish(),
           stockQuantity: z.number().int().nonnegative().optional(),
           lowStockThreshold: z.number().int().nonnegative().optional(),
         }),

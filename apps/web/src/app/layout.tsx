@@ -4,6 +4,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Providers } from "@/components/providers";
+import { CookieBanner } from "@/components/cookie-banner";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -41,6 +42,7 @@ export default function RootLayout({
             <TooltipProvider>
               {children}
               <Toaster />
+              <CookieBanner />
             </TooltipProvider>
           </Providers>
         </ThemeProvider>

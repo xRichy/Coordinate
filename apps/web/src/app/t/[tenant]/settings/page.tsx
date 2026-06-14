@@ -7,7 +7,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Save, Blocks, Lock, Users, ChevronRight } from "lucide-react";
+import { Save, Blocks, Lock, Users, ChevronRight, Download, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useTRPC } from "@/lib/trpc";
@@ -60,6 +60,24 @@ export default function SettingsPage() {
         router.refresh(); // re-render del layout server → sidebar aggiornata
       },
       onError: () => toast.error("Errore: servono permessi owner/admin."),
+    })
+  );
+
+  const exportData = useMutation(
+    trpc.gdpr.exportData.mutationOptions({
+      onSuccess: (res) => {
+        const bytes = Uint8Array.from(atob(res.base64), (c) => c.charCodeAt(0));
+        const url = URL.createObjectURL(new Blob([bytes], { type: "application/zip" }));
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = res.filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        toast.success("Export generato.");
+      },
+      onError: (e) => toast.error(e.message),
     })
   );
 
@@ -151,6 +169,42 @@ export default function SettingsPage() {
               );
             })
           )}
+        </CardContent>
+      </Card>
+
+      <Card className="bg-card/40 backdrop-blur-md border-border/50 shadow-sm">
+        <CardHeader>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="h-5 w-5 text-primary" />
+              <div>
+                <CardTitle>Privacy &amp; dati</CardTitle>
+                <CardDescription>Esporta tutti i dati del tenant (GDPR) e consulta le informative.</CardDescription>
+              </div>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5 shrink-0"
+              disabled={!canEdit || exportData.isPending}
+              onClick={() => exportData.mutate()}
+            >
+              <Download className="h-4 w-4" />
+              {exportData.isPending ? "Esportazione…" : "Esporta dati (ZIP)"}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {!canEdit && (
+            <p className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
+              <Lock className="h-3.5 w-3.5" /> Solo owner e admin possono esportare i dati.
+            </p>
+          )}
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+            <Link href="/privacy" className="text-primary hover:underline">Privacy policy</Link>
+            <Link href="/terms" className="text-primary hover:underline">Termini di servizio</Link>
+            <Link href="/dpa" className="text-primary hover:underline">DPA</Link>
+          </div>
         </CardContent>
       </Card>
     </div>

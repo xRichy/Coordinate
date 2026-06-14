@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, isBefore, startOfDay } from "date-fns";
 import { it } from "date-fns/locale";
-import { Plus, Pencil, Trash2, CalendarClock, AlertTriangle } from "lucide-react";
+import { Plus, Pencil, Trash2, CalendarClock, AlertTriangle, Paperclip, X } from "lucide-react";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { useTRPC } from "@/lib/trpc";
+import { UploadButton } from "@/components/upload-button";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "@coordinate/api";
 
@@ -162,6 +163,8 @@ function WorkOrderModal({
   const [quantity, setQuantity] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [notes, setNotes] = useState("");
+  const [attachmentUrl, setAttachmentUrl] = useState<string | null>(null);
+  const [attachmentName, setAttachmentName] = useState<string | null>(null);
 
   // Sync local form when the dialog opens for a (different) work order.
   const key = initial?.id ?? "new";
@@ -173,6 +176,8 @@ function WorkOrderModal({
     setQuantity(initial?.quantity != null ? String(initial.quantity) : "");
     setDueDate(initial?.dueDate ? new Date(initial.dueDate).toISOString().slice(0, 10) : "");
     setNotes(initial?.notes ?? "");
+    setAttachmentUrl(initial?.attachmentUrl ?? null);
+    setAttachmentName(initial?.attachmentName ?? null);
   }
 
   function close() { setInitId(null); onClose(); }
@@ -201,6 +206,8 @@ function WorkOrderModal({
       quantity: quantity.trim() ? Math.max(1, parseInt(quantity, 10) || 1) : null,
       dueDate: dueDate ? dueDate : null,
       notes: notes.trim() ? notes.trim() : null,
+      attachmentUrl,
+      attachmentName,
     };
     if (initial) updateMut.mutate({ id: initial.id, ...payload });
     else createMut.mutate(payload);
@@ -258,6 +265,27 @@ function WorkOrderModal({
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Materiali, disegni, tolleranze…"
             />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Disegno tecnico / allegato</Label>
+            {attachmentUrl ? (
+              <div className="flex items-center gap-2 text-sm">
+                <Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />
+                <a href={attachmentUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline truncate">
+                  {attachmentName ?? "Allegato"}
+                </a>
+                <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                  onClick={() => { setAttachmentUrl(null); setAttachmentName(null); }}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <UploadButton
+                accept="application/pdf,image/*"
+                label="Carica allegato"
+                onUploaded={(url, name) => { setAttachmentUrl(url); setAttachmentName(name); }}
+              />
+            )}
           </div>
         </div>
         <DialogFooter>

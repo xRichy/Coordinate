@@ -46,7 +46,7 @@ Fase 1   Single-domain migration          [x] 8/8   attivi
 Fase 2   Completamento migrazione moduli  [x] 6/6   attivi
 Fase 3   Moduli MVP boutique              [x] 18/18 attivi  (+6 deferred)
 Fase 4   Admin tenant, team & provisioning[ ] 4/6   attivi  (+12 deferred)
-Fase 4.5 Moduli verticali primi clienti  [ ] 4/5   attivi
+Fase 4.5 Moduli verticali primi clienti  [x] 5/5   attivi
 Fase 5   Polish                           [ ] 0/8   attivi  (+2 deferred)
 Fase 6   Testing & Hardening              [ ] 0/8   attivi  (+1 deferred)
 Fase 7   Launch white-glove               [ ] 0/4   attivi  (+4 deferred)
@@ -460,12 +460,14 @@ Non essenziale per il 1° cliente boutique (uptime best-effort, `mvp-scope.md` �
 
 **Done when**: ✅ il metalmeccanico apre una commessa da un preventivo accettato e la fa avanzare negli stati fino a "consegnata". Verificato: smoke dati (numerazione progressiva, avanzamento stati fino a delivered, link `quoteId` da preventivo accettato, update/delete, 0 residui); typecheck dei package toccati + RLS 12/12 + core 22/22. *(Nota: il `pnpm typecheck` full segnala `@coordinate/ui`/`config` per file di altri progetti fuori repo — ambientale, non legato a questa modifica.)*
 
-### T4.24 — File storage (Vercel Blob) + allegati — *trasversale*
-**Deps**: ✅ fondamenta · **Size**: M · **Files**: `packages/core/file-storage` (Vercel Blob) + campi allegato sui moduli
-- Helper upload su **Vercel Blob** (`@vercel/blob`, env `BLOB_READ_WRITE_TOKEN`), upload diretto da browser con URL pubblico salvato nel modello; limite ~25MB/file.
-- Allegati su: **foto prodotti** (warehouse, cliente B) e **disegni tecnici PDF** su preventivo/commessa (cliente A). Riusabile per il logo tenant (Fase 5, T5.3).
+### T4.24 ✅ — File storage (Vercel Blob) + allegati — *trasversale*
+**Deps**: ✅ fondamenta · **Size**: M · **Files**: `apps/web/src/app/api/upload/route.ts` + `apps/web/src/components/upload-button.tsx` + campi allegato sui moduli (`Product.imageUrl`, `WorkOrder.attachmentUrl/Name`, migration) · dep `@vercel/blob`
+- Upload **client-upload** su **Vercel Blob** (store **public**, env `BLOB_READ_WRITE_TOKEN`): il browser carica diretto al Blob (niente limite 4.5MB delle function), la route `/api/upload` (`handleUpload`) controlla la **sessione** e limita tipi (img/PDF) + 25MB; l'URL pubblico è salvato sul modello.
+- Allegati: **foto prodotto** (warehouse, cliente B — miniatura in inventario + modale) e **disegno tecnico/allegato** su commessa (cliente A — link nel modale). *(Lo store dev'essere public: gli URL salvati nel DB devono essere pubblici e durevoli.)*
 
-**Done when**: si carica una foto su un prodotto e un PDF su una commessa, l'URL persiste e il file è visibile dopo un redeploy.
+**Done when**: ✅ si carica una foto su un prodotto / un allegato su una commessa, l'URL persiste e il file resta accessibile dopo un redeploy. Verificato: smoke Vercel Blob reale (put → fetch 200 → del → 404, host `*.public.blob.vercel-storage.com`); typecheck + lint + RLS 12/12 + core 22/22.
+
+> ✅ **Fase 4.5 completa (5/5)**: preventivi+PDF, margini/ordini di vendita, commesse, allegati. I due primi clienti hanno il loro verticale.
 
 ---
 

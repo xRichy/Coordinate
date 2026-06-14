@@ -10,6 +10,8 @@ const baseInput = z.object({
   quantity: z.number().int().positive().nullish(),
   dueDate: z.coerce.date().nullish(),
   notes: z.string().max(2000).nullish(),
+  attachmentUrl: z.string().url().nullish(),
+  attachmentName: z.string().max(255).nullish(),
   quoteId: z.string().nullish(),
 });
 
@@ -27,6 +29,8 @@ export const workOrdersRouter = router({
         dueDate: true,
         status: true,
         notes: true,
+        attachmentUrl: true,
+        attachmentName: true,
         quoteId: true,
       },
     })
@@ -45,6 +49,8 @@ export const workOrdersRouter = router({
         quantity: input.quantity ?? null,
         dueDate: input.dueDate ?? null,
         notes: input.notes ?? null,
+        attachmentUrl: input.attachmentUrl ?? null,
+        attachmentName: input.attachmentName ?? null,
         quoteId: input.quoteId ?? null,
       },
     });
@@ -66,6 +72,8 @@ export const workOrdersRouter = router({
           ...(rest.quantity !== undefined ? { quantity: rest.quantity } : {}),
           ...(rest.dueDate !== undefined ? { dueDate: rest.dueDate } : {}),
           ...(rest.notes !== undefined ? { notes: rest.notes } : {}),
+          ...(rest.attachmentUrl !== undefined ? { attachmentUrl: rest.attachmentUrl } : {}),
+          ...(rest.attachmentName !== undefined ? { attachmentName: rest.attachmentName } : {}),
         },
       });
       return { id };

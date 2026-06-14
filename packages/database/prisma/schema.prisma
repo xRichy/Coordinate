@@ -429,6 +429,7 @@ model Product {
   category          String
   price             Float
   costPrice         Float    @default(0) // costo/prezzo di acquisto → margine = price - costPrice
+  imageUrl          String? // foto prodotto (Vercel Blob)
   stockQuantity     Int      @default(0)
   lowStockThreshold Int      @default(5)
   createdAt         DateTime @default(now())
@@ -624,6 +625,8 @@ model WorkOrder {
   dueDate     DateTime?
   status      WorkOrderStatus @default(todo)
   notes       String?
+  attachmentUrl  String? // disegno tecnico / allegato (Vercel Blob)
+  attachmentName String?
   quoteId     String? // collegamento opzionale al preventivo di origine
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt

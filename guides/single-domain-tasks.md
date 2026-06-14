@@ -45,7 +45,7 @@ Già fatte, non rientrano nel lavoro attivo — riassunte qui per le dipendenze.
 Fase 1   Single-domain migration          [x] 8/8   attivi
 Fase 2   Completamento migrazione moduli  [x] 6/6   attivi
 Fase 3   Moduli MVP boutique              [x] 18/18 attivi  (+6 deferred)
-Fase 4   Admin tenant, team & provisioning[ ] 4/6   attivi  (+12 deferred)
+Fase 4   Admin tenant, team & provisioning[ ] 5/6   attivi  (+12 deferred)
 Fase 4.5 Moduli verticali primi clienti  [x] 5/5   attivi
 Fase 5   Polish                           [ ] 0/8   attivi  (+2 deferred)
 Fase 6   Testing & Hardening              [ ] 0/8   attivi  (+1 deferred)
@@ -400,8 +400,13 @@ Fuori scope MVP boutique (`mvp-scope.md` §9). Si rivaluta a crescita clienti.
 ### T4.14 ⏭ DEFERRED — Status page (statuspage.io)
 Non essenziale per il 1° cliente boutique (uptime best-effort, `mvp-scope.md` §6). Rinviato.
 
-### T4.15 — GDPR: export dati tenant + privacy/terms pages
-**Deps**: ✅ fondamenta · **Size**: M — endpoint admin "Export my data" → ZIP CSV; pagine `/privacy`, `/terms`, `/dpa` (markdown); cookie banner analytics. (mvp-scope §6/§8.) *(Non blocca la vendita ma è obbligo di legge prima del go-live con dati reali: tenere come ultimo miglio, versione minimale. Scollegato da T4.8, deferred.)*
+### T4.15 ✅ — GDPR: export dati tenant + privacy/terms pages
+**Deps**: ✅ fondamenta · **Size**: M · **Files**: `packages/api/src/routers/gdpr.ts` (+ dep `jszip`) · `apps/web/src/app/(legal)/{privacy,terms,dpa}/page.tsx` + layout · `apps/web/src/components/cookie-banner.tsx` · settings page (bottone export) · middleware (bypass `/dpa`)
+- `gdpr.exportData` (gated owner/admin): raccoglie i dati del tenant (contatti, lead, deal, attività, prodotti, movimenti, vendite, preventivi+righe, commesse, settings) RLS-scoped → **ZIP di CSV** (base64) scaricato dal client; esclude la colonna `searchable`.
+- Pagine **`/privacy`, `/terms`, `/dpa`** (bozza IT minimale, con disclaimer "da revisionare con un legale"), linkate dalle impostazioni.
+- **Cookie banner** (solo se analytics attivo, `useSyncExternalStore` per leggere il consenso senza setState-in-effect).
+
+**Done when**: ✅ l'owner esporta i dati in ZIP; le pagine legali sono pubbliche (200) e linkate; cookie banner presente. Verificato: smoke export su tenant reale (zip valido, conteggi seed, `searchable` escluso); pagine `/privacy /terms /dpa` → 200; typecheck + lint + RLS 12/12 + core 22/22. *(Contenuti legali = bozza, da far revisionare; affinamento finale in T7.1.)*
 
 ### T4.16 — Chiusura Fase 4 + acceptance (provisioning + admin + team)
 **Deps**: T4.9, T4.10, T4.15, T4.17, T4.18 · **Size**: S — acceptance: dalla **super-admin** crei un tenant → l'owner accede a `/t/<slug>`, configura i moduli, **crea un 2° account** dal modulo Team, è bloccato al 3° → tu **aggiungi uno slot** dalla super-admin → l'owner crea il 3°. *(Niente acquisto piano: Stripe deferred.)* Marcare Fase 4 ✅.

@@ -13,6 +13,7 @@ const BYPASS_PATTERNS = [
   /^\/pricing(\/.*)?$/,
   /^\/privacy(\/.*)?$/,
   /^\/terms(\/.*)?$/,
+  /^\/dpa(\/.*)?$/,
 ];
 
 // Match /t/<slug> or /t/<slug>/...

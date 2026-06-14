@@ -11,6 +11,7 @@ import { teamRouter } from "./routers/team";
 import { adminRouter } from "./routers/admin";
 import { quotesRouter } from "./routers/quotes";
 import { workOrdersRouter } from "./routers/work-orders";
+import { gdprRouter } from "./routers/gdpr";
 
 export const appRouter = router({
   healthcheck: publicProcedure.query(() => ({ status: "ok" as const })),
@@ -26,6 +27,7 @@ export const appRouter = router({
   admin: adminRouter,
   quotes: quotesRouter,
   workOrders: workOrdersRouter,
+  gdpr: gdprRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -1,6 +1,6 @@
 import { initTRPC, TRPCError } from "@trpc/server";
 import type { FetchCreateContextFnOptions } from "@trpc/server/adapters/fetch";
-import { auth } from "@coordinate/core/auth";
+import { auth, isSuperAdmin } from "@coordinate/core/auth";
 import { resolveTenantBySlug } from "@coordinate/core/tenant";
 import { prismaAdmin, withTenant } from "@coordinate/database";
 
@@ -44,6 +44,18 @@ export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
       session: ctx.session,
     },
   });
+});
+
+/**
+ * Requires a platform super-admin (the operator). Cross-tenant — procedures
+ * built on this must use `prismaAdmin` (no tenant RLS context). Gated by the
+ * `SUPER_ADMIN_EMAILS` allowlist, not a DB role.
+ */
+export const superAdminProcedure = protectedProcedure.use(({ ctx, next }) => {
+  if (!isSuperAdmin(ctx.session.user.email)) {
+    throw new TRPCError({ code: "FORBIDDEN", message: "Super-admin only" });
+  }
+  return next({ ctx });
 });
 
 /**

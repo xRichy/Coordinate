@@ -8,6 +8,7 @@
     ".": "./src/index.ts",
     "./auth": "./src/auth/index.ts",
     "./auth/password": "./src/auth/password.ts",
+    "./provisioning": "./src/provisioning/index.ts",
     "./tenant": "./src/tenant/index.ts",
     "./jobs": "./src/jobs/index.ts",
     "./analytics": "./src/analytics/index.ts",

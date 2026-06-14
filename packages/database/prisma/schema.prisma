@@ -57,6 +57,7 @@ model Tenant {
   plan           TenantPlan   @default(starter)
   status         TenantStatus @default(active)
   enabledModules String[]     @default(["dashboard", "crm-contacts", "crm-pipeline", "activities", "warehouse", "calendar"])
+  maxSeats       Int          @default(2) // account inclusi (owner + 1); slot extra sbloccati dalla super-admin dopo pagamento
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 

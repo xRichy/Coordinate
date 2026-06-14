@@ -45,7 +45,7 @@ Già fatte, non rientrano nel lavoro attivo — riassunte qui per le dipendenze.
 Fase 1   Single-domain migration          [x] 8/8   attivi
 Fase 2   Completamento migrazione moduli  [x] 6/6   attivi
 Fase 3   Moduli MVP boutique              [x] 18/18 attivi  (+6 deferred)
-Fase 4   Admin tenant, team & provisioning[ ] 2/6   attivi  (+12 deferred)
+Fase 4   Admin tenant, team & provisioning[ ] 3/6   attivi  (+12 deferred)
 Fase 4.5 Moduli verticali primi clienti  [ ] 0/5   attivi
 Fase 5   Polish                           [ ] 0/8   attivi  (+2 deferred)
 Fase 6   Testing & Hardening              [ ] 0/8   attivi  (+1 deferred)
@@ -376,14 +376,14 @@ Fuori scope: onboarding white-glove, niente signup pubblico (`mvp-scope.md` §3)
 ### T4.8 ⏭ DEFERRED — Pagina tenant admin: dati azienda e branding
 Fuori scope per la vendita ai primi due clienti (decisione 2026-06-13). I dati azienda fissi (P.IVA, CF, indirizzo) servono solo per i preventivi → si aggiungono lì (Fase 4.5, T4.20). Il branding (logo/colore) dipende dallo storage e dal theming (Fase 5, T5.3); l'upload logo passerà a **Vercel Blob** (T4.24), non R2. Si riattiva quando serve.
 
-### T4.9 — Modulo Team: gestione account del tenant + limite posti (seat)
-**Deps**: ✅ fondamenta (RBAC), T4.10 · **Size**: L · **Files**: `Tenant.maxSeats` (schema, default 2) · `packages/api/.../team.ts` · `apps/web/.../settings/team/`
+### T4.9 ✅ — Modulo Team: gestione account del tenant + limite posti (seat)
+**Deps**: ✅ fondamenta (RBAC), T4.10 · **Size**: L · **Files**: `Tenant.maxSeats` (schema+migration, default 2) · `packages/core/src/auth/password.ts` (+export `./auth/password`) · `packages/api/.../team.ts` · `apps/web/.../settings/team/page.tsx`
 - Schema: `Tenant.maxSeats Int @default(2)` (= owner + 1 collega).
 - Router `team` (gated **owner+admin**, permesso es. `tenant:members:write`): `list` (membri con ruolo/email + `seatsUsed`/`maxSeats`), `createMember` (crea `User` + `Account` credential con **password temporanea** da consegnare + `Membership` col ruolo scelto; **blocca se `seatsUsed >= maxSeats`**), `updateRole`, `removeMember` (guardie: non rimuovere sé stessi né l'ultimo owner; la rimozione libera un posto).
 - Niente invito email (Resend deferred): l'owner crea l'account e consegna la password.
 - UI `/t/<slug>/settings/team`: lista membri, "Crea account" (disabilitato con messaggio di upsell a `maxSeats/maxSeats`), cambio ruolo, rimozione.
 
-**Done when**: l'owner crea un 2° account e accede; al 3° tentativo è bloccato con messaggio "contattaci per aggiungere posti"; owner+admin gestiscono, member/viewer no.
+**Done when**: ✅ l'owner crea un 2° account e accede; al 3° tentativo è bloccato con messaggio "contattaci per aggiungere posti"; owner+admin gestiscono, member/viewer no. Verificato: smoke a livello dati (creazione in `withTenant`/RLS, password validata con `verifyPassword`, blocco al 3°, rimozione libera il posto, 0 residui) + typecheck/test verdi (RLS 12/12, core 22/22). *(Bonus: fix tipizzazione in `requirePermission` — non ri-spande `ctx`, preserva il narrowing della session.)*
 
 ### T4.10 ✅ — Pagina tenant admin: abilitazione moduli
 **Deps**: T2.12 · **Size**: M — `Tenant.enabledModules` (default 6 core); router `tenant.modules.list/setEnabled` (gated `tenant:settings:write`); pagina `/t/<slug>/settings` con toggle per modulo + Salva (gating owner/admin via `useCan`); la sidebar filtra le voci per modulo abilitato (`router.refresh()` dopo il salvataggio). (Core del modello boutique.)

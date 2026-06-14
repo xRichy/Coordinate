@@ -7,6 +7,7 @@ import { dashboardRouter } from "./routers/dashboard";
 import { searchRouter } from "./routers/search";
 import { notificationsRouter } from "./routers/notifications";
 import { tenantRouter } from "./routers/tenant";
+import { teamRouter } from "./routers/team";
 
 export const appRouter = router({
   healthcheck: publicProcedure.query(() => ({ status: "ok" as const })),
@@ -18,6 +19,7 @@ export const appRouter = router({
   search: searchRouter,
   notifications: notificationsRouter,
   tenant: tenantRouter,
+  team: teamRouter,
 });
 
 export type AppRouter = typeof appRouter;

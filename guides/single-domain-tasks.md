@@ -46,7 +46,7 @@ Fase 1   Single-domain migration          [x] 8/8   attivi
 Fase 2   Completamento migrazione moduli  [x] 6/6   attivi
 Fase 3   Moduli MVP boutique              [x] 18/18 attivi  (+6 deferred)
 Fase 4   Admin tenant, team & provisioning[ ] 4/6   attivi  (+12 deferred)
-Fase 4.5 Moduli verticali primi clienti  [ ] 0/5   attivi
+Fase 4.5 Moduli verticali primi clienti  [ ] 1/5   attivi
 Fase 5   Polish                           [ ] 0/8   attivi  (+2 deferred)
 Fase 6   Testing & Hardening              [ ] 0/8   attivi  (+1 deferred)
 Fase 7   Launch white-glove               [ ] 0/4   attivi  (+4 deferred)
@@ -430,14 +430,14 @@ Non essenziale per il 1° cliente boutique (uptime best-effort, `mvp-scope.md` �
 
 ---
 
-### T4.20 — Modulo quotes (preventivi/offerte) + dati azienda emittente
-**Deps**: T2.7 (contatti), warehouse (opzionale per righe da catalogo) · **Size**: L · **Files**: `packages/modules/quotes/` + `packages/api/.../quotes.ts` + schema `Quote`/`QuoteLine`
-- Modelli `Quote` (numero, contatto, data, validità, stato, totali) + `QuoteLine` (descrizione/materiale, lavorazione, quantità, prezzo unitario, sconto, aliquota IVA).
-- Dati azienda emittente (ragione sociale, P.IVA, CF, indirizzo) come `TenantSetting` — qui rientra il pezzo "dati azienda" tagliato da T4.8.
-- Stati: bozza → inviato → accettato → rifiutato → scaduto. Accettato → (opz.) genera ordine/commessa.
-- UI: lista preventivi + editor righe con totali live (imponibile, IVA, totale).
+### T4.20 ✅ — Modulo quotes (preventivi/offerte) + dati azienda emittente
+**Deps**: T2.7 (contatti) · **Size**: L · **Files**: `packages/modules/quotes/` + `packages/api/src/routers/quotes.ts` + schema `Quote`/`QuoteLine` (+ migration RLS) + `apps/web/.../(modules)/quotes/{page,[id]/page}.tsx`
+- Modelli `Quote` (numero progressivo per tenant, contatto+snapshot nome, data, validità, stato, totali salvati) + `QuoteLine` (descrizione, quantità, prezzo, sconto%, IVA%, posizione). RLS su entrambe.
+- Router `quotes` (tenantProcedure): list/get/create/update (sostituzione righe + ricalcolo)/updateStatus/delete; `companyInfo.get/set` (dati emittente come `TenantSetting`, set gated owner/admin) — qui rientra il pezzo "dati azienda" tagliato da T4.8.
+- Stati: bozza → inviato → accettato → rifiutato → scaduto.
+- UI: lista preventivi (numero/cliente/data/stato/totale) + editor righe con totali live (imponibile, IVA, totale) e selettore contatto/cliente libero. Aggiunto al `MODULE_CATALOG` (abilitabile per tenant); nav `Preventivi` (sezione operations).
 
-**Done when**: il metalmeccanico crea un preventivo a righe per un cliente, con totali e IVA corretti, e lo porta in stato "inviato/accettato".
+**Done when**: ✅ il metalmeccanico crea un preventivo a righe per un cliente, con totali e IVA corretti, e lo porta in stato "inviato/accettato". Verificato: smoke dati (totali 1000/220/1220, numerazione progressiva, update righe+ricalcolo, stati, companyInfo, delete con cascade righe, 0 residui); typecheck full + RLS 12/12 + core 22/22 verdi. *(PDF = T4.21.)*
 
 ### T4.21 — quotes: export PDF brandato
 **Deps**: T4.20 · **Size**: M — generazione PDF del preventivo (dati azienda + logo se presente + righe + totali + IVA), scaricabile. *(L'invio email resta `⏭` finché Resend non è attivo — vedi T3.18.)*

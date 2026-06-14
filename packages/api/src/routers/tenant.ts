@@ -13,6 +13,7 @@ export const MODULE_CATALOG = [
   { id: "activities", label: "Attività", description: "Task, chiamate, riunioni, note" },
   { id: "warehouse", label: "Magazzino", description: "Prodotti e movimenti di stock" },
   { id: "calendar", label: "Calendario", description: "Vista mese/settimana delle attività" },
+  { id: "quotes", label: "Preventivi", description: "Offerte a righe con totali, IVA e stati" },
 ] as const;
 
 const MODULE_IDS = new Set<string>(MODULE_CATALOG.map((m) => m.id));

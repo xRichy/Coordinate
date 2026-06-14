@@ -14,6 +14,7 @@
     "@coordinate/api": "workspace:^",
     "@coordinate/core": "workspace:^",
     "@coordinate/modules-crm-contacts": "workspace:*",
+    "@coordinate/modules-quotes": "workspace:*",
     "@coordinate/modules-example": "workspace:*",
     "@hookform/resolvers": "^5.2.2",
     "@prisma/client": "^7.4.1",

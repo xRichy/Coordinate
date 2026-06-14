@@ -4,6 +4,7 @@ import { manifest as crmPipelineManifest } from "@coordinate/modules-crm-pipelin
 import { manifest as activitiesManifest } from "@coordinate/modules-activities";
 import { manifest as warehouseManifest } from "@coordinate/modules-warehouse";
 import { manifest as calendarManifest } from "@coordinate/modules-calendar";
+import { manifest as quotesManifest } from "@coordinate/modules-quotes";
 import type { NavigationItem } from "@coordinate/core/module-registry";
 
 const MODULE_MANIFESTS = [
@@ -13,6 +14,7 @@ const MODULE_MANIFESTS = [
   activitiesManifest,
   warehouseManifest,
   calendarManifest,
+  quotesManifest,
 ];
 
 /** A nav item enriched with the id of the module that contributes it. */

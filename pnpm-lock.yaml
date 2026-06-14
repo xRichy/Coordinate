@@ -41,6 +41,9 @@ importers:
       '@coordinate/modules-example':
         specifier: workspace:*
         version: link:../../packages/modules/example
+      '@coordinate/modules-quotes':
+        specifier: workspace:*
+        version: link:../../packages/modules/quotes
       '@coordinate/modules-warehouse':
         specifier: workspace:*
         version: link:../../packages/modules/warehouse
@@ -330,6 +333,22 @@ importers:
 
   packages/modules/example:
     dependencies:
+      react:
+        specifier: ^19.0.0
+        version: 19.2.3
+    devDependencies:
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.14
+      typescript:
+        specifier: ^5
+        version: 5.9.3
+
+  packages/modules/quotes:
+    dependencies:
+      '@coordinate/core':
+        specifier: workspace:*
+        version: link:../../core
       react:
         specifier: ^19.0.0
         version: 19.2.3

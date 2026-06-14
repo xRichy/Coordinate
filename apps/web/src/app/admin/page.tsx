@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Building2, Plus, Pencil, Copy, Check, Users } from "lucide-react";
+import { Building2, Plus, Pencil, Copy, Check, Users, Trash2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,7 @@ export default function AdminPage() {
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<Tenant | null>(null);
+  const [deleting, setDeleting] = useState<Tenant | null>(null);
 
   return (
     <div className="space-y-6">
@@ -79,9 +80,19 @@ export default function AdminPage() {
                       </CardDescription>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm" className="gap-1.5 shrink-0" onClick={() => setEditing(t)}>
-                    <Pencil className="h-3.5 w-3.5" /> Modifica
-                  </Button>
+                  <div className="flex shrink-0 gap-1.5">
+                    <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setEditing(t)}>
+                      <Pencil className="h-3.5 w-3.5" /> Modifica
+                    </Button>
+                    <Button
+                      variant="ghost" size="icon"
+                      className="h-9 w-9 text-muted-foreground hover:text-destructive"
+                      title="Elimina tenant"
+                      onClick={() => setDeleting(t)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="flex flex-wrap items-center gap-x-6 gap-y-1.5 text-sm text-muted-foreground">
@@ -110,6 +121,11 @@ export default function AdminPage() {
         onClose={() => setEditing(null)}
         catalog={catalog}
         onSaved={invalidate}
+      />
+      <DeleteTenantDialog
+        tenant={deleting}
+        onClose={() => setDeleting(null)}
+        onDeleted={invalidate}
       />
     </div>
   );
@@ -359,6 +375,109 @@ function EditTenantDialog({
             {update.isPending ? "Salvataggio…" : "Salva"}
           </Button>
         </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── Delete (archive to Blob, then delete) ─────────────────────────────────────
+
+function DeleteTenantDialog({
+  tenant, onClose, onDeleted,
+}: {
+  tenant: Tenant | null;
+  onClose: () => void;
+  onDeleted: () => void;
+}) {
+  const trpc = useTRPC();
+  const [initId, setInitId] = useState<string | null>(null);
+  const [confirmText, setConfirmText] = useState("");
+  const [archiveUrl, setArchiveUrl] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  // Reset local state when a new tenant opens.
+  if (tenant && tenant.id !== initId) {
+    setInitId(tenant.id);
+    setConfirmText("");
+    setArchiveUrl(null);
+    setCopied(false);
+  }
+
+  function close() { setInitId(null); onClose(); }
+
+  const del = useMutation(
+    trpc.admin.tenants.delete.mutationOptions({
+      onSuccess: (res) => {
+        onDeleted();
+        setArchiveUrl(res.archiveUrl);
+        toast.success(`Tenant /t/${res.slug} archiviato ed eliminato.`);
+      },
+      onError: (e) => toast.error(e.message),
+    })
+  );
+
+  const canDelete = !!tenant && confirmText.trim() === tenant.slug;
+
+  return (
+    <Dialog open={!!tenant} onOpenChange={(o) => { if (!o) close(); }}>
+      <DialogContent>
+        {archiveUrl ? (
+          <>
+            <DialogHeader>
+              <DialogTitle>Tenant eliminato</DialogTitle>
+              <DialogDescription>I dati sono stati archiviati su Blob prima della cancellazione. Conserva questo link.</DialogDescription>
+            </DialogHeader>
+            <div className="rounded-lg border border-border/60 bg-muted/40 p-4 flex items-center justify-between gap-2">
+              <a href={archiveUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline truncate">
+                Archivio ZIP
+              </a>
+              <Button
+                variant="outline" size="sm" className="gap-1.5 shrink-0"
+                onClick={() => { navigator.clipboard.writeText(archiveUrl); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
+              >
+                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                {copied ? "Copiato" : "Copia link"}
+              </Button>
+            </div>
+            <DialogFooter>
+              <Button onClick={close}>Fatto</Button>
+            </DialogFooter>
+          </>
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-destructive">
+                <AlertTriangle className="h-5 w-5" /> Elimina {tenant?.name}
+              </DialogTitle>
+              <DialogDescription>
+                I dati (CSV completo + elenco file su Blob) verranno <strong>archiviati su Blob</strong>, poi il tenant e i suoi dati nel
+                database saranno <strong>cancellati definitivamente</strong>. I file già su Blob (foto, allegati) restano.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2 py-2">
+              <Label htmlFor="del-confirm">
+                Scrivi <code className="font-mono text-foreground">{tenant?.slug}</code> per confermare
+              </Label>
+              <Input
+                id="del-confirm"
+                value={confirmText}
+                autoComplete="off"
+                placeholder={tenant?.slug}
+                onChange={(e) => setConfirmText(e.target.value)}
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="ghost" onClick={close}>Annulla</Button>
+              <Button
+                variant="destructive"
+                disabled={!canDelete || del.isPending}
+                onClick={() => tenant && del.mutate({ tenantId: tenant.id, confirmSlug: confirmText.trim() })}
+              >
+                {del.isPending ? "Archiviazione…" : "Archivia ed elimina"}
+              </Button>
+            </DialogFooter>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );

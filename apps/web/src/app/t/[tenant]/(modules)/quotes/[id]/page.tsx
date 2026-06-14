@@ -24,14 +24,22 @@ const STATUS_LABEL: Record<QuoteStatus, string> = {
 };
 const STATUSES: QuoteStatus[] = ["draft", "sent", "accepted", "rejected", "expired"];
 
-type Line = { description: string; quantity: number; unitPrice: number; discountPct: number; taxRate: number };
+// Numeric line fields are kept as strings while editing so the inputs can be
+// empty, accept a comma decimal separator, and not force a sticky "0".
+type Line = { description: string; quantity: string; unitPrice: string; discountPct: string; taxRate: string };
 type FormState = { contactId: string | null; contactName: string; validUntil: string; notes: string; lines: Line[] };
 
-const emptyLine = (): Line => ({ description: "", quantity: 1, unitPrice: 0, discountPct: 0, taxRate: 22 });
+const emptyLine = (): Line => ({ description: "", quantity: "1", unitPrice: "", discountPct: "", taxRate: "22" });
 const euro = (n: number) => `€ ${n.toLocaleString("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
+/** Parse a user-typed number (comma or dot, possibly empty) to a number. */
+const num = (s: string) => {
+  const n = parseFloat(s.replace(",", "."));
+  return Number.isFinite(n) ? n : 0;
+};
+
 function lineNet(l: Line) {
-  return l.quantity * l.unitPrice * (1 - l.discountPct / 100);
+  return num(l.quantity) * num(l.unitPrice) * (1 - num(l.discountPct) / 100);
 }
 function computeTotals(lines: Line[]) {
   let subtotal = 0;
@@ -39,7 +47,7 @@ function computeTotals(lines: Line[]) {
   for (const l of lines) {
     const net = lineNet(l);
     subtotal += net;
-    taxTotal += net * (l.taxRate / 100);
+    taxTotal += net * (num(l.taxRate) / 100);
   }
   return { subtotal, taxTotal, total: subtotal + taxTotal };
 }
@@ -96,8 +104,11 @@ export default function QuoteEditorPage() {
       validUntil: quote.validUntil ? new Date(quote.validUntil).toISOString().slice(0, 10) : "",
       notes: quote.notes ?? "",
       lines: quote.lines.map((l) => ({
-        description: l.description, quantity: l.quantity, unitPrice: l.unitPrice,
-        discountPct: l.discountPct, taxRate: l.taxRate,
+        description: l.description,
+        quantity: String(l.quantity),
+        unitPrice: String(l.unitPrice),
+        discountPct: l.discountPct ? String(l.discountPct) : "",
+        taxRate: String(l.taxRate),
       })),
     });
   }
@@ -154,8 +165,10 @@ export default function QuoteEditorPage() {
         .filter((l) => l.description.trim())
         .map((l) => ({
           description: l.description.trim(),
-          quantity: l.quantity, unitPrice: l.unitPrice,
-          discountPct: l.discountPct, taxRate: l.taxRate,
+          quantity: num(l.quantity),
+          unitPrice: num(l.unitPrice),
+          discountPct: num(l.discountPct),
+          taxRate: num(l.taxRate),
         })),
     };
     if (isNew) createMut.mutate(payload);
@@ -245,36 +258,46 @@ export default function QuoteEditorPage() {
           </Button>
         </div>
         <div className="divide-y divide-border/40">
-          <div className="hidden md:grid grid-cols-[1fr_70px_90px_70px_70px_100px_36px] gap-2 px-4 py-2 text-xs text-muted-foreground">
-            <span>Descrizione (materiale / lavorazione)</span>
-            <span className="text-right">Q.tà</span>
-            <span className="text-right">Prezzo</span>
-            <span className="text-right">Sc.%</span>
-            <span className="text-right">IVA%</span>
-            <span className="text-right">Totale</span>
-            <span />
-          </div>
           {form.lines.map((l, i) => (
-            <div key={i} className="grid grid-cols-2 md:grid-cols-[1fr_70px_90px_70px_70px_100px_36px] gap-2 px-4 py-2 items-center">
-              <Input
-                className="col-span-2 md:col-span-1 h-9"
-                placeholder="Descrizione"
-                value={l.description}
-                onChange={(e) => setLine(i, { description: e.target.value })}
-              />
-              <Input className="h-9 text-right" type="number" step="any" value={l.quantity}
-                onChange={(e) => setLine(i, { quantity: Number(e.target.value) || 0 })} />
-              <Input className="h-9 text-right" type="number" step="any" value={l.unitPrice}
-                onChange={(e) => setLine(i, { unitPrice: Number(e.target.value) || 0 })} />
-              <Input className="h-9 text-right" type="number" step="any" value={l.discountPct}
-                onChange={(e) => setLine(i, { discountPct: Number(e.target.value) || 0 })} />
-              <Input className="h-9 text-right" type="number" step="any" value={l.taxRate}
-                onChange={(e) => setLine(i, { taxRate: Number(e.target.value) || 0 })} />
-              <span className="text-right text-sm font-medium tabular-nums">{euro(lineNet(l))}</span>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                onClick={() => set({ lines: form.lines.filter((_, idx) => idx !== i) })}>
-                <Trash2 className="h-4 w-4" />
-              </Button>
+            <div key={i} className="px-4 py-3 space-y-2">
+              <div className="flex items-start gap-2">
+                <Input
+                  className="h-9 flex-1 min-w-0"
+                  placeholder="Descrizione (materiale / lavorazione)"
+                  value={l.description}
+                  onChange={(e) => setLine(i, { description: e.target.value })}
+                />
+                <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive"
+                  onClick={() => set({ lines: form.lines.filter((_, idx) => idx !== i) })}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="space-y-1">
+                  <label className="text-[11px] text-muted-foreground">Quantità</label>
+                  <Input className="h-9 text-right" inputMode="decimal" placeholder="0" value={l.quantity}
+                    onChange={(e) => setLine(i, { quantity: e.target.value })} />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[11px] text-muted-foreground">Prezzo €</label>
+                  <Input className="h-9 text-right" inputMode="decimal" placeholder="0,00" value={l.unitPrice}
+                    onChange={(e) => setLine(i, { unitPrice: e.target.value })} />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[11px] text-muted-foreground">Sconto %</label>
+                  <Input className="h-9 text-right" inputMode="decimal" placeholder="0" value={l.discountPct}
+                    onChange={(e) => setLine(i, { discountPct: e.target.value })} />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[11px] text-muted-foreground">IVA %</label>
+                  <Input className="h-9 text-right" inputMode="decimal" placeholder="22" value={l.taxRate}
+                    onChange={(e) => setLine(i, { taxRate: e.target.value })} />
+                </div>
+              </div>
+              <div className="text-right text-sm">
+                <span className="text-muted-foreground">Imponibile riga: </span>
+                <span className="font-medium tabular-nums">{euro(lineNet(l))}</span>
+              </div>
             </div>
           ))}
           {form.lines.length === 0 && (

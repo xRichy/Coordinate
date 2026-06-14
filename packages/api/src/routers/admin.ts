@@ -1,9 +1,11 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { prismaAdmin, TenantPlan, TenantStatus } from "@coordinate/database";
+import { put } from "@vercel/blob";
+import { prismaAdmin, withTenant, TenantPlan, TenantStatus } from "@coordinate/database";
 import { provisionTenant } from "@coordinate/core/provisioning";
 import { router, superAdminProcedure } from "../trpc";
 import { MODULE_CATALOG } from "./tenant";
+import { buildTenantExportZip } from "../lib/tenant-export";
 
 const MODULE_IDS = new Set<string>(MODULE_CATALOG.map((m) => m.id));
 const planEnum = z.enum([TenantPlan.starter, TenantPlan.pro, TenantPlan.business]);
@@ -116,6 +118,50 @@ export const adminRouter = router({
           select: { id: true, maxSeats: true, status: true, plan: true, enabledModules: true },
         });
         return updated;
+      }),
+
+    /**
+     * Archive the tenant's data to Vercel Blob, then delete the tenant from the
+     * DB. The archive ZIP (CSV of all data + manifest of file URLs) is uploaded
+     * to Blob; existing Blob files (photos/attachments) are left intact. The DB
+     * delete cascades all tenant rows. Destructive — requires the slug to match.
+     */
+    delete: superAdminProcedure
+      .input(z.object({ tenantId: z.string(), confirmSlug: z.string() }))
+      .mutation(async ({ input }) => {
+        const tenant = await prismaAdmin.tenant.findUnique({
+          where: { id: input.tenantId },
+          select: { id: true, name: true, slug: true },
+        });
+        if (!tenant) throw new TRPCError({ code: "NOT_FOUND", message: "Tenant non trovato." });
+        if (input.confirmSlug.trim() !== tenant.slug) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Lo slug di conferma non corrisponde." });
+        }
+        if (!process.env.BLOB_READ_WRITE_TOKEN) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "Storage non configurato (BLOB_READ_WRITE_TOKEN mancante): impossibile archiviare.",
+          });
+        }
+
+        // 1. Build the data archive (RLS-scoped to this tenant).
+        const zip = await withTenant(tenant.id, (db) =>
+          buildTenantExportZip(db, { name: tenant.name, slug: tenant.slug }, { includeFileManifest: true })
+        );
+        const buffer = await zip.generateAsync({ type: "nodebuffer" });
+
+        // 2. Upload the archive to Blob (files already on Blob stay where they are).
+        const date = new Date().toISOString().slice(0, 10);
+        const blob = await put(`archives/${tenant.slug}-${date}.zip`, buffer, {
+          access: "public",
+          addRandomSuffix: true,
+          contentType: "application/zip",
+        });
+
+        // 3. Delete the tenant from the DB (cascades all rows).
+        await prismaAdmin.tenant.delete({ where: { id: tenant.id } });
+
+        return { slug: tenant.slug, archiveUrl: blob.url };
       }),
   }),
 });

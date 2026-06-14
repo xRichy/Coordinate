@@ -35,6 +35,7 @@ const productSchema = z.object({
   name: z.string().min(2, "Nome obbligatorio"),
   category: z.string().min(2, "Categoria obbligatoria"),
   price: z.number().positive("Il prezzo deve essere positivo"),
+  costPrice: z.number().nonnegative("Il costo non può essere negativo"),
   stockQuantity: z.number().int().nonnegative("La quantità non può essere negativa"),
   lowStockThreshold: z.number().int().nonnegative("La soglia non può essere negativa"),
 });
@@ -75,7 +76,7 @@ export function ProductModal({ isOpen, onClose, productToEdit }: ProductModalPro
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
-    defaultValues: { sku: "", name: "", category: "", price: 0, stockQuantity: 0, lowStockThreshold: 5 },
+    defaultValues: { sku: "", name: "", category: "", price: 0, costPrice: 0, stockQuantity: 0, lowStockThreshold: 5 },
   });
 
   useEffect(() => {
@@ -85,11 +86,12 @@ export function ProductModal({ isOpen, onClose, productToEdit }: ProductModalPro
         name: productToEdit.name,
         category: productToEdit.category,
         price: productToEdit.price,
+        costPrice: productToEdit.costPrice,
         stockQuantity: productToEdit.stockQuantity,
         lowStockThreshold: productToEdit.lowStockThreshold,
       });
     } else {
-      form.reset({ sku: "", name: "", category: "", price: 0, stockQuantity: 0, lowStockThreshold: 5 });
+      form.reset({ sku: "", name: "", category: "", price: 0, costPrice: 0, stockQuantity: 0, lowStockThreshold: 5 });
     }
   }, [productToEdit, form, isOpen]);
 
@@ -177,6 +179,27 @@ export function ProductModal({ isOpen, onClose, productToEdit }: ProductModalPro
               />
               <FormField
                 control={form.control}
+                name="costPrice"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Costo (€)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        {...field}
+                        onFocus={(e) => e.target.select()}
+                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
                 name="stockQuantity"
                 render={({ field }) => (
                   <FormItem>
@@ -193,28 +216,25 @@ export function ProductModal({ isOpen, onClose, productToEdit }: ProductModalPro
                   </FormItem>
                 )}
               />
+              <FormField
+                control={form.control}
+                name="lowStockThreshold"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Soglia minima</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        {...field}
+                        onFocus={(e) => e.target.select()}
+                        onChange={(e) => field.onChange(parseInt(e.target.value, 10) || 0)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
-            <FormField
-              control={form.control}
-              name="lowStockThreshold"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Soglia scorta minima</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      {...field}
-                      onFocus={(e) => e.target.select()}
-                      onChange={(e) => field.onChange(parseInt(e.target.value, 10) || 0)}
-                    />
-                  </FormControl>
-                  <p className="text-xs text-muted-foreground">
-                    Sotto questa quantità il prodotto viene segnalato come “sotto soglia”.
-                  </p>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
             <DialogFooter>
               <Button type="button" variant="outline" onClick={onClose}>
                 Annulla

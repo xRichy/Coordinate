@@ -173,11 +173,10 @@ export function ProductModal({ isOpen, onClose, productToEdit }: ProductModalPro
                     <FormLabel>Prezzo (€)</FormLabel>
                     <FormControl>
                       <Input
-                        type="number"
-                        step="0.01"
+                        inputMode="decimal"
                         {...field}
                         onFocus={(e) => e.target.select()}
-                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                        onChange={(e) => field.onChange(parseFloat(e.target.value.replace(",", ".")) || 0)}
                       />
                     </FormControl>
                     <FormMessage />
@@ -192,11 +191,10 @@ export function ProductModal({ isOpen, onClose, productToEdit }: ProductModalPro
                     <FormLabel>Costo (€)</FormLabel>
                     <FormControl>
                       <Input
-                        type="number"
-                        step="0.01"
+                        inputMode="decimal"
                         {...field}
                         onFocus={(e) => e.target.select()}
-                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                        onChange={(e) => field.onChange(parseFloat(e.target.value.replace(",", ".")) || 0)}
                       />
                     </FormControl>
                     <FormMessage />

@@ -9,7 +9,6 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -181,12 +180,12 @@ export default function QuoteEditorPage() {
         <Link href={`${base}/quotes`} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground w-fit">
           <ArrowLeft className="h-4 w-4" /> Preventivi
         </Link>
-        <div className="flex items-center justify-between gap-4">
-          <h2 className="text-3xl font-bold tracking-tight">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
             {isNew ? "Nuovo preventivo" : `Preventivo #${quote?.number}`}
           </h2>
           {!isNew && quote && (
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {quote.status === "accepted" && (
                 <Button
                   variant="outline" size="sm" className="gap-1.5"
@@ -206,7 +205,6 @@ export default function QuoteEditorPage() {
                 <Download className="h-4 w-4" />
                 {downloading ? "PDF…" : "Scarica PDF"}
               </Button>
-              <Badge variant="secondary">{STATUS_LABEL[quote.status]}</Badge>
               <Select value={quote.status} onValueChange={(v) => updateStatus.mutate({ id, status: v as QuoteStatus })}>
                 <SelectTrigger className="h-8 w-[150px]"><SelectValue /></SelectTrigger>
                 <SelectContent>

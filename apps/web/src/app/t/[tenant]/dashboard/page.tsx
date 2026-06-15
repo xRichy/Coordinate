@@ -96,9 +96,9 @@ export default function DashboardPage() {
           <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
           <p className="text-muted-foreground mt-2">Panoramica commerciale. Clicca un dato per il dettaglio.</p>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="grid grid-cols-2 gap-2 w-full sm:flex sm:w-auto sm:shrink-0">
           <Select value={period} onValueChange={(v: Period) => setPeriod(v)}>
-            <SelectTrigger className="w-[170px] h-9"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-full sm:w-[170px] h-9"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="month">Questo mese</SelectItem>
               <SelectItem value="quarter">Questo trimestre</SelectItem>
@@ -107,7 +107,7 @@ export default function DashboardPage() {
             </SelectContent>
           </Select>
           <Select value={ownerId} onValueChange={setOwnerId}>
-            <SelectTrigger className="w-[160px] h-9"><SelectValue placeholder="Owner" /></SelectTrigger>
+            <SelectTrigger className="w-full sm:w-[160px] h-9"><SelectValue placeholder="Owner" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tutti gli owner</SelectItem>
               {members.map((m) => (

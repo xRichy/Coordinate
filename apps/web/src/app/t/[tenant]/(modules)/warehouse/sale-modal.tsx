@@ -19,6 +19,12 @@ export const CHANNEL_LABEL: Record<string, string> = {
 };
 const CHANNELS = ["ebay", "amazon", "vinted", "subito", "store", "other"] as const;
 
+/** Parse a user-typed number (comma or dot, possibly empty) to a number. */
+const num = (s: string) => {
+  const n = parseFloat(s.replace(",", "."));
+  return Number.isFinite(n) ? n : 0;
+};
+
 export function SaleModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -26,15 +32,17 @@ export function SaleModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
   const { data: products = [] } = useQuery(trpc.warehouse.product.list.queryOptions());
 
   const [productId, setProductId] = useState("");
-  const [quantity, setQuantity] = useState(1);
-  const [unitPrice, setUnitPrice] = useState(0);
+  const [quantity, setQuantity] = useState("1");
+  const [unitPrice, setUnitPrice] = useState("");
   const [channel, setChannel] = useState<(typeof CHANNELS)[number]>("ebay");
   const [buyer, setBuyer] = useState("");
 
   const selected = products.find((p) => p.id === productId);
+  const qtyNum = Math.max(1, Math.round(num(quantity)));
+  const priceNum = num(unitPrice);
 
   function reset() {
-    setProductId(""); setQuantity(1); setUnitPrice(0); setChannel("ebay"); setBuyer("");
+    setProductId(""); setQuantity("1"); setUnitPrice(""); setChannel("ebay"); setBuyer("");
   }
 
   const record = useMutation(
@@ -52,7 +60,7 @@ export function SaleModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
     })
   );
 
-  const margin = selected ? (unitPrice - selected.costPrice) * quantity : 0;
+  const margin = selected ? (priceNum - selected.costPrice) * qtyNum : 0;
 
   return (
     <Dialog open={isOpen} onOpenChange={(o) => { if (!o) { reset(); onClose(); } }}>
@@ -69,7 +77,7 @@ export function SaleModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
               onValueChange={(v) => {
                 setProductId(v);
                 const p = products.find((x) => x.id === v);
-                if (p) setUnitPrice(p.price);
+                if (p) setUnitPrice(String(p.price));
               }}
             >
               <SelectTrigger><SelectValue placeholder="Scegli un prodotto" /></SelectTrigger>
@@ -91,15 +99,15 @@ export function SaleModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
           <div className="grid grid-cols-3 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="s-qty">Quantità</Label>
-              <Input id="s-qty" type="number" min={1} value={quantity}
+              <Input id="s-qty" inputMode="numeric" placeholder="1" value={quantity}
                 onFocus={(e) => e.target.select()}
-                onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value, 10) || 1))} />
+                onChange={(e) => setQuantity(e.target.value)} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="s-price">Prezzo unit. (€)</Label>
-              <Input id="s-price" type="number" step="0.01" value={unitPrice}
+              <Input id="s-price" inputMode="decimal" placeholder="0,00" value={unitPrice}
                 onFocus={(e) => e.target.select()}
-                onChange={(e) => setUnitPrice(parseFloat(e.target.value) || 0)} />
+                onChange={(e) => setUnitPrice(e.target.value)} />
             </div>
             <div className="space-y-1.5">
               <Label>Canale</Label>
@@ -129,8 +137,8 @@ export function SaleModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
         <DialogFooter>
           <Button variant="outline" onClick={() => { reset(); onClose(); }}>Annulla</Button>
           <Button
-            disabled={!productId || quantity < 1 || record.isPending}
-            onClick={() => record.mutate({ productId, quantity, unitPrice, channel, buyer: buyer.trim() || undefined })}
+            disabled={!productId || qtyNum < 1 || record.isPending}
+            onClick={() => record.mutate({ productId, quantity: qtyNum, unitPrice: priceNum, channel, buyer: buyer.trim() || undefined })}
           >
             {record.isPending ? "Registrazione…" : "Registra vendita"}
           </Button>

@@ -31,7 +31,7 @@ const contactSchema = z.object({
   company: z.string().optional(),
   email: z.string().email("Email non valida").optional().or(z.literal("")),
   phone: z.string().optional(),
-  status: z.enum(["active", "inactive"]),
+  status: z.enum(["active", "inactive", "customer"]),
   parentId: z.string().optional(),
   ownerId: z.string().optional(),
 });
@@ -62,9 +62,10 @@ export function CustomerModal({
   const createTag = useMutation(trpc.crm.tag.create.mutationOptions({
     onSuccess: (tag) => {
       queryClient.invalidateQueries(trpc.crm.tag.list.queryOptions());
-      setSelectedTagIds((prev) => [...prev, tag.id]);
+      setSelectedTagIds((prev) => (prev.includes(tag.id) ? prev : [...prev, tag.id]));
       setTagInput("");
     },
+    onError: (e) => toast.error(e.message),
   }));
 
   const invalidateContacts = () =>
@@ -73,11 +74,13 @@ export function CustomerModal({
   const createContact = useMutation(
     trpc.crm.contact.create.mutationOptions({
       onSuccess: () => { invalidateContacts(); toast.success("Contatto creato."); onClose(); },
+      onError: (e) => toast.error(e.message),
     })
   );
   const updateContact = useMutation(
     trpc.crm.contact.update.mutationOptions({
       onSuccess: () => { invalidateContacts(); toast.success("Contatto aggiornato."); onClose(); },
+      onError: (e) => toast.error(e.message),
     })
   );
 
@@ -100,7 +103,7 @@ export function CustomerModal({
           company: contactToEdit.company ?? "",
           email: contactToEdit.email ?? "",
           phone: contactToEdit.phone ?? "",
-          status: (contactToEdit.status as "active" | "inactive") ?? "active",
+          status: (contactToEdit.status as "active" | "inactive" | "customer") ?? "active",
           parentId: contactToEdit.parentId ?? "",
           ownerId: contactToEdit.ownerId ?? "",
         });
@@ -143,7 +146,7 @@ export function CustomerModal({
       company: values.company || undefined,
       email: values.email || undefined,
       phone: values.phone || undefined,
-      status: values.status as "active" | "inactive",
+      status: values.status,
       parentId: values.parentId || undefined,
       ownerId: values.ownerId || undefined,
       tagIds: selectedTagIds,

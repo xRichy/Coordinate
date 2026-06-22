@@ -15,7 +15,6 @@
     "db:provision": "tsx prisma/provision-tenant.ts",
     "db:reset-password": "tsx prisma/reset-password.ts",
     "test": "vitest run",
-    "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf node_modules .turbo"
   },
@@ -23,6 +22,7 @@
     "@prisma/client": "^6.0.0"
   },
   "devDependencies": {
+    "@types/node": "^20",
     "dotenv": "^17.4.2",
     "eslint": "^9",
     "prisma": "^6.0.0",

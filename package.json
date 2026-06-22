@@ -17,5 +17,16 @@
     "node": ">=20",
     "pnpm": ">=8"
   },
-  "packageManager": "pnpm@9.0.0"
+  "packageManager": "pnpm@9.0.0",
+  "pnpm": {
+    "comment": "Security overrides: pin transitive deps to patched versions within their major (caret) to fix pnpm audit highs without breaking the parents.",
+    "overrides": {
+      "@grpc/grpc-js": "^1.14.4",
+      "dompurify": "^3.4.5",
+      "hono": "^4.12.25",
+      "protobufjs": "^7.6.1",
+      "undici": "^6.27.0",
+      "vite": "^8.0.16"
+    }
+  }
 }

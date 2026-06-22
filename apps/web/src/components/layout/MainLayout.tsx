@@ -2,6 +2,7 @@
 
 import { AppSidebar } from "./AppSidebar";
 import { AppHeader } from "./AppHeader";
+import { TwoFactorGate } from "@/components/auth/two-factor-gate";
 
 export function MainLayout({
   children,
@@ -21,6 +22,7 @@ export function MainLayout({
           {children}
         </main>
       </div>
+      <TwoFactorGate tenantSlug={tenantSlug} />
     </div>
   );
 }

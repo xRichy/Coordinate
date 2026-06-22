@@ -326,7 +326,8 @@ I moduli dichiarano gli eventi che emettono e quelli che ascoltano nel manifest.
 - **Better-Auth** gestisce login, sessioni, MFA, password reset.
 - Estensione **organizations** di Better-Auth = i nostri tenant.
 - Un utente può appartenere a più organizzazioni (utile per consulenti / partner).
-- Provider OAuth (Google, Microsoft) configurabili per tenant (alcuni enterprise lo richiedono).
+- **Niente OAuth/social login** nell'MVP boutique: gli account li crea l'operatore (provisioning / super-admin), i clienti non si auto-registrano. Solo email + password. *(Riattivabile se un cliente enterprise lo richiede.)*
+- **2FA TOTP** opzionale per tutti, **obbligatoria per l'Owner** (enforced lato UI da `<TwoFactorGate>`).
 - **Dominio unico** → cookie di sessione **host-only** (niente cross-subdomain). Login da `coordinate.app/login`, poi accesso a `coordinate.app/t/<slug>/…`. Se l'utente appartiene a più tenant, dopo il login sceglie il workspace; la membership sul tenant è verificata server-side in `tenantProcedure`.
 
 ### Modello di permessi

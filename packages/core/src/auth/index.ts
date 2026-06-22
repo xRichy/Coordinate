@@ -17,20 +17,16 @@ export const auth = betterAuth({
     requireEmailVerification: false,
   },
 
-  socialProviders: {
-    google: {
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    },
-    microsoft: {
-      clientId: process.env.MICROSOFT_CLIENT_ID!,
-      clientSecret: process.env.MICROSOFT_CLIENT_SECRET!,
-    },
-  },
+  // No social/OAuth providers: in the boutique white-glove model the operator
+  // provisions every account manually — clients never self-register, so social
+  // login would only add an unused (and attackable) surface.
 
   plugins: [
     organization(),
-    twoFactor(),
+    // TOTP-based 2FA. `issuer` is the label shown in the user's authenticator
+    // app (Google Authenticator/Authy). Mandatory for Owners (enforced in the
+    // tenant UI via <TwoFactorGate>), optional for everyone else.
+    twoFactor({ issuer: "Coordinate" }),
   ],
 
   databaseHooks: {

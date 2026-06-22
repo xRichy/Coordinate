@@ -547,7 +547,7 @@ Dipende da T3.19 (deferred).
 - ✅ **Security headers** in `apps/web/next.config.ts` (`headers()`): CSP (scoped su Sentry/PostHog/Vercel Blob + `'wasm-unsafe-eval'` per react-pdf), HSTS (solo prod), X-Frame-Options DENY, X-Content-Type-Options, Referrer-Policy, Permissions-Policy. Verificato 0 violazioni CSP su login/dashboard/magazzino/sicurezza/2FA in dev.
 - ✅ **Rate limiting** auth in `packages/core/src/auth/index.ts` (`rateLimit` Better-Auth, regole strette su sign-in/2FA; attivo in prod, store in-memory per-istanza).
 - ✅ **Niente segreti nel bundle client** (nessun file `"use client"` legge env server-only).
-- ⏳ **`pnpm audit`**: 56 vuln (16 high, quasi tutte transitive, es. `undici` via `@vercel/blob`) → remediation in task `chore/deps` dedicato.
+- ✅ **`pnpm audit` remediation** (branch `v2/chore/deps-audit-remediation`): da **56 vuln / 16 high → 11 vuln / 1 high**. Next 16.1.6→**16.2.9** (8 CVE, build prod verificato); rimossi `socket.io`/`socket.io-client` (inutilizzati → elimina il vuln `ws`); `pnpm.overrides` per le transitive (`undici ^6.27.0`, `@grpc/grpc-js ^1.14.4`, `protobufjs ^7.6.1`, `dompurify ^3.4.5`, `hono ^4.12.25`, `vite ^8.0.16`). L'unica high residua è `vite` (via `better-auth > vitest`, **solo tooling di test**, vuln del dev-server su Windows → non eseguito in produzione).
 - *Nota: fatto in anticipo rispetto a Deps T6.5 (gli header/rate-limit non dipendono dagli E2E).*
 
 > **Extra (non a piano)**: 2FA TOTP obbligatoria per Owner + rimozione OAuth/signup → branch `v2/feat/auth-2fa-mandatory-owner`, già in produzione. Theming per-tenant (T5.3) **rientra in MVP** (decisione 2026-06-22).

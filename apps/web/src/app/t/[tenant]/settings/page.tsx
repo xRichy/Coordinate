@@ -7,7 +7,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Save, Blocks, Lock, Users, ChevronRight, Download, ShieldCheck } from "lucide-react";
+import { Save, Blocks, Lock, Users, ChevronRight, Download, ShieldCheck, KeyRound } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useTRPC } from "@/lib/trpc";
@@ -111,6 +111,23 @@ export default function SettingsPage() {
                 <div className="min-w-0">
                   <CardTitle>Team</CardTitle>
                   <CardDescription>Gestisci gli account della tua azienda e i loro ruoli.</CardDescription>
+                </div>
+              </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0" />
+            </div>
+          </CardHeader>
+        </Card>
+      </Link>
+
+      <Link href={`/t/${tenant}/settings/security`} className="block">
+        <Card className="bg-card/40 backdrop-blur-md border-border/50 shadow-sm hover:bg-card/60 transition-colors">
+          <CardHeader>
+            <div className="flex items-center justify-between gap-4 min-w-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <KeyRound className="h-5 w-5 text-primary shrink-0" />
+                <div className="min-w-0">
+                  <CardTitle>Sicurezza</CardTitle>
+                  <CardDescription>Verifica in due passaggi (2FA) per proteggere il tuo account.</CardDescription>
                 </div>
               </div>
               <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0" />

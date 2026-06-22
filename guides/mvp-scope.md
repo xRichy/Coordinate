@@ -41,8 +41,8 @@ Dettagli sui range di prezzo: vedi `pricing.md`.
 ## 3. Foundation — cosa serve sempre
 
 ### `auth` — autenticazione
-**IN**: email + password (senza email verification — la abiliteremo se/quando serve), OAuth Google + Microsoft, password reset, sessioni con refresh token, 2FA TOTP opzionale.
-**OUT**: SSO/SAML (deferred), magic link, social login esotici.
+**IN**: email + password (senza email verification — la abiliteremo se/quando serve), password reset, sessioni con refresh token, 2FA TOTP (opzionale per tutti, **obbligatoria per l'Owner**, enforced in UI via `<TwoFactorGate>`).
+**OUT**: **OAuth/social login (Google, Microsoft)** — rimosso: nel modello white-glove gli account li crea l'operatore, i clienti non si auto-registrano, quindi il login social è solo superficie d'attacco inutile. SSO/SAML (deferred), magic link.
 
 ### `users` & `organizations` (Better-Auth)
 **IN**: gestione utenti dentro a un tenant (admin-led: tu inviti, tu rimuovi), un utente può appartenere a più tenant.

@@ -9,7 +9,6 @@ const BYPASS_PATTERNS = [
   /^\/api\/inngest\//,
   /^\/$/,
   /^\/login(\/.*)?$/,
-  /^\/signup(\/.*)?$/,
   /^\/pricing(\/.*)?$/,
   /^\/privacy(\/.*)?$/,
   /^\/terms(\/.*)?$/,

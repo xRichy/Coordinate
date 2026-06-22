@@ -27,7 +27,11 @@ export default function Home() {
       }
 
       if (tenants.length === 0) {
-        window.location.assign("/signup");
+        // No self-serve signup: an account always belongs to a tenant created by
+        // the operator. A logged-in user with no membership is an orphaned account
+        // — sign out and send back to login rather than offering registration.
+        await authClient.signOut();
+        window.location.assign("/login");
         return;
       }
 

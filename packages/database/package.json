@@ -12,6 +12,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:seed:demo": "tsx prisma/seed-demo.ts",
     "db:seed:mich": "tsx prisma/seed-mich.ts",
+    "db:seed:e2e": "tsx prisma/seed-e2e.ts",
     "db:provision": "tsx prisma/provision-tenant.ts",
     "db:reset-password": "tsx prisma/reset-password.ts",
     "test": "vitest run",

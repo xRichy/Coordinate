@@ -48,7 +48,7 @@ Fase 3   Moduli MVP boutique              [x] 18/18 attivi  (+6 deferred)
 Fase 4   Admin tenant, team & provisioning[x] 6/6   attivi  (+12 deferred)
 Fase 4.5 Moduli verticali primi clienti  [x] 5/5   attivi
 Fase 5   Polish                           [ ] 0/8   attivi  (+2 deferred)
-Fase 6   Testing & Hardening              [~] 2/8   attivi  (+1 deferred)  (T6.6 security, T6.9 CI)
+Fase 6   Testing & Hardening              [~] 3/8   attivi  (+1 deferred)  (T6.6 security, T6.9 CI, T6.1 E2E login)
 Fase 7   Launch white-glove               [ ] 0/4   attivi  (+4 deferred)
                                           ----------------------------------
                                           63 attivi · 25 deferred · 88 totali
@@ -527,8 +527,12 @@ Fuori scope: niente listino pubblico (`mvp-scope.md` §5).
 
 ---
 
-### T6.1 — Setup Playwright + E2E login → sezione tenant
+### T6.1 ✅ — Setup Playwright + E2E login → sezione tenant
 **Deps**: T5.10 · **Size**: M — Playwright in `apps/web`; test: login → `/t/<slug>/dashboard`. *(Signup è white-glove: il tenant è creato via T4.17, non self-serve.)*
+- ✅ Playwright in `apps/web` (`playwright.config.ts`, `e2e/`, script `test:e2e`); seed deterministico `db:seed:e2e` (2 tenant `e2e-a`/`e2e-b` con utente **admin** — esenti dal gate 2FA, login email+password); `global-setup` esegue il seed; dev server avviato/riusato da Playwright.
+- ✅ `e2e/auth.spec.ts`: login admin → `/t/e2e-a/dashboard` + credenziali errate restano su `/login`. **2/2 verdi.**
+- *Nota tooling: con Node 22 + Playwright 1.61, gli import relativi cross-file tra spec falliscono (`context.conditions?.includes`); gli spec sono quindi **autosufficienti** (mini-helper locale per file).*
+- ⏳ Restano T6.2 (CRM golden path), T6.3 (warehouse), T6.5 (cross-tenant) — stesso pattern. Integrazione E2E in CI: follow-up (serve `playwright install` + app+DB nel runner).
 
 ### T6.2 — E2E: contatto + lead + deal
 **Deps**: T6.1 · **Size**: M — golden path commerciale: contatto → lead → deal → Won. *(Niente preventivo: quotes deferred.)*

@@ -48,7 +48,7 @@ Fase 3   Moduli MVP boutique              [x] 18/18 attivi  (+6 deferred)
 Fase 4   Admin tenant, team & provisioning[x] 6/6   attivi  (+12 deferred)
 Fase 4.5 Moduli verticali primi clienti  [x] 5/5   attivi
 Fase 5   Polish                           [ ] 0/8   attivi  (+2 deferred)
-Fase 6   Testing & Hardening              [~] 1/8   attivi  (+1 deferred)  (T6.6 headers+rate-limit)
+Fase 6   Testing & Hardening              [~] 2/8   attivi  (+1 deferred)  (T6.6 security, T6.9 CI)
 Fase 7   Launch white-glove               [ ] 0/4   attivi  (+4 deferred)
                                           ----------------------------------
                                           63 attivi · 25 deferred · 88 totali
@@ -558,8 +558,11 @@ Dipende da T3.19 (deferred).
 ### T6.8 — Backup verificato + runbook incident
 **Deps**: T6.5 · **Size**: M — verifica backup Postgres prod; test restore in staging; `guides/runbook.md` (5 scenari).
 
-### T6.9 — Chiusura Fase 6 + CI/CD
+### T6.9 ✅ (CI parte) — Chiusura Fase 6 + CI/CD
 **Deps**: tutti i T6.* attivi · **Size**: M — GitHub Actions (lint/typecheck/test su PR); deploy Vercel su merge; `prisma migrate deploy` safe. Marcare Fase 6 ✅.
+- ✅ **CI** `.github/workflows/ci.yml` (on PR + push develop/main): job **checks** (install frozen → prisma generate → typecheck → lint → unit test core → build web) e job **rls-tests** (service Postgres 16 → migrate deploy → test RLS come `coordinate_app`). Validato in locale: frozen-lockfile in sync, `migrate deploy` su DB vuoto + RLS 12/12 verdi.
+- **CD**: il deploy in produzione è gestito dall'integrazione Git di **Vercel** (push su `main`), non da un workflow. ⚠️ `prisma migrate deploy` verso Neon su release con nuove migration: da agganciare quando ci sarà la prima release con migrazioni (le release attualmente pendenti su develop **non** introducono migration).
+- ⏳ Resta da fare l'**acceptance finale** di chiusura Fase 6 (dopo E2E T6.1/2/3/5, runbook T6.8, perf T6.7) per marcare Fase 6 ✅.
 
 ---
 

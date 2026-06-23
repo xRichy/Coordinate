@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Plus, Trash2, Download, Hammer } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Download, Hammer, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -65,12 +65,17 @@ export default function QuoteEditorPage() {
   const { data: company } = useQuery(trpc.quotes.companyInfo.get.queryOptions());
 
   const [downloading, setDownloading] = useState(false);
-  async function downloadPdf() {
+  // PDF is shown in an in-app full-screen overlay (with a back button) instead
+  // of a same-tab download: on mobile the browser ignores the download attribute
+  // and navigates to the blob, trapping the user in the PDF with no way back.
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+
+  async function openPdf() {
     if (!quote) return;
     setDownloading(true);
     try {
-      const { downloadQuotePdf } = await import("@/lib/quote-pdf");
-      await downloadQuotePdf(
+      const { createQuotePdfBlob } = await import("@/lib/quote-pdf");
+      const blob = await createQuotePdfBlob(
         {
           number: quote.number,
           contactName: quote.contactName,
@@ -84,11 +89,22 @@ export default function QuoteEditorPage() {
         },
         company ?? { name: "", vat: "", taxCode: "", address: "" }
       );
+      setPdfUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return URL.createObjectURL(blob);
+      });
     } catch {
       toast.error("Errore nella generazione del PDF.");
     } finally {
       setDownloading(false);
     }
+  }
+
+  function closePdf() {
+    setPdfUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
   }
 
   const [form, setForm] = useState<FormState | null>(
@@ -201,9 +217,9 @@ export default function QuoteEditorPage() {
                   Crea commessa
                 </Button>
               )}
-              <Button variant="outline" size="sm" className="gap-1.5" disabled={downloading} onClick={downloadPdf}>
-                <Download className="h-4 w-4" />
-                {downloading ? "PDF…" : "Scarica PDF"}
+              <Button variant="outline" size="sm" className="gap-1.5" disabled={downloading} onClick={openPdf}>
+                <FileText className="h-4 w-4" />
+                {downloading ? "PDF…" : "Apri PDF"}
               </Button>
               <Select value={quote.status} onValueChange={(v) => updateStatus.mutate({ id, status: v as QuoteStatus })}>
                 <SelectTrigger className="h-8 w-[150px]"><SelectValue /></SelectTrigger>
@@ -331,6 +347,24 @@ export default function QuoteEditorPage() {
           </Button>
         </div>
       </div>
+
+      {/* In-app PDF viewer overlay — always has a way back (fixes mobile trap). */}
+      {pdfUrl && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-background">
+          <div className="flex items-center justify-between gap-2 border-b border-border/50 p-3">
+            <Button variant="ghost" size="sm" className="gap-1.5" onClick={closePdf}>
+              <ArrowLeft className="h-4 w-4" /> Indietro
+            </Button>
+            <span className="text-sm font-medium truncate">Preventivo #{quote?.number}</span>
+            <Button asChild variant="outline" size="sm" className="gap-1.5">
+              <a href={pdfUrl} download={`preventivo-${quote?.number}.pdf`}>
+                <Download className="h-4 w-4" /> Scarica
+              </a>
+            </Button>
+          </div>
+          <iframe src={pdfUrl} title={`Preventivo ${quote?.number}`} className="flex-1 w-full border-0" />
+        </div>
+      )}
     </div>
   );
 }

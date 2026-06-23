@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [develop, main]
+
+# Cancel superseded runs on the same branch/PR.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Lint · Typecheck · Unit · Build
+    runs-on: ubuntu-latest
+    env:
+      # Dummy datasource URLs — prisma generate / typecheck / lint / build never
+      # open a DB connection (Prisma connects lazily on first query at runtime).
+      DATABASE_URL: postgresql://coordinate_app:coordinate@localhost:5432/coordinate_dev
+      DIRECT_URL: postgresql://coordinate:coordinate@localhost:5432/coordinate_dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm -F @coordinate/database db:generate
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Unit tests (core)
+        run: pnpm -F @coordinate/core test
+
+      - name: Production build (web)
+        run: pnpm -F @coordinate/web build
+
+  rls-tests:
+    name: RLS isolation tests (Postgres)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: coordinate
+          POSTGRES_PASSWORD: coordinate
+          POSTGRES_DB: coordinate_dev
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U coordinate -d coordinate_dev"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      # coordinate_app (RLS-enforced) for the client, coordinate (superuser) for
+      # migrations — mirrors the local two-role setup. The create_app_role
+      # migration provisions coordinate_app during `migrate deploy`.
+      DATABASE_URL: postgresql://coordinate_app:coordinate@localhost:5432/coordinate_dev
+      DIRECT_URL: postgresql://coordinate:coordinate@localhost:5432/coordinate_dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm -F @coordinate/database db:generate
+
+      - name: Apply migrations (creates schema + RLS policies + coordinate_app role)
+        run: pnpm -F @coordinate/database exec prisma migrate deploy --schema=./prisma/schema.prisma
+
+      - name: RLS isolation tests
+        run: pnpm -F @coordinate/database test

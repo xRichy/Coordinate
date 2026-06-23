@@ -17,6 +17,22 @@ export const auth = betterAuth({
     requireEmailVerification: false,
   },
 
+  // Rate limiting on the auth endpoints. Better-Auth enables this in production
+  // by default (in-memory store, 60s/100 req per IP); we keep that baseline and
+  // tighten the sensitive endpoints to blunt credential/2FA brute-forcing.
+  // Note: the in-memory counter is per serverless instance — adequate at this
+  // scale; move to DB storage if abuse ever becomes a real concern.
+  rateLimit: {
+    window: 60,
+    max: 100,
+    customRules: {
+      "/sign-in/email": { window: 60, max: 10 },
+      "/two-factor/verify-totp": { window: 60, max: 10 },
+      "/two-factor/verify-backup-code": { window: 60, max: 5 },
+      "/two-factor/enable": { window: 60, max: 10 },
+    },
+  },
+
   // No social/OAuth providers: in the boutique white-glove model the operator
   // provisions every account manually — clients never self-register, so social
   // login would only add an unused (and attackable) surface.

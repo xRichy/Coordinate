@@ -29,6 +29,13 @@ import type { AppRouter } from "@coordinate/api";
 type Contact = inferRouterOutputs<AppRouter>["crm"]["contact"]["list"][number];
 type DeletedContact = inferRouterOutputs<AppRouter>["crm"]["contact"]["listDeleted"][number];
 
+// Days remaining before a soft-deleted contact is permanently purged (30-day
+// retention). Kept at module scope so Date.now() isn't called during render.
+function daysUntilPurge(deletedAtIso: string): number {
+  const purgeAt = new Date(deletedAtIso).getTime() + 30 * 24 * 60 * 60 * 1000;
+  return Math.ceil((purgeAt - Date.now()) / (1000 * 60 * 60 * 24));
+}
+
 export default function CustomersPage() {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -147,8 +154,7 @@ export default function CustomersPage() {
               <TableBody>
                 {deletedContacts.map((c: DeletedContact) => {
                   const deletedAt = new Date(c.deletedAt!);
-                  const purgeAt = new Date(deletedAt.getTime() + 30 * 24 * 60 * 60 * 1000);
-                  const daysLeft = Math.ceil((purgeAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                  const daysLeft = daysUntilPurge(c.deletedAt!);
                   return (
                     <TableRow key={c.id} className="opacity-70">
                       <TableCell className="font-medium">{c.name}</TableCell>

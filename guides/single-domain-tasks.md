@@ -48,7 +48,7 @@ Fase 3   Moduli MVP boutique              [x] 18/18 attivi  (+6 deferred)
 Fase 4   Admin tenant, team & provisioning[x] 6/6   attivi  (+12 deferred)
 Fase 4.5 Moduli verticali primi clienti  [x] 5/5   attivi
 Fase 5   Polish                           [ ] 0/8   attivi  (+2 deferred)
-Fase 6   Testing & Hardening              [ ] 0/8   attivi  (+1 deferred)
+Fase 6   Testing & Hardening              [~] 2/8   attivi  (+1 deferred)  (T6.6 security, T6.9 CI)
 Fase 7   Launch white-glove               [ ] 0/4   attivi  (+4 deferred)
                                           ----------------------------------
                                           63 attivi · 25 deferred · 88 totali
@@ -542,8 +542,15 @@ Dipende da T3.19 (deferred).
 ### T6.5 — E2E cross-tenant isolation + membership
 **Deps**: T6.1, T1.4 · **Size**: M — 2 tenant; accesso a dati/URL del tenant B da utente del tenant A → fallisce (`FORBIDDEN`/404). Copre RLS + il membership check di T1.4.
 
-### T6.6 — Security review checklist
+### T6.6 ✅ (parziale) — Security review checklist
 **Deps**: T6.5 · **Size**: M — CSP/HSTS/X-Frame-Options; rate limiting su `/api/auth/*`; `pnpm audit`; verifica niente secret nel bundle. *(Turnstile su signup non applicabile: niente signup pubblico.)*
+- ✅ **Security headers** in `apps/web/next.config.ts` (`headers()`): CSP (scoped su Sentry/PostHog/Vercel Blob + `'wasm-unsafe-eval'` per react-pdf), HSTS (solo prod), X-Frame-Options DENY, X-Content-Type-Options, Referrer-Policy, Permissions-Policy. Verificato 0 violazioni CSP su login/dashboard/magazzino/sicurezza/2FA in dev.
+- ✅ **Rate limiting** auth in `packages/core/src/auth/index.ts` (`rateLimit` Better-Auth, regole strette su sign-in/2FA; attivo in prod, store in-memory per-istanza).
+- ✅ **Niente segreti nel bundle client** (nessun file `"use client"` legge env server-only).
+- ✅ **`pnpm audit` remediation** (branch `v2/chore/deps-audit-remediation`): da **56 vuln / 16 high → 11 vuln / 1 high**. Next 16.1.6→**16.2.9** (8 CVE, build prod verificato); rimossi `socket.io`/`socket.io-client` (inutilizzati → elimina il vuln `ws`); `pnpm.overrides` per le transitive (`undici ^6.27.0`, `@grpc/grpc-js ^1.14.4`, `protobufjs ^7.6.1`, `dompurify ^3.4.5`, `hono ^4.12.25`, `vite ^8.0.16`). L'unica high residua è `vite` (via `better-auth > vitest`, **solo tooling di test**, vuln del dev-server su Windows → non eseguito in produzione).
+- *Nota: fatto in anticipo rispetto a Deps T6.5 (gli header/rate-limit non dipendono dagli E2E).*
+
+> **Extra (non a piano)**: 2FA TOTP obbligatoria per Owner + rimozione OAuth/signup → branch `v2/feat/auth-2fa-mandatory-owner`, già in produzione. Theming per-tenant (T5.3) **rientra in MVP** (decisione 2026-06-22).
 
 ### T6.7 — Performance review
 **Deps**: T6.5 · **Size**: M — Lighthouse ≥ 90 su landing/dashboard; chunk < 300KB gz; slow query log; indici mancanti.
@@ -551,8 +558,11 @@ Dipende da T3.19 (deferred).
 ### T6.8 — Backup verificato + runbook incident
 **Deps**: T6.5 · **Size**: M — verifica backup Postgres prod; test restore in staging; `guides/runbook.md` (5 scenari).
 
-### T6.9 — Chiusura Fase 6 + CI/CD
+### T6.9 ✅ (CI parte) — Chiusura Fase 6 + CI/CD
 **Deps**: tutti i T6.* attivi · **Size**: M — GitHub Actions (lint/typecheck/test su PR); deploy Vercel su merge; `prisma migrate deploy` safe. Marcare Fase 6 ✅.
+- ✅ **CI** `.github/workflows/ci.yml` (on PR + push develop/main): job **checks** (install frozen → prisma generate → typecheck → lint → unit test core → build web) e job **rls-tests** (service Postgres 16 → migrate deploy → test RLS come `coordinate_app`). Validato in locale: frozen-lockfile in sync, `migrate deploy` su DB vuoto + RLS 12/12 verdi.
+- **CD**: il deploy in produzione è gestito dall'integrazione Git di **Vercel** (push su `main`), non da un workflow. ⚠️ `prisma migrate deploy` verso Neon su release con nuove migration: da agganciare quando ci sarà la prima release con migrazioni (le release attualmente pendenti su develop **non** introducono migration).
+- ⏳ Resta da fare l'**acceptance finale** di chiusura Fase 6 (dopo E2E T6.1/2/3/5, runbook T6.8, perf T6.7) per marcare Fase 6 ✅.
 
 ---
 

@@ -135,9 +135,17 @@ export function QuoteDocument({ quote, company }: { quote: QuotePdfData; company
   );
 }
 
-/** Generate the PDF in the browser and trigger a download. */
+/** Generate the quote PDF as a Blob in the browser. */
+export async function createQuotePdfBlob(
+  quote: QuotePdfData,
+  company: QuotePdfCompany
+): Promise<Blob> {
+  return pdf(<QuoteDocument quote={quote} company={company} />).toBlob();
+}
+
+/** Generate the PDF and trigger a file download. */
 export async function downloadQuotePdf(quote: QuotePdfData, company: QuotePdfCompany) {
-  const blob = await pdf(<QuoteDocument quote={quote} company={company} />).toBlob();
+  const blob = await createQuotePdfBlob(quote, company);
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -145,5 +153,7 @@ export async function downloadQuotePdf(quote: QuotePdfData, company: QuotePdfCom
   document.body.appendChild(a);
   a.click();
   a.remove();
-  URL.revokeObjectURL(url);
+  // Revoke later: some (mobile) browsers start the download asynchronously and
+  // revoking immediately can abort it.
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }

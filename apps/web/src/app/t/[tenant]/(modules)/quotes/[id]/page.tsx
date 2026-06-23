@@ -354,7 +354,10 @@ export default function QuoteEditorPage() {
           </div>
 
           <div className="flex-1 overflow-y-auto bg-muted/30 p-3 sm:p-6">
-            <div className="mx-auto max-w-2xl rounded-lg bg-white p-5 text-sm text-neutral-900 shadow-lg sm:p-10">
+            {/* aspect-[210/297] = A4 proportions, so a short quote still looks
+                like a full page (whitespace below) and not a tight card; grows
+                past the page for long quotes (min-height: auto). */}
+            <div className="mx-auto flex aspect-[210/297] max-w-2xl flex-col rounded-lg bg-white p-5 text-sm text-neutral-900 shadow-lg sm:p-10">
               {/* Header: emittente + meta documento */}
               <div className="flex flex-col gap-4 sm:flex-row sm:justify-between">
                 <div className="min-w-0">

@@ -30,6 +30,8 @@ const csp = [
     .filter(Boolean)
     .join(" "),
   "worker-src 'self' blob:",
+  // Allow the in-app PDF viewer (quote preview) to frame a blob: URL.
+  "frame-src 'self' blob:",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

@@ -37,11 +37,11 @@ const lineNet = (l: QuotePdfLine) => l.quantity * l.unitPrice * (1 - l.discountP
 
 const styles = StyleSheet.create({
   page: { padding: 40, fontSize: 10, fontFamily: "Helvetica", color: "#1a1a1a", lineHeight: 1.4 },
-  companyName: { fontSize: 16, fontFamily: "Helvetica-Bold" },
+  companyName: { fontSize: 16, fontFamily: "Helvetica-Bold", marginBottom: 4, lineHeight: 1.2 },
   muted: { color: "#666" },
   row: { flexDirection: "row" },
   spaceBetween: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
-  title: { fontSize: 20, fontFamily: "Helvetica-Bold", marginBottom: 2 },
+  title: { fontSize: 20, fontFamily: "Helvetica-Bold", marginBottom: 6, lineHeight: 1.2 },
   section: { marginTop: 20 },
   label: { fontSize: 8, color: "#888", textTransform: "uppercase", marginBottom: 2 },
 
@@ -81,7 +81,7 @@ export function QuoteDocument({ quote, company }: { quote: QuotePdfData; company
 
         {/* Customer */}
         <View style={styles.section}>
-          <Text style={styles.label}>Spett.le</Text>
+          <Text style={[styles.label, { textTransform: "none" }]}>Spett.le</Text>
           <Text style={styles.bold}>{quote.contactName}</Text>
         </View>
 

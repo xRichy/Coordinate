@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Plus, Trash2, Download, Hammer, FileText } from "lucide-react";
+import { format } from "date-fns";
+import { it } from "date-fns/locale";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -65,17 +67,17 @@ export default function QuoteEditorPage() {
   const { data: company } = useQuery(trpc.quotes.companyInfo.get.queryOptions());
 
   const [downloading, setDownloading] = useState(false);
-  // PDF is shown in an in-app full-screen overlay (with a back button) instead
-  // of a same-tab download: on mobile the browser ignores the download attribute
-  // and navigates to the blob, trapping the user in the PDF with no way back.
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  // The quote is previewed as in-app HTML (responsive — renders on every device);
+  // the real PDF is only built on "Scarica". An <iframe> PDF preview rendered
+  // blank on mobile browsers, which don't display PDFs inline.
+  const [previewOpen, setPreviewOpen] = useState(false);
 
-  async function openPdf() {
+  async function downloadPdf() {
     if (!quote) return;
     setDownloading(true);
     try {
-      const { createQuotePdfBlob } = await import("@/lib/quote-pdf");
-      const blob = await createQuotePdfBlob(
+      const { downloadQuotePdf } = await import("@/lib/quote-pdf");
+      await downloadQuotePdf(
         {
           number: quote.number,
           contactName: quote.contactName,
@@ -89,22 +91,11 @@ export default function QuoteEditorPage() {
         },
         company ?? { name: "", vat: "", taxCode: "", address: "" }
       );
-      setPdfUrl((prev) => {
-        if (prev) URL.revokeObjectURL(prev);
-        return URL.createObjectURL(blob);
-      });
     } catch {
       toast.error("Errore nella generazione del PDF.");
     } finally {
       setDownloading(false);
     }
-  }
-
-  function closePdf() {
-    setPdfUrl((prev) => {
-      if (prev) URL.revokeObjectURL(prev);
-      return null;
-    });
   }
 
   const [form, setForm] = useState<FormState | null>(
@@ -191,7 +182,7 @@ export default function QuoteEditorPage() {
   }
 
   return (
-    <div className="flex-1 space-y-6 max-w-4xl">
+    <div className="flex-1 space-y-6 max-w-4xl mx-auto w-full">
       <div className="flex flex-col gap-3 shadow-sm bg-card/40 backdrop-blur-md border border-border/50 p-6 rounded-xl">
         <Link href={`${base}/quotes`} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground w-fit">
           <ArrowLeft className="h-4 w-4" /> Preventivi
@@ -217,9 +208,9 @@ export default function QuoteEditorPage() {
                   Crea commessa
                 </Button>
               )}
-              <Button variant="outline" size="sm" className="gap-1.5" disabled={downloading} onClick={openPdf}>
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setPreviewOpen(true)}>
                 <FileText className="h-4 w-4" />
-                {downloading ? "PDF…" : "Apri PDF"}
+                Anteprima
               </Button>
               <Select value={quote.status} onValueChange={(v) => updateStatus.mutate({ id, status: v as QuoteStatus })}>
                 <SelectTrigger className="h-8 w-[150px]"><SelectValue /></SelectTrigger>
@@ -348,21 +339,94 @@ export default function QuoteEditorPage() {
         </div>
       </div>
 
-      {/* In-app PDF viewer overlay — always has a way back (fixes mobile trap). */}
-      {pdfUrl && (
+      {/* In-app HTML preview — responsive, renders on every device (mobile
+          browsers don't show PDFs in an iframe). The real PDF is built on download. */}
+      {previewOpen && quote && (
         <div className="fixed inset-0 z-50 flex flex-col bg-background">
-          <div className="flex items-center justify-between gap-2 border-b border-border/50 p-3">
-            <Button variant="ghost" size="sm" className="gap-1.5" onClick={closePdf}>
+          <div className="flex items-center justify-between gap-2 border-b border-border/50 p-3 shrink-0">
+            <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => setPreviewOpen(false)}>
               <ArrowLeft className="h-4 w-4" /> Indietro
             </Button>
-            <span className="text-sm font-medium truncate">Preventivo #{quote?.number}</span>
-            <Button asChild variant="outline" size="sm" className="gap-1.5">
-              <a href={pdfUrl} download={`preventivo-${quote?.number}.pdf`}>
-                <Download className="h-4 w-4" /> Scarica
-              </a>
+            <span className="text-sm font-medium truncate">Preventivo #{quote.number}</span>
+            <Button variant="outline" size="sm" className="gap-1.5" disabled={downloading} onClick={downloadPdf}>
+              <Download className="h-4 w-4" /> {downloading ? "PDF…" : "Scarica PDF"}
             </Button>
           </div>
-          <iframe src={pdfUrl} title={`Preventivo ${quote?.number}`} className="flex-1 w-full border-0" />
+
+          <div className="flex-1 overflow-y-auto bg-muted/30 p-3 sm:p-6">
+            <div className="mx-auto max-w-2xl rounded-lg bg-white p-5 text-sm text-neutral-900 shadow-lg sm:p-10">
+              {/* Header: emittente + meta documento */}
+              <div className="flex flex-col gap-4 sm:flex-row sm:justify-between">
+                <div className="min-w-0">
+                  <p className="text-lg font-bold leading-snug">{company?.name || "—"}</p>
+                  {company?.address && <p className="text-neutral-500">{company.address}</p>}
+                  {company?.vat && <p className="text-neutral-500">P.IVA {company.vat}</p>}
+                  {company?.taxCode && <p className="text-neutral-500">C.F. {company.taxCode}</p>}
+                </div>
+                <div className="sm:text-right">
+                  <p className="text-2xl font-bold leading-snug">Preventivo</p>
+                  <p className="font-semibold">#{quote.number}</p>
+                  <p className="mt-1 text-neutral-500">Data: {format(new Date(quote.issueDate), "dd/MM/yyyy", { locale: it })}</p>
+                  {quote.validUntil && (
+                    <p className="text-neutral-500">Valido fino al: {format(new Date(quote.validUntil), "dd/MM/yyyy", { locale: it })}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Destinatario */}
+              <div className="mt-6">
+                <p className="text-[11px] tracking-wide text-neutral-400">Spett.le</p>
+                <p className="font-semibold">{quote.contactName}</p>
+              </div>
+
+              {/* Righe */}
+              <div className="mt-6 overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="border-b-2 border-neutral-800 text-left text-[11px] uppercase text-neutral-400">
+                      <th className="py-2 pr-2 font-medium">Descrizione</th>
+                      <th className="py-2 px-2 text-right font-medium">Q.tà</th>
+                      <th className="py-2 px-2 text-right font-medium">Prezzo</th>
+                      <th className="py-2 px-2 text-right font-medium">Sc.%</th>
+                      <th className="py-2 px-2 text-right font-medium">IVA%</th>
+                      <th className="py-2 pl-2 text-right font-medium">Imponibile</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {quote.lines.map((l, i) => (
+                      <tr key={i} className="border-b border-neutral-200">
+                        <td className="py-2 pr-2">{l.description}</td>
+                        <td className="py-2 px-2 text-right tabular-nums">{l.quantity.toLocaleString("it-IT")}</td>
+                        <td className="py-2 px-2 text-right tabular-nums">{euro(l.unitPrice)}</td>
+                        <td className="py-2 px-2 text-right tabular-nums">{l.discountPct ? `${l.discountPct}%` : "—"}</td>
+                        <td className="py-2 px-2 text-right tabular-nums">{l.taxRate}%</td>
+                        <td className="py-2 pl-2 text-right tabular-nums">
+                          {euro(l.quantity * l.unitPrice * (1 - l.discountPct / 100))}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Totali */}
+              <div className="mt-4 flex justify-end">
+                <div className="w-full max-w-[260px] space-y-1">
+                  <div className="flex justify-between text-neutral-600"><span>Imponibile</span><span className="tabular-nums">{euro(quote.subtotal)}</span></div>
+                  <div className="flex justify-between text-neutral-600"><span>IVA</span><span className="tabular-nums">{euro(quote.taxTotal)}</span></div>
+                  <div className="flex justify-between border-t-2 border-neutral-800 pt-1 text-base font-bold"><span>Totale</span><span className="tabular-nums">{euro(quote.total)}</span></div>
+                </div>
+              </div>
+
+              {/* Note */}
+              {quote.notes && (
+                <div className="mt-8 border-t border-neutral-200 pt-3">
+                  <p className="text-[11px] uppercase tracking-wide text-neutral-400">Note</p>
+                  <p className="whitespace-pre-wrap text-neutral-700">{quote.notes}</p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
